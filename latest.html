@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Diamond-BETT | Fixed</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg: #0c0a1e;
+  --bg2: #100d26;
+  --purple: #1c1642;
+  --purple2: #241b52;
+  --accent: #f5c518;
+  --accent2: #ffd700;
+  --text: #ffffff;
+  --muted: #9890c0;
+  --bottom-h: 58px;
+}
+
+html, body {
+  width: 100%;
+  height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Myanmar Text', sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+svg {
+  display: block;
+}
+
+/* ========= BANNER SLIDER ========= */
+.banner-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  flex-shrink: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.banner-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.banner-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-placeholder {
+  text-align: center;
+  pointer-events: none;
+}
+
+.banner-placeholder .b-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-shadow: 0 0 20px currentColor;
+}
+
+.banner-placeholder .b-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 6px;
+}
+
+.banner-placeholder .b-amount {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent);
+  margin-top: 4px;
+}
+
+.banner-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 5;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.dot.active {
+  width: 18px;
+  background: var(--accent);
+}
+
+/* ========= QUICK NAV ========= */
+.quick-nav {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 6px;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.login-btn {
+  background: linear-gradient(135deg, #2a2a2a, #181818);
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  border-radius: 22px;
+  padding: 7px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.nav-icons {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.nav-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 7px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 9.5px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nav-ico {
+  width: 30px;
+  height: 30px;
+  background: var(--purple2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========= ANNOUNCEMENT ========= */
+.announce {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--bg2);
+  border-top: 1px solid #1c1840;
+  border-bottom: 1px solid #1c1840;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.announce-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+
+.announce-ticker {
+  overflow: hidden;
+  flex: 1;
+}
+
+.announce-ticker span {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--muted);
+  animation: ticker 22s linear infinite;
+}
+
+@keyframes ticker {
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-100%); }
+}
+
+/* ========= MAIN ========= */
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ========= SIDEBAR ========= */
+.sidebar {
+  width: 74px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  overflow-y: auto;
+  scrollbar-width: none;
+  min-height: 0;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 4px;
+  cursor: pointer;
+  border-bottom: 1px solid #161330;
+  min-height: 66px;
+  transition: background 0.2s;
+}
+
+.cat-item.active {
+  background: var(--accent);
+}
+
+.cat-item.active .cat-lbl {
+  color: #000;
+  font-weight: 700;
+}
+
+.cat-ico {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-lbl {
+  font-size: 9px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ========= GAME AREA ========= */
+.game-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 5px;
+  scrollbar-width: none;
+  min-height: 0;
+}
+
+.game-area::-webkit-scrollbar {
+  display: none;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.game-card {
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transition: transform 0.15s;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+}
+
+.game-card:active {
+  transform: scale(0.95);
+}
+
+.gc-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gc-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(80, 60, 200, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 60, 200, 0.12) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.gc-char {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: auto;
+}
+
+.gc-coins {
+  position: absolute;
+  bottom: 28px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  opacity: 0.75;
+}
+
+.gc-label {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85) 60%);
+  padding: 18px 4px 5px;
+  text-align: center;
+}
+
+.gc-label span {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #fff;
+  display: block;
+}
+
+/* ========= BOTTOM NAV ========= */
+.bottom-nav {
+  height: var(--bottom-h);
+  background: #0a0820;
+  border-top: 1px solid #201c44;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.bnav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #5a5090;
+  font-size: 9px;
+  font-family: inherit;
+}
+
+.bnav-btn.active {
+  color: var(--accent);
+}
+
+.bnav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========= MODAL ========= */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  width: 85%;
+  max-width: 320px;
+  border-radius: 28px;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg2);
+}
+
+.modal-content input {
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px;
+  border: none;
+  border-radius: 28px;
+  background: #1e1b3a;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.modal-content button {
+  width: 100%;
+  margin-top: 8px;
+  border: none;
+  border-radius: 28px;
+  padding: 10px;
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.switch-auth {
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ========= SMALL FIXES ========= */
+button {
+  outline: none;
+}
+</style>
+</head>
+<body>
+
+<div class="banner-wrap" id="bannerWrap">
+  <div class="banner-track" id="bannerTrack">
+    <div class="banner-slide" style="background: linear-gradient(135deg, #1a0850, #5a0095);">
+      <div class="banner-placeholder">
+        <div style="font-size:11px;">PRAGMATIC PLAY</div>
+        <div class="b-title" style="color:#f5c518;">Gates of OLYMPUS</div>
+        <div class="b-sub">ZEUS ရဲ့ အင်အား</div>
+        <div class="b-amount">10,000</div>
+      </div>
+    </div>
+
+    <div class="banner-slide" style="background: linear-gradient(135deg, #041840, #0060b0);">
+      <div class="banner-placeholder">
+        <div style="font-size:11px;">LIVE CASINO</div>
+        <div class="b-title" style="color:#40cfff;">Real Dealers</div>
+        <div class="b-sub">တိုက်ရိုက် ကာစိနို</div>
+        <div class="b-amount" style="color:#40cfff;">50,000</div>
+      </div>
+    </div>
+
+    <div class="banner-slide" style="background: linear-gradient(135deg, #300808, #900018);">
+      <div class="banner-placeholder">
+        <div style="font-size:11px;">TOURNAMENT</div>
+        <div class="b-title" style="color:#ff5060;">Grand Prize</div>
+        <div class="b-sub">နှစ်တိုင်း ဆုငွေကြီး</div>
+        <div class="b-amount" style="color:#ff7080;">100,000</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner-dots" id="bannerDots">
+    <div class="dot active" data-i="0"></div>
+    <div class="dot" data-i="1"></div>
+    <div class="dot" data-i="2"></div>
+  </div>
+</div>
+
+<div class="quick-nav">
+  <button class="login-btn" id="showAuthBtn">လော့ဂ်အင်</button>
+
+  <div class="nav-icons">
+    <button class="nav-icon-btn">
+      <div class="nav-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 3v12"/>
+          <path d="M7 10l5 5 5-5"/>
+          <path d="M4 20h16"/>
+        </svg>
+      </div>
+      <span>ဒေါင်းလုပ်</span>
+    </button>
+
+    <button class="nav-icon-btn">
+      <div class="nav-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+          <path d="M8 7h8"/>
+          <path d="M8 11h8"/>
+          <path d="M8 15h5"/>
+        </svg>
+      </div>
+      <span>မှတ်တမ်း</span>
+    </button>
+
+    <button class="nav-icon-btn" id="langBtn">
+      <div class="nav-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M2 12h20"/>
+          <path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10"/>
+          <path d="M12 2a15 15 0 0 0-4 10 15 15 0 0 0 4 10"/>
+        </svg>
+      </div>
+      <span>Language</span>
+    </button>
+  </div>
+</div>
+
+<div class="announce">
+  <span class="announce-icon">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2a7 7 0 0 0-7 7v3l-2 3h18l-2-3V9a7 7 0 0 0-7-7z"/>
+      <path d="M9 19a3 3 0 0 0 6 0"/>
+    </svg>
+  </span>
+  <div class="announce-ticker">
+    <span>ကြိုဆိုပါတယ်! Diamond-BETT မှာ မှတ်ပုံတင်ပြီး ဆုငွေများ ရယူပါ။</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar" id="sidebar">
+    <div class="cat-item active" data-cat="all">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">အားလုံး</div>
+    </div>
+
+    <div class="cat-item" data-cat="show">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">ဂိမ်း Show</div>
+    </div>
+
+    <div class="cat-item" data-cat="buffalo">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">BUFFALO</div>
+    </div>
+
+    <div class="cat-item" data-cat="arcade">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M8 12h8"/>
+          <path d="M12 8v8"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">ARCADE</div>
+    </div>
+
+    <div class="cat-item" data-cat="live">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="M8 12h8"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">တိုက်ရိုက်</div>
+    </div>
+
+    <div class="cat-item" data-cat="fish">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 3v3"/>
+          <path d="M12 18v3"/>
+          <path d="M3 12h3"/>
+          <path d="M18 12h3"/>
+          <path d="M12 12l-4 4"/>
+          <path d="M12 12l4 4"/>
+          <path d="M12 12l-4-4"/>
+          <path d="M12 12l4-4"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">ငါးဖမ်း</div>
+    </div>
+
+    <div class="cat-item" data-cat="sport">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a10 10 0 0 0 0 20"/>
+          <path d="M12 2a10 10 0 0 1 0 20"/>
+          <path d="M2 12h20"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">အားကစား</div>
+    </div>
+
+    <div class="cat-item" data-cat="lottery">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v12"/>
+          <path d="M6 12h12"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">LOTTERY</div>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <div class="game-grid" id="gameGrid">
+      <!-- DB ကနေ loadGamesFromDB() သွင်းမည် -->
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="bnav-btn active" data-nav="home">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7"/>
+        <path d="M9 22V12h6v10"/>
+        <path d="M21 22H3"/>
+      </svg>
+    </span>
+    <span>Home</span>
+  </button>
+
+  <button class="bnav-btn" data-nav="tasks">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    </span>
+    <span>Tasks</span>
+  </button>
+
+  <button class="bnav-btn" data-nav="agent">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </span>
+    <span>Agent</span>
+  </button>
+
+  <button class="bnav-btn" data-nav="cs">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </span>
+    <span>CS</span>
+  </button>
+
+  <button class="bnav-btn" data-nav="account">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </span>
+    <span>Account</span>
+  </button>
+</nav>
+
+<div id="authModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">လော့ဂ်အင်</h3>
+    <input type="text" id="authPhone" placeholder="ဖုန်းနံပါတ် (Phone)">
+    <input type="text" id="authName" placeholder="အမည် (Name)" style="display:none;">
+    <input type="password" id="authPassword" placeholder="စကားဝှက် (Password)">
+    <button id="authSubmitBtn">ဝင်ရန်</button>
+    <div class="switch-auth" id="switchAuth">မှတ်ပုံတင်ရန်</div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ============================================================
+  // [1] SUPABASE INIT — New credentials (Diamond-BETT project)
+  // ============================================================
+  const supabaseUrl = "https://jmmrtqsiaczdwhryygh.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXJ0cXNpYWN6ZHdwaHJ5eWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NjQyNTEsImV4cCI6MjA5NDM0MDI1MX0.nJbgHjfUTvuvwJXpfBthTR8rBZ6pag90ZofQfLMeGBY";
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  // ============================================================
+  // [2] LOAD GAMES FROM DB — replaces static GAMES_LIST
+  // ============================================================
+  async function loadGamesFromDB() {
+    const { data: games, error } = await supabase
+      .from('games')
+      .select('*');
+
+    const grid = document.getElementById('gameGrid');
+    if (!grid) return;
+
+    if (error || !games || games.length === 0) {
+      // DB မှာ data မရှိသေးရင် fallback placeholder ပြမယ်
+      grid.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:20px;grid-column:span 3;text-align:center;">Games loading...</div>`;
+      return;
+    }
+
+    grid.innerHTML = "";
+    games.forEach(game => {
+      grid.innerHTML += `
+        <div class="game-card" onclick="alert('Launch ${game.name}')">
+          <img src="${game.image_url}" class="gc-bg" onerror="this.style.display='none'">
+          <div class="gc-label"><span>${game.name}</span></div>
+        </div>`;
+    });
+  }
+
+  loadGamesFromDB();
+
+  // ============================================================
+  // [3] BANNER SLIDER
+  // ============================================================
+  let current = 0;
+  let sliderTimer = null;
+  const track = document.getElementById("bannerTrack");
+  const dots = document.querySelectorAll("#bannerDots .dot");
+  const bannerWrap = document.getElementById("bannerWrap");
+
+  function updateSlider() {
+    if (!track) return;
+    track.style.transform = `translateX(-${current * 100}%)`;
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === current));
+  }
+
+  function goToSlide(n) {
+    current = ((n % 3) + 3) % 3;
+    updateSlider();
+  }
+
+  function startSlider() {
+    clearInterval(sliderTimer);
+    sliderTimer = setInterval(() => goToSlide(current + 1), 4000);
+  }
+
+  if (track && dots.length) {
+    dots.forEach(dot => {
+      dot.addEventListener("click", () => {
+        goToSlide(Number(dot.dataset.i));
+        startSlider();
+      });
+    });
+
+    let startX = 0;
+    bannerWrap.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    bannerWrap.addEventListener("touchend", e => {
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) goToSlide(diff > 0 ? current + 1 : current - 1);
+      startSlider();
+    }, { passive: true });
+
+    updateSlider();
+    startSlider();
+  }
+
+  // ============================================================
+  // CATEGORY + BOTTOM NAV
+  // ============================================================
+  document.querySelectorAll(".cat-item").forEach(item => {
+    item.addEventListener("click", () => {
+      document.querySelectorAll(".cat-item").forEach(el => el.classList.remove("active"));
+      item.classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".bnav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".bnav-btn").forEach(el => el.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
+  document.getElementById("langBtn").addEventListener("click", () => {
+    alert("Language switch");
+  });
+
+  // ============================================================
+  // AUTH MODAL
+  // ============================================================
+  const modal       = document.getElementById("authModal");
+  const showAuthBtn = document.getElementById("showAuthBtn");
+  const switchAuth  = document.getElementById("switchAuth");
+  const modalTitle  = document.getElementById("modalTitle");
+  const authName    = document.getElementById("authName");
+  const authPhone   = document.getElementById("authPhone");
+  const authPassword = document.getElementById("authPassword");
+  const authSubmit  = document.getElementById("authSubmitBtn");
+
+  let isLogin = true;
+
+  showAuthBtn.addEventListener("click", () => {
+    modal.style.display = "flex";
+    isLogin = true;
+    modalTitle.textContent = "လော့ဂ်အင်";
+    authName.style.display = "none";
+    authSubmit.textContent = "ဝင်ရန်";
+    switchAuth.textContent = "မှတ်ပုံတင်ရန်";
+  });
+
+  modal.addEventListener("click", e => {
+    if (e.target === modal) modal.style.display = "none";
+  });
+
+  switchAuth.addEventListener("click", () => {
+    isLogin = !isLogin;
+    modalTitle.textContent  = isLogin ? "လော့ဂ်အင်"      : "မှတ်ပုံတင်ရန်";
+    authName.style.display  = isLogin ? "none"            : "block";
+    authSubmit.textContent  = isLogin ? "ဝင်ရန်"           : "မှတ်ပုံတင်မည်";
+    switchAuth.textContent  = isLogin ? "မှတ်ပုံတင်ရန်"     : "လော့ဂ်အင်";
+  });
+
+  // ============================================================
+  // [4] REGISTER — Termux Node.js API သို့ POST
+  // ============================================================
+  async function handleRegister() {
+    const phone    = document.getElementById('authPhone').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+    const name     = document.getElementById('authName').value.trim();
+
+    try {
+      const response = await fetch("http://localhost:3000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone,
+          password,
+          fullname: name,
+          referrer_code: new URLSearchParams(window.location.search).get('ref')
+        })
+      });
+
+      const result = await response.json();
+      console.log("Register result:", result);
+
+      if (response.ok) {
+        alert("မှတ်ပုံတင်ခြင်း အောင်မြင်သည်!\nReferral Code: " + result.ref_code);
+        modal.style.display = "none";
+      } else {
+        alert("အမှားအယွင်း: " + result.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server နဲ့ ချိတ်ဆက်လို့ မရပါ\n(Termux မှာ node server.js run ထားပါ)");
+    }
+  }
+
+  // LOGIN — Supabase Auth
+  async function handleLogin() {
+    const phone    = authPhone.value.trim();
+    const password = authPassword.value.trim();
+
+    const fakeEmail = `${phone}@diamondbett.com`;
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: fakeEmail,
+      password
+    });
+
+    if (error) {
+      alert("Login မအောင်မြင်ပါ: " + error.message);
+    } else {
+      alert("ဝင်ရောက်မှု အောင်မြင်သည်!");
+      modal.style.display = "none";
+    }
+  }
+
+  // ============================================================
+  // SUBMIT BUTTON — register vs login ခွဲထားမယ်
+  // ============================================================
+  authSubmit.addEventListener("click", () => {
+    const phone = authPhone.value.trim();
+    const pwd   = authPassword.value.trim();
+
+    if (!phone || !pwd) return alert("Phone & Password ဖြည့်ပါ");
+
+    if (!isLogin) {
+      const name = authName.value.trim();
+      if (!name) return alert("အမည် ဖြည့်ပါ");
+      handleRegister(); // → Termux Node.js API
+    } else {
+      handleLogin();    // → Supabase Auth
+    }
+  });
+
+});
+</script>
+</body>
+</html>
