@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Diamond-BETT</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#0c0a1e; --bg2:#100d26; --purple:#1c1642; --purple2:#241b52;
+  --accent:#f5c518; --blue:#1a4fd6; --blue2:#0e3ab8;
+  --text:#fff; --muted:#9890c0; --bottom-h:58px;
+}
+html,body { width:100%; height:100dvh; background:var(--bg); color:var(--text);
+  font-family:'Segoe UI','Myanmar Text',sans-serif; overflow:hidden; display:flex; flex-direction:column; }
+svg { display:block; }
+button { outline:none; cursor:pointer; }
+
+/* ===== BANNER ===== */
+.banner-wrap { position:relative; width:100%; height:190px; flex-shrink:0; overflow:hidden; touch-action:pan-y; }
+.banner-track { display:flex; width:100%; height:100%; transition:transform 0.45s cubic-bezier(.4,0,.2,1); }
+.banner-slide { flex:0 0 100%; width:100%; height:100%; position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; }
+.banner-placeholder { text-align:center; pointer-events:none; }
+.banner-placeholder .b-title { font-size:24px; font-weight:900; text-shadow:0 0 20px currentColor; }
+.banner-placeholder .b-sub { font-size:12px; color:rgba(255,255,255,.72); margin-top:6px; }
+.banner-placeholder .b-amount { font-size:36px; font-weight:900; color:var(--accent);
+  text-shadow:0 0 30px var(--accent); margin-top:4px; }
+.banner-dots { position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+  display:flex; gap:5px; z-index:5; }
+.dot { width:6px; height:6px; border-radius:999px; background:rgba(255,255,255,.35); cursor:pointer; transition:all .3s; }
+.dot.active { width:18px; background:var(--accent); }
+
+/* ===== QUICK NAV ===== */
+.quick-nav { display:flex; align-items:center; padding:8px 10px; gap:6px; background:var(--bg); flex-shrink:0; }
+.login-btn { background:linear-gradient(135deg,#2a2a2a,#181818); border:1px solid #3a3a3a;
+  color:#fff; border-radius:22px; padding:7px 18px; font-size:13px;
+  white-space:nowrap; flex-shrink:0; font-family:inherit; }
+.wallet-btns { display:none; gap:6px; flex-shrink:0; }
+.wallet-btn { border:none; border-radius:18px; padding:6px 14px; font-size:12px;
+  font-weight:700; font-family:inherit; white-space:nowrap; }
+.wallet-btn.deposit  { background:linear-gradient(135deg,#16a34a,#15803d); color:#fff; }
+.wallet-btn.withdraw { background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; }
+.nav-icons { display:flex; flex:1; justify-content:flex-end; }
+.nav-icon-btn { display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:4px 7px; background:none; border:none; color:var(--muted); font-size:9.5px;
+  font-family:inherit; text-decoration:none; }
+.nav-ico { width:30px; height:30px; background:var(--purple2); border-radius:8px;
+  display:flex; align-items:center; justify-content:center; }
+.lang-label { font-size:10px; font-weight:700; color:var(--accent); }
+
+/* ===== ANNOUNCE ===== */
+.announce { display:flex; align-items:center; gap:8px; padding:5px 10px;
+  background:var(--bg2); border-top:1px solid #1c1840; border-bottom:1px solid #1c1840;
+  overflow:hidden; flex-shrink:0; }
+.announce-icon { flex-shrink:0; color:var(--accent); display:flex; align-items:center; }
+.announce-ticker { overflow:hidden; flex:1; }
+.announce-ticker span { display:inline-block; white-space:nowrap; font-size:11.5px;
+  color:var(--muted); animation:ticker 22s linear infinite; }
+@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+/* ===== MAIN LAYOUT ===== */
+.main { flex:1; display:flex; overflow:hidden; min-height:0; }
+
+/* ===== SIDEBAR ===== */
+.sidebar { width:74px; flex-shrink:0; background:var(--bg2); overflow-y:auto; scrollbar-width:none; }
+.sidebar::-webkit-scrollbar { display:none; }
+.cat-item { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; padding:12px 4px; border-bottom:1px solid #161330; min-height:66px; transition:background .2s; cursor:pointer; }
+.cat-item.active { background:var(--accent); }
+.cat-item.active .cat-lbl { color:#000; font-weight:700; }
+.cat-ico { width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+.cat-lbl { font-size:9px; color:var(--muted); text-align:center; line-height:1.3; }
+
+/* ===== GAME AREA ===== */
+.game-area { flex:1; overflow-y:auto; padding:5px; scrollbar-width:none; }
+.game-area::-webkit-scrollbar { display:none; }
+.game-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.game-card { aspect-ratio:3/4; border-radius:10px; overflow:hidden; cursor:pointer;
+  position:relative; display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-end; transition:transform .15s; box-shadow:0 3px 12px rgba(0,0,0,.6); }
+.game-card:active { transform:scale(.95); }
+.gc-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.gc-char { position:absolute; inset:0; display:flex; align-items:center;
+  justify-content:center; width:48px; height:48px; margin:auto; }
+.gc-label { position:relative; z-index:2; width:100%;
+  background:linear-gradient(transparent,rgba(0,0,0,.85) 60%); padding:18px 4px 5px; text-align:center; }
+.gc-label span { font-size:8px; font-weight:800; color:#fff; display:block; }
+
+/* ===== FOOTER ===== */
+.site-footer { padding:28px 20px 20px; text-align:center; border-top:1px solid #1c1840; }
+.footer-logo { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; }
+.footer-logo-text { font-size:16px; font-weight:900; letter-spacing:1px;
+  background:linear-gradient(135deg,var(--accent),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.footer-links { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:10px; }
+.footer-links a { color:var(--muted); font-size:11px; text-decoration:none; }
+.footer-copy { font-size:10px; color:#4a4470; }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav { height:var(--bottom-h); background:#0a0820; border-top:1px solid #201c44; display:flex; flex-shrink:0; }
+.bnav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; background:none; border:none; color:#5a5090; font-size:9px; font-family:inherit; }
+.bnav-btn.active { color:var(--accent); }
+.bnav-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+
+/* ===== PAGE PANELS ===== */
+.page-panel { display:none; flex:1; overflow-y:auto; scrollbar-width:none; flex-direction:column; }
+.page-panel::-webkit-scrollbar { display:none; }
+.page-panel.active { display:flex; }
+
+/* ===== AGENT PAGE ===== */
+.agent-page-wrap { display:flex; flex-direction:column; min-height:100%; background:var(--bg); }
+
+/* Agent top tab bar */
+.agent-tabbar { display:flex; overflow-x:auto; scrollbar-width:none; background:#0a0820;
+  border-bottom:1px solid #1c1840; flex-shrink:0; }
+.agent-tabbar::-webkit-scrollbar { display:none; }
+.atab { flex-shrink:0; padding:10px 14px; background:none; border:none; border-bottom:2px solid transparent;
+  color:rgba(255,255,255,.4); font-size:11.5px; font-family:inherit; white-space:nowrap;
+  transition:all .2s; }
+.atab.active { color:var(--accent); border-bottom:2px solid var(--accent); font-weight:700; }
+
+/* Agent tab content */
+.atab-content { display:none; flex-direction:column; }
+.atab-content.active { display:flex; }
+
+/* Agent promo banner */
+.agent-promo { width:100%; height:130px; border-radius:10px; overflow:hidden;
+  margin:10px 0; flex-shrink:0; position:relative;
+  background:linear-gradient(135deg,#b8860b,#ffd700,#ff8c00); display:flex; align-items:center; justify-content:center; }
+.agent-promo-text { text-align:center; }
+.agent-promo-text .promo-title { font-size:18px; font-weight:900; color:#5a1a00;
+  text-shadow:0 1px 0 rgba(255,255,255,.4); }
+.agent-promo-text .promo-sub { font-size:12px; color:#3d1200; font-weight:600; }
+.agent-promo-text .promo-amount { font-size:26px; font-weight:900; color:#5a1a00; }
+
+/* User rank card */
+.agent-user-card { margin:0 10px 10px; background:#1a1a1a; border-radius:12px;
+  padding:12px 14px; display:flex; align-items:flex-start; gap:12px; }
+.rank-badge { width:44px; height:44px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(135deg,#cd7f32,#8b4513);
+  border:2px solid #ffd700; display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:900; color:#fff; position:relative; }
+.rank-help { position:absolute; top:-4px; right:-4px; width:14px; height:14px;
+  background:#555; border-radius:50%; font-size:8px; display:flex; align-items:center;
+  justify-content:center; color:#ccc; }
+.user-card-mid { flex:1; }
+.user-card-phone { font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
+.user-rank-badge { display:inline-block; background:#333; border:1px solid #555;
+  border-radius:4px; padding:2px 8px; font-size:10px; color:#aaa; }
+.user-card-right { text-align:right; font-size:11px; color:#888; line-height:1.8; flex-shrink:0; }
+.user-card-right span { color:#fff; }
+
+/* Commission wallet card */
+.agent-wallet-card { margin:0 10px 8px; background:#1a1a1a; border-radius:12px; overflow:hidden; }
+.wallet-card-header { display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; border-bottom:1px solid #2a2a2a; cursor:pointer; }
+.wallet-card-title { font-size:13px; color:#fff; font-weight:600; }
+.wallet-countdown { font-size:10px; color:#f5c518; }
+.wallet-chevron { color:#888; }
+.wallet-row { display:flex; align-items:center; padding:10px 14px; gap:10px; }
+.wallet-item { flex:1; }
+.wallet-item-label { font-size:10px; color:#888; margin-bottom:3px; }
+.wallet-item-value { font-size:16px; font-weight:700; color:#fff; }
+.wallet-item-value.gold { color:#f5a623; }
+.wallet-claim-btn { background:#333; border:1px solid #555; border-radius:8px;
+  padding:6px 14px; color:#ccc; font-size:12px; font-family:inherit; flex-shrink:0; }
+.wallet-divider { height:1px; background:#222; margin:0 14px; }
+
+/* Commission ticker */
+.agent-ticker { margin:0 10px 8px; background:linear-gradient(135deg,#ff6b00,#ff4500,#c62828);
+  border-radius:10px; padding:10px 14px; overflow:hidden; position:relative; }
+.agent-ticker::before { content:'🔥'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:16px; }
+.ticker-inner { white-space:nowrap; font-size:12px; color:#fff; font-weight:600;
+  padding-left:28px; animation:agentTick 18s linear infinite; }
+@keyframes agentTick { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* Referral invite section */
+.agent-invite { margin:0 10px 8px; background:#1a1a1a; border-radius:12px; padding:14px; }
+.invite-title { font-size:12px; color:#888; margin-bottom:10px; }
+.invite-code-row { display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #2a2a2a; }
+.invite-code-label { font-size:12px; color:#aaa; }
+.invite-code-val { font-size:14px; color:#fff; font-weight:700; }
+.copy-icon-btn { background:#333; border:1px solid #444; border-radius:6px;
+  padding:4px 8px; color:#aaa; font-size:12px; font-family:inherit; }
+.invite-qr-row { display:flex; gap:12px; margin-bottom:12px; }
+.qr-placeholder { width:72px; height:72px; background:#111; border:2px solid #333;
+  border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:4px; }
+.qr-placeholder span { font-size:8px; color:#555; text-align:center; }
+.qr-placeholder svg { opacity:.3; }
+.invite-link-col { flex:1; display:flex; flex-direction:column; gap:6px; justify-content:center; }
+.invite-link-wrap { display:flex; gap:6px; }
+.invite-link-input { flex:1; background:#111; border:1px solid #333; border-radius:8px;
+  padding:8px 10px; color:#aaa; font-size:11px; font-family:inherit; min-width:0; }
+.invite-link-copy { background:#333; border:1px solid #444; border-radius:8px;
+  padding:8px; color:#aaa; flex-shrink:0; }
+.share-btns { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.share-btn { display:flex; flex-direction:column; align-items:center; gap:4px;
+  background:none; border:none; color:#aaa; font-size:9px; font-family:inherit; }
+.share-btn-ico { width:38px; height:38px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:18px; }
+.sico-share    { background:#333; }
+.sico-telegram { background:#2AABEE; }
+.sico-viber    { background:#7360F2; }
+.sico-facebook { background:#1877F2; }
+.sico-wa       { background:#25D366; }
+
+/* Agent action buttons */
+.agent-action-row { display:flex; gap:10px; margin:0 10px 10px; }
+.agent-action-btn { flex:1; border:none; border-radius:10px; padding:12px 8px;
+  font-size:12px; font-weight:700; font-family:inherit; display:flex; align-items:center;
+  justify-content:space-between; }
+.agent-action-btn.gold-btn { background:linear-gradient(135deg,#f5c518,#e6a800); color:#000; }
+.agent-action-btn.green-btn { background:linear-gradient(135deg,#f5a623,#e67e22); color:#000; }
+.agent-action-btn svg { opacity:.7; }
+
+/* Bottom collection row */
+.agent-collection { margin:0 10px 16px; background:#1a1a1a; border-radius:12px;
+  padding:12px 14px; display:flex; align-items:center; justify-content:space-between; }
+.collection-label { font-size:12px; color:#888; }
+.collection-val { font-size:14px; font-weight:700; color:#fff; }
+.collection-btn { background:#333; border:1px solid #555; border-radius:8px;
+  padding:6px 12px; color:#ccc; font-size:11px; font-family:inherit; }
+
+/* Coming soon placeholder */
+.coming-soon { flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; color:var(--muted); padding:40px 20px; text-align:center; }
+.coming-soon-icon { font-size:36px; margin-bottom:12px; }
+.coming-soon p { font-size:13px; }
+
+/* Agent locked */
+.agent-locked { flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; color:var(--muted); padding:40px 20px; text-align:center; }
+.agent-locked-icon { font-size:40px; margin-bottom:12px; }
+.agent-locked p { font-size:13px; line-height:1.6; }
+.agent-login-btn { margin-top:16px; background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff; border:none; border-radius:22px; padding:10px 28px;
+  font-size:14px; font-weight:700; font-family:inherit; }
+
+/* ===== AUTH MODAL ===== */
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85);
+  z-index:999; align-items:flex-end; justify-content:center; }
+.modal.active { display:flex; }
+.modal-sheet { width:100%; max-width:480px; background:linear-gradient(170deg,#0d1b50,#07112e);
+  border-radius:28px 28px 0 0; padding:0 0 24px; position:relative; animation:slideUp .3s ease; }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+.auth-tabs { display:flex; border-bottom:1px solid rgba(255,255,255,.08); }
+.auth-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:18px 10px; font-size:15px; font-weight:600; color:rgba(255,255,255,.4);
+  border-bottom:2px solid transparent; transition:all .2s; font-family:inherit;
+  background:none; border-top:none; border-left:none; border-right:none; }
+.auth-tab.active { color:#fff; border-bottom:2px solid var(--blue); }
+
+.auth-body { padding:16px 20px 8px; }
+.auth-subtitle { font-size:12px; color:rgba(255,255,255,.5); margin-bottom:16px; text-align:center; }
+
+.input-group { position:relative; margin-bottom:12px; }
+.input-group .inp-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  color:rgba(255,255,255,.4); pointer-events:none; }
+.input-group input { width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  border-radius:12px; padding:13px 14px 13px 42px; color:#fff; font-size:14px; font-family:inherit; }
+.input-group input:focus { outline:none; border-color:rgba(99,130,255,.6); }
+.input-group input::placeholder { color:rgba(255,255,255,.3); }
+.eye-toggle { position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:rgba(255,255,255,.5); padding:4px; }
+
+.phone-wrap { display:flex; margin-bottom:12px; }
+.phone-prefix { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1); border-right:none;
+  border-radius:12px 0 0 12px; padding:13px 12px; font-size:13px; color:rgba(255,255,255,.7); flex-shrink:0; }
+.phone-input { flex:1; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  border-left:none; border-radius:0 12px 12px 0; padding:13px 14px; color:#fff; font-size:14px; font-family:inherit; }
+.phone-input:focus { outline:none; border-color:rgba(99,130,255,.6); }
+.phone-input::placeholder { color:rgba(255,255,255,.3); }
+
+.ref-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.ref-row-label { font-size:12px; color:rgba(255,255,255,.5); flex-shrink:0; }
+.ref-dots { display:flex; gap:6px; }
+.ref-dot { width:32px; height:8px; border-radius:999px; }
+.ref-input-wrap { flex:1; }
+.ref-input-wrap input { width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  border-radius:10px; padding:10px 12px; color:rgba(255,255,255,.8); font-size:13px; font-family:inherit; }
+.ref-input-wrap input:focus { outline:none; border-color:rgba(99,130,255,.6); }
+
+.age-check { display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; }
+.age-check input[type="checkbox"] { width:18px; height:18px; accent-color:#22c55e;
+  flex-shrink:0; margin-top:2px; }
+.age-check label { font-size:12px; color:rgba(255,255,255,.6); line-height:1.5; }
+.age-check label a { color:var(--accent); text-decoration:none; }
+
+.auth-submit { width:100%; border:none; border-radius:14px; padding:14px;
+  background:linear-gradient(135deg,#1a4fd6,#0e3ab8); color:#fff; font-size:15px;
+  font-weight:700; font-family:inherit; margin-bottom:14px;
+  box-shadow:0 4px 20px rgba(26,79,214,.4); }
+.auth-submit:active { opacity:.85; }
+.auth-footer-link { text-align:center; font-size:12px; color:rgba(255,255,255,.4); }
+.auth-footer-link a { color:rgba(255,255,255,.4); text-decoration:none; }
+.modal-close { position:absolute; bottom:-64px; left:50%; transform:translateX(-50%);
+  width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.2); color:#fff; font-size:20px;
+  display:flex; align-items:center; justify-content:center; font-family:inherit; }
+</style>
+</head>
+<body>
+
+<!-- ===== BANNER ===== -->
+<div class="banner-wrap" id="bannerWrap">
+  <div class="banner-track" id="bannerTrack">
+    <div class="banner-slide" style="background:linear-gradient(135deg,#1a0850,#5a0095);">
+      <div class="banner-placeholder">
+        <div style="font-size:11px;">PRAGMATIC PLAY</div>
+        <div class="b-title" style="color:#f5c518;">Gates of OLYMPUS</div>
+        <div class="b-sub">ZEUS ရဲ့ အင်အား</div>
+        <div class="b-amount">10,000</div>
+      </div>
+    </div>
+    <div class="banner-slide" style="background:linear-gradient(135deg,#041840,#0060b0);">
+      <div class="banner-placeholder">
+        <div style="font-size:11px;">LIVE CASINO</div>
+        <div class="b-title" style="color:#40cfff;">Real Dealers</div>
+        <div class="b-sub">တိုက်ရိုက် ကာစိနို</div>
+        <div class="b-amount" style="color:#40cfff;">50,000</div>
+      </div>
+    </div>
+    <div class="banner-slide" style="background:linear-gradient(135deg,#300808,#900018);">
+      <div class="banner-placeholder">
+        <div style="font-size:11px;">TOURNAMENT</div>
+        <div class="b-title" style="color:#ff5060;">Grand Prize</div>
+        <div class="b-sub">နှစ်တိုင်း ဆုငွေကြီး</div>
+        <div class="b-amount" style="color:#ff7080;">100,000</div>
+      </div>
+    </div>
+  </div>
+  <div class="banner-dots" id="bannerDots">
+    <div class="dot active" data-i="0"></div>
+    <div class="dot" data-i="1"></div>
+    <div class="dot" data-i="2"></div>
+  </div>
+</div>
+
+<!-- ===== QUICK NAV ===== -->
+<div class="quick-nav">
+  <button class="login-btn" id="showAuthBtn">လော့ဂ်အင်</button>
+  <div class="wallet-btns" id="walletBtns">
+    <button class="wallet-btn deposit">ငွေသွင်း</button>
+    <button class="wallet-btn withdraw">ငွေထုတ်</button>
+  </div>
+  <div class="nav-icons">
+    <a class="nav-icon-btn"
+       href="https://ccorryxx-bot.github.io/glm-45-air_free-to-Cloud-api/"
+       target="_blank" rel="noopener">
+      <div class="nav-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/>
+        </svg>
+      </div>
+      <span>ဒေါင်းလုပ်</span>
+    </a>
+    <button class="nav-icon-btn" id="historyBtn">
+      <div class="nav-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+          <path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/>
+        </svg>
+      </div>
+      <span>မှတ်တမ်း</span>
+    </button>
+    <button class="nav-icon-btn" id="langBtn">
+      <div class="nav-ico">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/>
+          <path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10"/>
+          <path d="M12 2a15 15 0 0 0-4 10 15 15 0 0 0 4 10"/>
+        </svg>
+      </div>
+      <span class="lang-label" id="langLabel">မြန်မာ</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== ANNOUNCE ===== -->
+<div class="announce">
+  <span class="announce-icon">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2a7 7 0 0 0-7 7v3l-2 3h18l-2-3V9a7 7 0 0 0-7-7z"/>
+      <path d="M9 19a3 3 0 0 0 6 0"/>
+    </svg>
+  </span>
+  <div class="announce-ticker">
+    <span>ကြိုဆိုပါတယ်! Diamond-BETT မှာ မှတ်ပုံတင်ပြီး ဆုငွေများ ရယူပါ။</span>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main" id="mainContent">
+
+  <!-- SIDEBAR (home only) -->
+  <div class="sidebar" id="sidebar">
+    <div class="cat-item active" data-cat="all">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">အားလုံး</div>
+    </div>
+    <div class="cat-item" data-cat="show">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">ဂိမ်း Show</div>
+    </div>
+    <div class="cat-item" data-cat="arcade">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M8 12h8"/><path d="M12 8v8"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">ARCADE</div>
+    </div>
+    <div class="cat-item" data-cat="live">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 12h8"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">တိုက်ရိုက်</div>
+    </div>
+    <div class="cat-item" data-cat="fish">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+          <path d="M12 12l-4 4"/><path d="M12 12l4 4"/><path d="M12 12l-4-4"/><path d="M12 12l4-4"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">ငါးဖမ်း</div>
+    </div>
+    <div class="cat-item" data-cat="sport">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a10 10 0 0 0 0 20"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">အားကစား</div>
+    </div>
+    <div class="cat-item" data-cat="lottery">
+      <div class="cat-ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/>
+        </svg>
+      </div>
+      <div class="cat-lbl">LOTTERY</div>
+    </div>
+  </div>
+
+  <!-- HOME GAME AREA -->
+  <div class="game-area" id="homePageArea">
+    <div class="game-grid" id="gameGrid"></div>
+    <footer class="site-footer">
+      <div class="footer-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="#f5c518" stroke-width="1.5"/>
+          <polygon points="12,5 19,9 19,15 12,19 5,15 5,9" fill="rgba(245,197,24,0.15)" stroke="#f5c518" stroke-width="1"/>
+          <text x="12" y="14.5" text-anchor="middle" fill="#f5c518" font-size="6" font-weight="900" font-family="sans-serif">DB</text>
+        </svg>
+        <span class="footer-logo-text">Diamond-BETT</span>
+      </div>
+      <div class="footer-links">
+        <a href="#">ကျွန်ုပ်တို့အကြောင်း</a>
+        <a href="#">Terms of Condition</a>
+        <a href="#">ကိုယ်ရေးလုံခြုံမှု</a>
+        <a href="#">ဆက်သွယ်ရန်</a>
+      </div>
+      <div class="footer-copy">© 2025 DiamondBett Team. All rights reserved.</div>
+    </footer>
+  </div>
+
+  <!-- ===== AGENT PAGE ===== -->
+  <div class="page-panel" id="agentPage">
+
+    <!-- Not logged in -->
+    <div id="agentLocked" class="agent-locked">
+      <div class="agent-locked-icon">🔒</div>
+      <p>Agent Panel ကို ဝင်ကြည့်ရန်<br>အကောင့်ဝင်ရောက်ပါ</p>
+      <button class="agent-login-btn" id="agentLoginBtn">အကောင့်ဝင်ရန်</button>
+    </div>
+
+    <!-- Logged in -->
+    <div id="agentUnlocked" style="display:none;" class="agent-page-wrap">
+
+      <!-- Tab bar -->
+      <div class="agent-tabbar" id="agentTabBar">
+        <button class="atab active" data-atab="main">ပင်မ</button>
+        <button class="atab" data-atab="invite">ငါ့ဖိတ်ခေါ်လင့်</button>
+        <button class="atab" data-atab="mydata">ကျနုပ်၏ ဒေတာ</button>
+        <button class="atab" data-atab="performance">စွမ်းဆောင်ရည်</button>
+        <button class="atab" data-atab="commission">ကော်မရှင်</button>
+        <button class="atab" data-atab="downline">အောက်လက်ငယ်သား</button>
+        <button class="atab" data-atab="lowbet">အဆင့်နိမ့်အလောင်းအစား</button>
+        <button class="atab" data-atab="bank">အောက်ခြေ Bank</button>
+        <button class="atab" data-atab="rebate">ပြန်ပေးကော်မရှင်</button>
+      </div>
+
+      <!-- ===== ပင်မ TAB ===== -->
+      <div id="atab-main" class="atab-content active" style="overflow-y:auto;scrollbar-width:none;flex:1;">
+
+        <!-- Promo banner -->
+        <div style="padding:0 10px;">
+          <div class="agent-promo">
+            <div class="agent-promo-text">
+              <div class="promo-title">မှန်ကန်သော ဖိတ်ကြား</div>
+              <div class="promo-sub">မိတ်ဆက်ကော်မရှင် ရယူပါ</div>
+              <div class="promo-amount">15 သိန်း</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User rank card -->
+        <div class="agent-user-card">
+          <div class="rank-badge">
+            1
+            <div class="rank-help">?</div>
+          </div>
+          <div class="user-card-mid">
+            <div class="user-card-phone" id="agentUserPhone">—</div>
+            <div class="user-rank-badge">အမျိုးသားကိုယ်စားလှယ်</div>
+          </div>
+          <div class="user-card-right">
+            တာရင်းစပ်မျိုးစုံ: <span>1.00</span><br>
+            တာရင်းသည်ရက်စွဲ: <span id="agentJoinDate">—</span>
+          </div>
+        </div>
+
+        <!-- Commission wallet -->
+        <div class="agent-wallet-card">
+          <div class="wallet-card-header">
+            <span class="wallet-card-title">ကော်မရှင်</span>
+            <span class="wallet-countdown" id="commissionCountdown">(နောက်ခြေချချိန်: 04:00:00)</span>
+            <svg class="wallet-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </div>
+          <div class="wallet-row">
+            <div class="wallet-item">
+              <div class="wallet-item-label">ရရှိသည်ငွေ</div>
+              <div class="wallet-item-value">0.00</div>
+            </div>
+            <div class="wallet-item">
+              <div class="wallet-item-label">ဆုလာဘ်</div>
+              <div class="wallet-item-value gold">0.00</div>
+            </div>
+            <button class="wallet-claim-btn">လွတ်...</button>
+          </div>
+          <div class="wallet-divider"></div>
+          <div class="wallet-row">
+            <div class="wallet-item">
+              <div class="wallet-item-label">မနေ့ တိုက်ရိုက်ရလဒ်များ</div>
+              <div class="wallet-item-value">0.00</div>
+            </div>
+            <div class="wallet-item">
+              <div class="wallet-item-label">လစာအပြည်</div>
+              <div class="wallet-item-value">0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Commission live ticker -->
+        <div class="agent-ticker">
+          <div class="ticker-inner" id="agentTickerText">
+            🎰 သာ ကော်မရှင်: 0.00 &nbsp;&nbsp;&nbsp; 💎 Diamond-BETT Agent System &nbsp;&nbsp;&nbsp;
+            🎰 သာ ကော်မရှင်: 0.00 &nbsp;&nbsp;&nbsp; 💎 Diamond-BETT Agent System
+          </div>
+        </div>
+
+        <!-- Referral invite section -->
+        <div class="agent-invite">
+          <div class="invite-title">သုံးယဆချင်းများကိုဖိတ်ကြားသည်</div>
+          <div class="invite-code-row">
+            <div>
+              <span class="invite-code-label">ငါ့ဖိတ်တစ်ကတ်: </span>
+              <span class="invite-code-val" id="agentPhoneDisplay">—</span>
+            </div>
+            <button class="copy-icon-btn" id="copyPhoneBtn">📋 ကူး</button>
+          </div>
+
+          <div class="invite-qr-row">
+            <!-- QR placeholder (real QR library integration later) -->
+            <div class="qr-placeholder">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1">
+                <rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/>
+                <rect x="2" y="13" width="9" height="9"/><rect x="4" y="4" width="5" height="5"/>
+                <rect x="15" y="4" width="5" height="5"/><rect x="4" y="15" width="5" height="5"/>
+                <rect x="13" y="13" width="3" height="3"/><rect x="18" y="13" width="3" height="3"/>
+                <rect x="13" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+              </svg>
+              <span>ဖိတ်ခေါ်ကတ်<br>ကိုသိမ်းသည်</span>
+            </div>
+            <div class="invite-link-col">
+              <div class="invite-link-wrap">
+                <input type="text" class="invite-link-input" id="agentShareLinkInput"
+                  readonly placeholder="Link loading...">
+                <button class="invite-link-copy" id="agentCopyLinkBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="share-btns">
+                <button class="share-btn" id="shareNativeBtn">
+                  <div class="share-btn-ico sico-share">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                      <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+                    </svg>
+                  </div>
+                  <span>မျှဝေပါ</span>
+                </button>
+                <button class="share-btn" onclick="shareVia('telegram')">
+                  <div class="share-btn-ico sico-telegram">✈️</div>
+                  <span>Telegram</span>
+                </button>
+                <button class="share-btn" onclick="shareVia('viber')">
+                  <div class="share-btn-ico sico-viber">📳</div>
+                  <span>Viber</span>
+                </button>
+                <button class="share-btn" onclick="shareVia('facebook')">
+                  <div class="share-btn-ico sico-facebook" style="font-weight:900;color:#fff;font-size:16px;">f</div>
+                  <span>Facebook</span>
+                </button>
+                <button class="share-btn" onclick="shareVia('whatsapp')">
+                  <div class="share-btn-ico sico-wa">💬</div>
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="agent-action-row">
+          <button class="agent-action-btn gold-btn">
+            <span>အဆင်ခဲ့ဝန်တီးပါ</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+          <button class="agent-action-btn green-btn">
+            <span>ပြန်ပေး ကော်မရှင်အချိုး</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Bottom collection -->
+        <div class="agent-collection">
+          <div>
+            <div class="collection-label">ပဲ့အတွက် စုဆောင်းငွေများ</div>
+            <div class="collection-val">0.00</div>
+          </div>
+          <button class="collection-btn">လွတ်ခ...</button>
+        </div>
+
+      </div><!-- end atab-main -->
+
+      <!-- Other tabs (placeholders, expand later) -->
+      <div id="atab-invite"      class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">🔗</div><p>ငါ့ဖိတ်ခေါ်လင့် — Coming Soon</p></div></div>
+      <div id="atab-mydata"      class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">📊</div><p>ကျနုပ်၏ ဒေတာ — Coming Soon</p></div></div>
+      <div id="atab-performance" class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">📈</div><p>စွမ်းဆောင်ရည် — Coming Soon</p></div></div>
+      <div id="atab-commission"  class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">💰</div><p>ကော်မရှင် — Coming Soon</p></div></div>
+      <div id="atab-downline"    class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">👥</div><p>အောက်လက်ငယ်သား — Coming Soon</p></div></div>
+      <div id="atab-lowbet"      class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">🎲</div><p>အဆင့်နိမ့်အလောင်းအစား — Coming Soon</p></div></div>
+      <div id="atab-bank"        class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">🏦</div><p>အောက်ခြေ Bank — Coming Soon</p></div></div>
+      <div id="atab-rebate"      class="atab-content"><div class="coming-soon"><div class="coming-soon-icon">🔄</div><p>ပြန်ပေးကော်မရှင် — Coming Soon</p></div></div>
+
+    </div><!-- end agentUnlocked -->
+  </div><!-- end agentPage -->
+
+</div><!-- end .main -->
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav">
+  <button class="bnav-btn active" data-nav="home">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/><path d="M21 22H3"/>
+      </svg>
+    </span><span>Home</span>
+  </button>
+  <button class="bnav-btn" data-nav="tasks">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    </span><span>Tasks</span>
+  </button>
+  <button class="bnav-btn" data-nav="agent">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </span><span>Agent</span>
+  </button>
+  <button class="bnav-btn" data-nav="cs">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </span><span>CS</span>
+  </button>
+  <button class="bnav-btn" data-nav="account">
+    <span class="bnav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </span><span>Account</span>
+  </button>
+</nav>
+
+<!-- ===== AUTH MODAL ===== -->
+<div id="authModal" class="modal">
+  <div class="modal-sheet">
+    <div class="auth-tabs">
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M19 8v6"/><path d="M22 11h-6"/>
+        </svg>
+        <span>မှတ်ပုံတင်</span>
+      </button>
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10,17 15,12 10,7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        <span>လော့ဂ်အင်</span>
+      </button>
+    </div>
+    <div class="auth-body">
+      <!-- REGISTER -->
+      <div id="registerForm" style="display:none;">
+        <p class="auth-subtitle">အဆင်တော်ပါသည်! အကောင် မှတ်ပုံတင်ပါ</p>
+        <div class="input-group">
+          <span class="inp-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+          <input type="text" id="regName" placeholder="* နာမည် (Username)">
+        </div>
+        <div class="input-group">
+          <span class="inp-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <input type="password" id="regPassword" placeholder="* စကားဝှက်">
+          <button class="eye-toggle" onclick="toggleEye('regPassword',this)" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="ref-row">
+          <span class="ref-row-label">ဆွန်အား</span>
+          <div class="ref-dots">
+            <div class="ref-dot" style="background:#e74c3c;"></div>
+            <div class="ref-dot" style="background:#e67e22;"></div>
+            <div class="ref-dot" style="background:#2ecc71;"></div>
+            <div class="ref-dot" style="background:#3498db;"></div>
+          </div>
+          <div class="ref-input-wrap">
+            <input type="text" id="referrer_code_input" placeholder="Referral Code (ရှိလျှင်)" maxlength="10">
+          </div>
+        </div>
+        <div class="phone-wrap">
+          <div class="phone-prefix">🇲🇲 +95</div>
+          <input type="tel" class="phone-input" id="regPhone" placeholder="* ဖုန်းနံပါတ်">
+        </div>
+        <div class="age-check">
+          <input type="checkbox" id="ageCheck">
+          <label for="ageCheck">
+            ကျွန်ုပ်သည် အသက် 18 နှစ်ကျော်သည်
+            《<a href="#">Terms of Condition</a>》ကို ဖတ်ပြီး သဘောတူသည်
+          </label>
+        </div>
+        <button class="auth-submit" id="registerBtn">မှတ်ပုံတင်</button>
+        <div class="auth-footer-link"><a href="#">ညည်ဝန်ဆောင်မှု</a></div>
+      </div>
+      <!-- LOGIN -->
+      <div id="loginForm">
+        <p class="auth-subtitle">ကြိုဆိုပါသည်! အကောင့်ဝင်ပါ</p>
+        <div class="phone-wrap">
+          <div class="phone-prefix">🇲🇲 +95</div>
+          <input type="tel" class="phone-input" id="loginPhone" placeholder="* ဖုန်းနံပါတ်">
+        </div>
+        <div class="input-group">
+          <span class="inp-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <input type="password" id="loginPassword" placeholder="* စကားဝှက်">
+          <button class="eye-toggle" onclick="toggleEye('loginPassword',this)" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <button class="auth-submit" id="loginBtn">ဝင်ရန်</button>
+        <div class="auth-footer-link"><a href="#">ညည်ဝန်ဆောင်မှု</a></div>
+      </div>
+    </div>
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
