@@ -1,5 +1,5 @@
 // ============================================================
-// [1] GLOBAL HELPERS (no supabase needed)
+// GLOBAL HELPERS
 // ============================================================
 function switchTab(tab) {
   document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
@@ -29,21 +29,18 @@ function shareVia(platform) {
 }
 
 // ============================================================
-// [2] DOM READY — supabase init အပါ အကုန် ဒီထဲမှာ
+// DOM READY
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
 
-  // --- SUPABASE INIT (CDN load ပြီးမှ run မှာ safe) ---
+  // SUPABASE INIT (inside DOMContentLoaded — CDN safe)
   const supabaseUrl = "https://xjqrwcsxiaybpztzestb.supabase.co";
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcXJ3Y3N4aWF5YnB6dHplc3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NzQxMDksImV4cCI6MjA5NDM1MDEwOX0.Kn5sLOTBdNtlooaH-q8ml0cOEswMlgMTSP7GFe7mbxg";
   const supabase    = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-  // --- STATE ---
-  let currentUser    = null;
-  let currentRefCode = null;
-  let lang           = 'my';
+  let lang = 'my';
 
-  // --- AUTO REF FROM URL ---
+  // Auto ?ref= from URL
   const urlParams = new URLSearchParams(window.location.search);
   const invitedBy = urlParams.get('ref');
   if (invitedBy) {
@@ -56,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
   // BANNER SLIDER
   // ============================================================
-  (function initBanner() {
+  (function () {
     let current = 0, timer = null;
     const track = document.getElementById("bannerTrack");
     const dots  = document.querySelectorAll("#bannerDots .dot");
@@ -82,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
   // ============================================================
-  // LOAD GAMES FROM DB
+  // LOAD GAMES
   // ============================================================
   async function loadGamesFromDB() {
     const { data: games, error } = await supabase.from('games').select('*');
@@ -124,20 +121,26 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
   // NAVIGATION
   // ============================================================
+  const topArea      = document.getElementById('topArea');
   const sidebar      = document.getElementById('sidebar');
   const homePageArea = document.getElementById('homePageArea');
   const agentPage    = document.getElementById('agentPage');
 
   function showPage(nav) {
+    // Reset
     sidebar.style.display      = 'none';
     homePageArea.style.display = 'none';
     agentPage.classList.remove('active');
+
     if (nav === 'home') {
-      sidebar.style.display      = 'flex';
+      topArea.style.display      = '';        // restore
+      sidebar.style.display      = 'block';   // ← block not flex
       homePageArea.style.display = 'block';
     } else if (nav === 'agent') {
+      topArea.style.display = 'none';         // agent page full screen
       agentPage.classList.add('active');
     }
+    // tasks / cs / account → expand later
   }
 
   document.querySelectorAll(".bnav-btn").forEach(btn => {
@@ -229,7 +232,6 @@ document.addEventListener("DOMContentLoaded", () => {
         .select('ref_code,fullname,phone,balance')
         .eq('id', data.user.id)
         .single();
-
       modal.classList.remove('active');
       onLoginSuccess(userData || { phone }, userData?.ref_code, userData?.balance);
     }
@@ -237,9 +239,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ON LOGIN SUCCESS
   function onLoginSuccess(user, refCode, balance = 0) {
-    currentUser    = user;
-    currentRefCode = refCode;
-
     document.getElementById('showAuthBtn').style.display = 'none';
     document.getElementById('walletBtns').style.display  = 'flex';
 
@@ -252,12 +251,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('agentJoinDate').textContent     = today;
     document.getElementById('agentShareLinkInput').value     = shareLink;
 
-    document.getElementById('agentLocked').style.display    = 'none';
-    document.getElementById('agentUnlocked').style.display  = 'block';
+    const balEl = document.getElementById('statBalance');
+    if (balEl) balEl.textContent = parseFloat(balance || 0).toFixed(2);
+
+    document.getElementById('agentLocked').style.display   = 'none';
+    document.getElementById('agentUnlocked').style.display = 'flex';
 
     const ticker = document.getElementById('agentTickerText');
-    if (ticker && refCode) {
-      const t = `🎰 သာ ကော်မရှင်: ${parseFloat(balance || 0).toFixed(2)} &nbsp;&nbsp;&nbsp; 💎 Agent ID: ${refCode} &nbsp;&nbsp;&nbsp;`;
+    if (ticker) {
+      const t = ` &rsaquo; သာ ကော်မရှင်: ${parseFloat(balance||0).toFixed(2)} &nbsp;&nbsp;&nbsp; &rsaquo; Agent ID: ${refCode||'—'} &nbsp;&nbsp;&nbsp;`;
       ticker.innerHTML = t + t;
     }
   }
@@ -283,7 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById('copyPhoneBtn').addEventListener('click', () => {
     const phone = document.getElementById('agentPhoneDisplay').textContent;
-    navigator.clipboard.writeText(phone).then(() => alert("ကူးယူပြီးပါပြီ! ✓"));
+    navigator.clipboard.writeText(phone).then(() => alert("ကူးယူပြီးပါပြီ!"));
   });
 
   document.getElementById('shareNativeBtn').addEventListener('click', async () => {
@@ -300,8 +302,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById('agentShareLinkInput');
     if (!input.value || input.value === '—') return;
     navigator.clipboard.writeText(input.value)
-      .then(() => alert("Link ကူးယူပြီးပါပြီ! ✓"))
-      .catch(() => { input.select(); document.execCommand('copy'); alert("Link ကူးယူပြီးပါပြီ! ✓"); });
+      .then(() => alert("Link ကူးယူပြီးပါပြီ!"))
+      .catch(() => { input.select(); document.execCommand('copy'); alert("Link ကူးယူပြီးပါပြီ!"); });
   }
 
   // ============================================================
@@ -313,9 +315,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const now  = new Date();
       const next = new Date(); next.setHours(24, 0, 0, 0);
       const d    = next - now;
-      const h = String(Math.floor(d / 3600000)).padStart(2,'0');
-      const m = String(Math.floor((d % 3600000) / 60000)).padStart(2,'0');
-      const s = String(Math.floor((d % 60000) / 1000)).padStart(2,'0');
+      const h = String(Math.floor(d / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((d % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((d % 60000) / 1000)).padStart(2, '0');
       countEl.textContent = `(နောက်ခြေချချိန်: ${h}:${m}:${s})`;
     };
     tick(); setInterval(tick, 1000);
