@@ -863,38 +863,42 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ============================================================
-  // [4] REGISTER — Termux Node.js API သို့ POST
+  // [4] REGISTER — Supabase Edge Function သို့ POST
   // ============================================================
   async function handleRegister() {
-    const phone    = document.getElementById('authPhone').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
-    const name     = document.getElementById('authName').value.trim();
+  const phone    = document.getElementById('authPhone').value.trim();
+  const password = document.getElementById('authPassword').value.trim();
+  const name     = document.getElementById('authName').value.trim();
 
-    try {
-      const response = await fetch("http://localhost:3000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone,
-          password,
-          fullname: name,
-          referrer_code: new URLSearchParams(window.location.search).get('ref')
-        })
-      });
+  try {
+    const response = await fetch("https://xjqrwcsxiaybpztzestb.supabase.co/functions/v1/register-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": supabaseKey,
+        "Authorization": "Bearer " + supabaseKey
+      },
+      body: JSON.stringify({
+        phone,
+        password,
+        fullname: name,
+        referrer_code: new URLSearchParams(window.location.search).get('ref')
+      })
+    });
 
-      const result = await response.json();
-      console.log("Register result:", result);
+    const result = await response.json();
+    console.log("Register result:", result);
 
-      if (response.ok) {
-        alert("မှတ်ပုံတင်ခြင်း အောင်မြင်သည်!\nReferral Code: " + result.ref_code);
-        modal.style.display = "none";
-      } else {
-        alert("အမှားအယွင်း: " + result.error);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Server နဲ့ ချိတ်ဆက်လို့ မရပါ\n(Termux မှာ node server.js run ထားပါ)");
+    if (response.ok) {
+      alert("မှတ်ပုံတင်ခြင်း အောင်မြင်သည်!\nReferral Code: " + result.ref_code);
+      modal.style.display = "none";
+    } else {
+      alert("အမှားအယွင်း: " + result.error);
     }
+  } catch (err) {
+    console.error(err);
+    alert("Edge Function နဲ့ ချိတ်ဆက်လို့ မရပါ");
+  }
   }
 
   // LOGIN — Supabase Auth
