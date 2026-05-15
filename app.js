@@ -8,9 +8,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 // ============================================================
 // [2] STATE
 // ============================================================
-let currentUser = null;
+let currentUser    = null;
 let currentRefCode = null;
-let lang = 'my';
+let lang           = 'my';
 
 // ============================================================
 // [3] DOM READY
@@ -40,19 +40,20 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================
 function initBanner() {
   let current = 0, timer = null;
-  const track  = document.getElementById("bannerTrack");
-  const dots   = document.querySelectorAll("#bannerDots .dot");
-  const wrap   = document.getElementById("bannerWrap");
+  const track = document.getElementById("bannerTrack");
+  const dots  = document.querySelectorAll("#bannerDots .dot");
+  const wrap  = document.getElementById("bannerWrap");
   if (!track) return;
 
   const update = () => {
     track.style.transform = `translateX(-${current * 100}%)`;
     dots.forEach((d, i) => d.classList.toggle("active", i === current));
   };
-  const go = n => { current = ((n % 3) + 3) % 3; update(); };
+  const go    = n => { current = ((n % 3) + 3) % 3; update(); };
   const start = () => { clearInterval(timer); timer = setInterval(() => go(current + 1), 4000); };
 
   dots.forEach(d => d.addEventListener("click", () => { go(+d.dataset.i); start(); }));
+
   let sx = 0;
   wrap.addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
   wrap.addEventListener("touchend",   e => {
@@ -69,8 +70,15 @@ function initBanner() {
 // ============================================================
 async function loadGamesFromDB() {
   const { data: games, error } = await supabase.from('games').select('*');
+
+  // DEBUG — ဖြုတ်ချင်ရင် ဖြုတ်
+  console.log("=== GAMES DEBUG ===");
+  console.log("DATA :", games);
+  console.log("ERROR:", error);
+  console.log("COUNT:", games?.length);
+
   const grid = document.getElementById('gameGrid');
-  if (!grid) return;
+  if (!grid) { console.log("gameGrid element not found!"); return; }
 
   if (error || !games || games.length === 0) {
     grid.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:20px;grid-column:span 3;text-align:center;">Games loading...</div>`;
@@ -133,7 +141,6 @@ function initNav() {
     });
   });
 
-  // Language toggle
   document.getElementById("langBtn").addEventListener("click", () => {
     lang = lang === 'my' ? 'en' : 'my';
     document.getElementById('langLabel').textContent = lang === 'my' ? 'မြန်မာ' : 'EN';
@@ -158,10 +165,7 @@ function initAuth() {
     if (e.target === modal) modal.classList.remove('active');
   });
 
-  // Register
   document.getElementById('registerBtn').addEventListener('click', handleRegister);
-
-  // Login
   document.getElementById('loginBtn').addEventListener('click', handleLogin);
 }
 
@@ -212,32 +216,39 @@ async function handleLogin() {
   if (error) {
     alert("Login မအောင်မြင်ပါ: " + error.message);
   } else {
+    // balance (formerly points) ပါ ထည့် fetch လုပ်တယ်
     const { data: userData } = await supabase
-      .from('users').select('ref_code,fullname,phone').eq('id', data.user.id).single();
+      .from('users')
+      .select('ref_code,fullname,phone,balance')
+      .eq('id', data.user.id)
+      .single();
+
     document.getElementById('authModal').classList.remove('active');
-    onLoginSuccess(userData || { phone }, userData?.ref_code);
+    onLoginSuccess(userData || { phone }, userData?.ref_code, userData?.balance);
   }
 }
 
-function onLoginSuccess(user, refCode) {
+function onLoginSuccess(user, refCode, balance = 0) {
   currentUser    = user;
   currentRefCode = refCode;
 
-  // Swap login btn → wallet btns
+  // Login btn → wallet btns
   document.getElementById('showAuthBtn').style.display = 'none';
   document.getElementById('walletBtns').style.display  = 'flex';
 
-  // Agent data
-  const phone    = user.phone || user.name || '—';
-  const shareLink = refCode
-    ? `https://diamond-bett.vercel.app/?ref=${refCode}`
-    : '—';
-  const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '/');
+  // Agent panel data
+  const phone     = user.phone || user.name || '—';
+  const shareLink = refCode ? `https://diamond-bett.vercel.app/?ref=${refCode}` : '—';
+  const today     = new Date().toLocaleDateString('en-GB').replace(/\//g, '/');
 
-  document.getElementById('agentUserPhone').textContent  = phone;
+  document.getElementById('agentUserPhone').textContent   = phone;
   document.getElementById('agentPhoneDisplay').textContent = phone;
-  document.getElementById('agentJoinDate').textContent   = today;
-  document.getElementById('agentShareLinkInput').value   = shareLink;
+  document.getElementById('agentJoinDate').textContent    = today;
+  document.getElementById('agentShareLinkInput').value    = shareLink;
+
+  // Balance display
+  const balEl = document.getElementById('statBalance');
+  if (balEl) balEl.textContent = parseFloat(balance || 0).toFixed(2);
 
   // Unlock agent panel
   document.getElementById('agentLocked').style.display   = 'none';
@@ -246,7 +257,7 @@ function onLoginSuccess(user, refCode) {
   // Ticker update
   const ticker = document.getElementById('agentTickerText');
   if (ticker && refCode) {
-    const t = `🎰 သာ ကော်မရှင်: 0.00 &nbsp;&nbsp;&nbsp; 💎 Agent ID: ${refCode} &nbsp;&nbsp;&nbsp;`;
+    const t = `🎰 သာ ကော်မရှင်: ${parseFloat(balance || 0).toFixed(2)} &nbsp;&nbsp;&nbsp; 💎 Agent ID: ${refCode} &nbsp;&nbsp;&nbsp;`;
     ticker.innerHTML = t + t;
   }
 }
@@ -255,7 +266,6 @@ function onLoginSuccess(user, refCode) {
 // [8] AGENT PAGE
 // ============================================================
 function initAgent() {
-  // Agent login btn
   document.getElementById('agentLoginBtn').addEventListener("click", () => {
     document.getElementById('authModal').classList.add('active');
     switchTab('login');
@@ -272,14 +282,13 @@ function initAgent() {
     if (target) target.classList.add('active');
   });
 
-  // Copy link button
   document.getElementById('agentCopyLinkBtn').addEventListener('click', copyAgentLink);
+
   document.getElementById('copyPhoneBtn').addEventListener('click', () => {
     const phone = document.getElementById('agentPhoneDisplay').textContent;
     navigator.clipboard.writeText(phone).then(() => alert("ကူးယူပြီးပါပြီ! ✓"));
   });
 
-  // Native share
   document.getElementById('shareNativeBtn').addEventListener('click', async () => {
     const link = document.getElementById('agentShareLinkInput').value;
     if (!link || link === '—') return;
@@ -325,7 +334,7 @@ function initCountdown() {
   function update() {
     const now  = new Date();
     const next = new Date();
-    next.setHours(24, 0, 0, 0); // midnight
+    next.setHours(24, 0, 0, 0);
     const diff = next - now;
     const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
     const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
@@ -351,4 +360,4 @@ function toggleEye(inputId, btn) {
   const show = inp.type === 'password';
   inp.type   = show ? 'text' : 'password';
   btn.style.color = show ? '#f5c518' : 'rgba(255,255,255,.5)';
-                                                 }
+}
