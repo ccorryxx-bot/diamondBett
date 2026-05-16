@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Diamond-BETT</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#0c0a1e; --bg2:#100d26; --purple2:#241b52;
+  --accent:#f5c518; --blue:#1a4fd6; --blue2:#0e3ab8;
+  --text:#fff; --muted:#9890c0; --bottom-h:58px;
+  --card:#1a1a2e; --border:#2a2a4a;
+  --gold:#C9A227; --gold2:#FFD700;
+}
+html,body { width:100%; height:100dvh; background:var(--bg); color:var(--text);
+  font-family:'Segoe UI','Myanmar Text',sans-serif; overflow:hidden; display:flex; flex-direction:column; }
+svg { display:block; }
+button { outline:none; cursor:pointer; }
+input { outline:none; }
+
+/* ===== BANNER ===== */
+.banner-wrap { position:relative; width:100%; height:190px; flex-shrink:0; overflow:hidden; touch-action:pan-y; }
+.banner-track { display:flex; width:100%; height:100%; transition:transform 0.45s cubic-bezier(.4,0,.2,1); }
+.banner-slide { flex:0 0 100%; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+.banner-placeholder { text-align:center; pointer-events:none; }
+.banner-placeholder .b-title { font-size:24px; font-weight:900; text-shadow:0 0 20px currentColor; }
+.banner-placeholder .b-sub { font-size:12px; color:rgba(255,255,255,.72); margin-top:6px; }
+.banner-placeholder .b-amount { font-size:36px; font-weight:900; color:var(--accent); text-shadow:0 0 30px var(--accent); margin-top:4px; }
+.banner-dots { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); display:flex; gap:5px; z-index:5; }
+.dot { width:6px; height:6px; border-radius:999px; background:rgba(255,255,255,.35); cursor:pointer; transition:all .3s; }
+.dot.active { width:18px; background:var(--accent); }
+
+/* ===== QUICK NAV ===== */
+.quick-nav { display:flex; align-items:center; padding:8px 10px; gap:6px; background:var(--bg); flex-shrink:0; }
+.login-btn { background:linear-gradient(135deg,#2a2a2a,#181818); border:1px solid #3a3a3a; color:#fff; border-radius:22px; padding:7px 18px; font-size:13px; white-space:nowrap; flex-shrink:0; font-family:inherit; }
+.wallet-btns { display:none; gap:6px; flex-shrink:0; }
+.wallet-btn { border:none; border-radius:18px; padding:6px 14px; font-size:12px; font-weight:700; font-family:inherit; white-space:nowrap; display:flex; align-items:center; gap:4px; }
+.wallet-btn.deposit  { background:linear-gradient(135deg,#16a34a,#15803d); color:#fff; }
+.wallet-btn.withdraw { background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; }
+.nav-icons { display:flex; flex:1; justify-content:flex-end; }
+.nav-icon-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 7px; background:none; border:none; color:var(--muted); font-size:9.5px; font-family:inherit; text-decoration:none; }
+.nav-ico { width:30px; height:30px; background:var(--purple2); border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.lang-label { font-size:10px; font-weight:700; color:var(--accent); }
+
+/* ===== ANNOUNCE ===== */
+.announce { display:flex; align-items:center; gap:8px; padding:5px 10px; background:var(--bg2); border-top:1px solid #1c1840; border-bottom:1px solid #1c1840; overflow:hidden; flex-shrink:0; }
+.announce-icon { flex-shrink:0; color:var(--accent); display:flex; align-items:center; }
+.announce-ticker { overflow:hidden; flex:1; }
+.announce-ticker span { display:inline-block; white-space:nowrap; font-size:11.5px; color:var(--muted); animation:ticker 22s linear infinite; }
+@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+/* ===== MAIN ===== */
+.main { flex:1; display:flex; overflow:hidden; min-height:0; }
+.sidebar { width:74px; flex-shrink:0; background:var(--bg2); overflow-y:auto; scrollbar-width:none; }
+.sidebar::-webkit-scrollbar { display:none; }
+.cat-item { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:12px 4px; border-bottom:1px solid #161330; min-height:66px; transition:background .2s; cursor:pointer; }
+.cat-item.active { background:var(--accent); }
+.cat-item.active .cat-lbl { color:#000; font-weight:700; }
+.cat-ico { width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+.cat-lbl { font-size:9px; color:var(--muted); text-align:center; line-height:1.3; }
+
+/* ===== GAME AREA ===== */
+.game-area { flex:1; overflow-y:auto; padding:5px; scrollbar-width:none; }
+.game-area::-webkit-scrollbar { display:none; }
+.game-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.game-card { aspect-ratio:3/4; border-radius:10px; overflow:hidden; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; transition:transform .15s; box-shadow:0 3px 12px rgba(0,0,0,.6); }
+.game-card:active { transform:scale(.95); }
+.gc-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.gc-char { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; width:48px; height:48px; margin:auto; }
+.gc-label { position:relative; z-index:2; width:100%; background:linear-gradient(transparent,rgba(0,0,0,.85) 60%); padding:18px 4px 5px; text-align:center; }
+.gc-label span { font-size:8px; font-weight:800; color:#fff; display:block; }
+
+/* ===== FOOTER ===== */
+.site-footer { padding:28px 20px 20px; text-align:center; border-top:1px solid #1c1840; }
+.footer-logo { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; }
+.footer-logo-text { font-size:16px; font-weight:900; letter-spacing:1px; background:linear-gradient(135deg,var(--accent),#fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.footer-links { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:10px; }
+.footer-links a { color:var(--muted); font-size:11px; text-decoration:none; }
+.footer-copy { font-size:10px; color:#4a4470; }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav { height:var(--bottom-h); background:#0a0820; border-top:1px solid #201c44; display:flex; flex-shrink:0; }
+.bnav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:none; border:none; color:#5a5090; font-size:9px; font-family:inherit; }
+.bnav-btn.active { color:var(--accent); }
+.bnav-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+
+/* ===== PAGE PANELS ===== */
+.page-panel { display:none; flex:1; scrollbar-width:none; flex-direction:column; min-height:0; }
+.page-panel::-webkit-scrollbar { display:none; }
+.page-panel.active { display:flex; }
+
+/* ===== AGENT STYLES ===== */
+.agent-header { background:linear-gradient(135deg,#060f30,#0e3ab8); padding:14px 14px 12px; flex-shrink:0; }
+.agent-header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.agent-brand { display:flex; align-items:center; gap:10px; }
+.agent-brand-title { font-size:15px; font-weight:800; color:#fff; }
+.agent-brand-sub { font-size:10px; color:rgba(255,255,255,.45); }
+.agent-header-btns { display:flex; gap:6px; }
+.agent-stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.agent-stat-card { background:rgba(255,255,255,.08); border-radius:10px; padding:10px; text-align:center; }
+.agent-stat-num { font-size:16px; font-weight:800; color:var(--accent); }
+.agent-stat-lbl { font-size:9px; color:rgba(255,255,255,.45); margin-top:2px; }
+.agent-tabbar { display:flex; overflow-x:auto; scrollbar-width:none; background:#0a0820; border-bottom:1px solid #1c1840; flex-shrink:0; }
+.agent-tabbar::-webkit-scrollbar { display:none; }
+.atab { flex-shrink:0; padding:10px 14px; background:none; border:none; border-bottom:2px solid transparent; color:rgba(255,255,255,.4); font-size:11.5px; font-family:inherit; white-space:nowrap; transition:all .2s; }
+.atab.active { color:var(--accent); border-bottom:2px solid var(--accent); font-weight:700; }
+.atab-content { display:none; flex-direction:column; }
+.atab-content.active { display:flex; }
+.agent-promo { margin:10px; border-radius:12px; background:linear-gradient(135deg,#b8860b,#ffd700,#e67e00); padding:20px 16px; position:relative; overflow:hidden; }
+.agent-promo-label { font-size:10px; color:#5a1a00; font-weight:700; letter-spacing:1px; }
+.agent-promo-title { font-size:20px; font-weight:900; color:#3d1200; margin:4px 0 2px; }
+.agent-promo-sub { font-size:12px; color:#6b2500; }
+.agent-promo-amount { font-size:28px; font-weight:900; color:#3d1200; margin-top:6px; }
+.agent-promo-deco { position:absolute; right:12px; top:50%; transform:translateY(-50%); opacity:.15; }
+.agent-user-card { margin:0 10px 10px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; align-items:flex-start; gap:12px; }
+.rank-badge { width:46px; height:46px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,#cd7f32,#8b4513); border:2px solid #ffd700; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900; color:#fff; position:relative; }
+.rank-help { position:absolute; top:-4px; right:-4px; width:16px; height:16px; background:#333; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.user-card-phone { font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
+.user-rank-badge { display:inline-block; background:#1e1e3a; border:1px solid #3a3a5a; border-radius:4px; padding:2px 8px; font-size:10px; color:#9890c0; }
+.user-card-right { text-align:right; font-size:11px; color:#666; line-height:1.9; flex-shrink:0; }
+.user-card-right span { color:#ccc; }
+.agent-wallet-card { margin:0 10px 8px; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.wallet-card-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid #252540; }
+.wallet-card-title { font-size:13px; color:#fff; font-weight:600; }
+.wallet-countdown { font-size:10px; color:var(--accent); }
+.wallet-row { display:flex; align-items:center; padding:10px 14px; gap:10px; }
+.wallet-item { flex:1; }
+.wallet-item-label { font-size:10px; color:#666; margin-bottom:3px; }
+.wallet-item-value { font-size:16px; font-weight:700; color:#fff; }
+.wallet-item-value.gold { color:#f5a623; }
+.wallet-claim-btn { background:#252540; border:1px solid #3a3a5a; border-radius:8px; padding:6px 14px; color:#aaa; font-size:12px; font-family:inherit; flex-shrink:0; }
+.wallet-divider { height:1px; background:#1e1e38; margin:0 14px; }
+.agent-ticker { margin:0 10px 8px; background:linear-gradient(135deg,#7f1d1d,#991b1b,#dc2626); border-radius:10px; padding:10px 14px; overflow:hidden; }
+.ticker-inner { white-space:nowrap; font-size:12px; color:#fff; font-weight:600; animation:agentTick 20s linear infinite; }
+@keyframes agentTick { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.agent-invite { margin:0 10px 8px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; }
+.invite-title { font-size:12px; color:#666; margin-bottom:10px; }
+.invite-code-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #252540; }
+.invite-code-label { font-size:12px; color:#888; }
+.invite-code-val { font-size:14px; color:#fff; font-weight:700; }
+.copy-icon-btn { background:#252540; border:1px solid #3a3a5a; border-radius:6px; padding:5px 10px; color:#aaa; font-size:11px; font-family:inherit; display:flex; align-items:center; gap:4px; }
+.invite-qr-row { display:flex; gap:12px; margin-bottom:12px; }
+.qr-placeholder { width:72px; height:72px; background:#111; border:1px solid var(--border); border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:4px; }
+.qr-placeholder span { font-size:8px; color:#444; text-align:center; }
+.invite-link-col { flex:1; display:flex; flex-direction:column; gap:8px; justify-content:center; }
+.invite-link-wrap { display:flex; gap:6px; }
+.invite-link-input { flex:1; background:#111; border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:#aaa; font-size:11px; font-family:inherit; min-width:0; }
+.invite-link-copy { background:#252540; border:1px solid #3a3a5a; border-radius:8px; padding:8px 10px; color:#aaa; flex-shrink:0; display:flex; align-items:center; }
+.share-btns { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.share-btn { display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; color:#888; font-size:9px; font-family:inherit; }
+.share-btn-ico { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.sico-share{background:#2a2a4a}.sico-telegram{background:#2AABEE}.sico-viber{background:#7360F2}.sico-facebook{background:#1877F2}.sico-wa{background:#25D366}
+.agent-action-row { display:flex; gap:10px; margin:0 10px 10px; }
+.agent-action-btn { flex:1; border:none; border-radius:10px; padding:12px 10px; font-size:12px; font-weight:700; font-family:inherit; display:flex; align-items:center; justify-content:space-between; }
+.agent-action-btn.gold-btn  { background:linear-gradient(135deg,#d97706,#b45309); color:#fff; }
+.agent-action-btn.green-btn { background:linear-gradient(135deg,#059669,#047857); color:#fff; }
+.agent-collection { margin:0 10px 16px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; }
+.collection-label { font-size:12px; color:#666; margin-bottom:3px; }
+.collection-val { font-size:14px; font-weight:700; color:#fff; }
+.collection-btn { background:#252540; border:1px solid #3a3a5a; border-radius:8px; padding:6px 12px; color:#aaa; font-size:11px; font-family:inherit; }
+
+/* ===== MY DATA STYLES ===== */
+.time-pills { display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; padding:10px 10px 8px; flex-shrink:0; }
+.time-pills::-webkit-scrollbar { display:none; }
+.time-pill { flex-shrink:0; padding:6px 16px; border-radius:999px; font-size:12px; font-family:inherit; font-weight:600; cursor:pointer; transition:all .2s; background:var(--card); border:1px solid var(--border); color:#888; }
+.time-pill.active { background:var(--accent); border-color:var(--accent); color:#000; }
+.md-top-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 10px 10px; }
+.md-top-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; }
+.md-top-val { font-size:17px; font-weight:800; }
+.md-top-val.gold { color:var(--accent); }
+.md-top-val.white { color:#fff; }
+.md-top-val.green { color:#22c55e; }
+.md-top-lbl { font-size:9px; color:#666; margin-top:3px; }
+.md-section { margin:0 10px 10px; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.md-section-title { padding:10px 14px; font-size:12px; font-weight:700; color:#ddd; background:rgba(255,255,255,.04); border-bottom:1px solid var(--border); }
+.md-grid3 { display:grid; grid-template-columns:repeat(3,1fr); }
+.md-grid2 { display:grid; grid-template-columns:1fr 1fr; }
+.md-cell { padding:10px 8px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); text-align:center; }
+.md-grid3 .md-cell:nth-child(3n) { border-right:none; }
+.md-grid2 .md-cell:nth-child(2n) { border-right:none; }
+.md-cell-lbl { font-size:9.5px; color:#666; line-height:1.3; margin-bottom:5px; }
+.md-cell-val { font-size:14px; font-weight:700; color:#fff; }
+.md-cell-val.gold { color:var(--accent); }
+.md-last-row { border-bottom:none !important; }
+.md-loading { display:flex; align-items:center; justify-content:center; padding:40px; color:var(--muted); font-size:12px; gap:8px; }
+.md-spin { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; flex-shrink:0; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ===== DOWNLINE TAB ===== */
+.dl-filter-bar { display:flex; gap:6px; padding:10px; flex-shrink:0; }
+.dl-filter-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:4px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 6px; color:#888; font-size:10px; font-family:inherit; transition:all .2s; }
+.dl-filter-btn.active { border-color:var(--accent); color:var(--accent); }
+.dl-search-bar { padding:0 10px 8px; display:none; }
+.dl-search-inner { display:flex; gap:8px; }
+.dl-search-input { flex:1; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:#fff; font-size:13px; font-family:inherit; }
+.dl-search-submit { background:linear-gradient(135deg,var(--accent),#e6b800); border:none; border-radius:8px; padding:9px 18px; color:#000; font-size:13px; font-weight:700; font-family:inherit; }
+.dl-content { flex:1; overflow-y:auto; scrollbar-width:none; }
+.dl-content::-webkit-scrollbar { display:none; }
+.dl-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; text-align:center; flex:1; }
+.dl-empty-text { font-size:13px; color:var(--muted); margin-top:14px; }
+.dl-empty-sub { font-size:11px; color:#3a3a5a; margin-top:6px; }
+.dl-table-wrap { padding:8px 10px; }
+.dl-table { width:100%; border-collapse:collapse; }
+.dl-table th { font-size:10px; color:#666; padding:8px 6px; text-align:left; border-bottom:1px solid var(--border); font-weight:600; }
+.dl-table td { font-size:11px; color:#ccc; padding:10px 6px; border-bottom:1px solid rgba(255,255,255,.04); }
+.dl-table tr:last-child td { border-bottom:none; }
+.dl-level-badge { display:inline-block; background:#1a2a4a; border:1px solid #2a4a6a; border-radius:4px; padding:1px 6px; font-size:10px; color:#6abaff; }
+
+/* ===== DOWNLINE MODALS ===== */
+.overlay-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:800; }
+.overlay-backdrop.show { display:block; }
+.dl-date-modal { display:none; position:fixed; bottom:0; left:0; right:0; background:#121220; border-radius:20px 20px 0 0; z-index:900; padding:20px; max-height:85vh; overflow-y:auto; animation:slideUp .25s ease; }
+.dl-date-modal.show { display:block; }
+.dl-modal-handle { width:36px; height:4px; background:#333; border-radius:999px; margin:0 auto 16px; }
+.dl-modal-title { font-size:14px; font-weight:700; color:#fff; margin-bottom:14px; }
+.dl-period-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.dl-period-btn { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px; color:#888; font-size:12px; font-family:inherit; font-weight:600; transition:all .2s; }
+.dl-period-btn.active { background:var(--accent); border-color:var(--accent); color:#000; }
+.dl-custom-title { font-size:12px; color:#888; margin-bottom:10px; }
+.dl-date-pickers { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.dl-picker-label { font-size:11px; color:var(--muted); margin-bottom:6px; }
+.dl-picker-selects { display:flex; gap:4px; }
+.dl-picker-selects select { flex:1; background:#0d0d1a; border:1px solid var(--border); border-radius:6px; padding:8px 4px; color:#fff; font-size:11px; font-family:inherit; -webkit-appearance:none; text-align:center; }
+.dl-modal-actions { display:flex; gap:10px; }
+.dl-btn-cancel { flex:1; background:transparent; border:1px solid var(--border); border-radius:10px; padding:12px; color:#aaa; font-size:14px; font-family:inherit; font-weight:600; }
+.dl-btn-confirm { flex:1; background:linear-gradient(135deg,var(--accent),#e6b800); border:none; border-radius:10px; padding:12px; color:#000; font-size:14px; font-family:inherit; font-weight:700; }
+.dl-role-dropdown { display:none; position:absolute; top:100%; left:0; right:0; background:#1a1a2e; border:1px solid var(--border); border-radius:10px; z-index:700; overflow:hidden; margin-top:4px; }
+.dl-role-option { padding:12px 14px; font-size:12px; color:#ccc; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.dl-role-option:last-child { border-bottom:none; }
+.dl-role-option:active, .dl-role-option.active { background:rgba(245,197,24,.1); color:var(--accent); }
+.dl-filter-relative { position:relative; flex:1; }
+
+/* ===== TASKS PAGE ===== */
+.tasks-page { display:flex; flex-direction:column; flex:1; background:linear-gradient(170deg,#120008,#0a0018 50%,#06000d); overflow-y:auto; scrollbar-width:none; }
+.tasks-page::-webkit-scrollbar { display:none; }
+.tasks-page-header { padding:14px; background:rgba(0,0,0,.4); border-bottom:1px solid rgba(139,0,0,.3); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+.tasks-header-brand { display:flex; align-items:center; gap:10px; }
+.tasks-header-title { font-size:15px; font-weight:800; color:#fff; }
+.tasks-header-sub { font-size:10px; color:rgba(255,255,255,.4); }
+.tasks-spin-count { display:flex; align-items:center; gap:6px; background:rgba(201,162,39,.12); border:1px solid rgba(201,162,39,.3); border-radius:20px; padding:6px 12px; }
+.tasks-spin-count-num { font-size:16px; font-weight:900; color:var(--gold2); }
+.tasks-spin-count-lbl { font-size:10px; color:rgba(255,255,255,.5); }
+
+/* Bonus code */
+.bonus-section { margin:14px; }
+.bonus-label { font-size:11px; color:rgba(255,255,255,.4); margin-bottom:8px; letter-spacing:.5px; text-transform:uppercase; }
+.bonus-wrap { display:flex; gap:8px; }
+.bonus-input { flex:1; background:rgba(255,255,255,.06); border:1px solid rgba(201,162,39,.25); border-radius:10px; padding:11px 14px; color:#fff; font-size:13px; font-family:inherit; }
+.bonus-input::placeholder { color:rgba(255,255,255,.3); }
+.bonus-input:focus { border-color:rgba(201,162,39,.6); }
+.bonus-btn { background:linear-gradient(135deg,#c9a227,#7a5e10); border:none; border-radius:10px; padding:11px 20px; color:#fff; font-size:13px; font-weight:700; font-family:inherit; }
+
+/* Section divider */
+.tasks-divider { display:flex; align-items:center; gap:10px; margin:0 14px 12px; }
+.tasks-divider-line { flex:1; height:1px; background:linear-gradient(to right,transparent,rgba(201,162,39,.4),transparent); }
+.tasks-divider-text { font-size:12px; font-weight:700; color:var(--gold2); white-space:nowrap; }
+
+/* Wheel */
+.wheel-section { display:flex; flex-direction:column; align-items:center; padding:0 14px; margin-bottom:14px; }
+.wheel-outer { position:relative; width:270px; height:270px; }
+.wheel-pointer-el { position:absolute; top:-16px; left:50%; transform:translateX(-50%); z-index:10; }
+#wheelCanvas { border-radius:50%; display:block; }
+.wheel-glow { position:absolute; inset:-8px; border-radius:50%; box-shadow:0 0 30px rgba(201,162,39,.25), 0 0 60px rgba(139,0,0,.2); pointer-events:none; }
+.wheel-spin-btn { margin-top:14px; background:linear-gradient(135deg,#c9a227,#7a5e10); border:none; border-radius:999px; padding:13px 48px; color:#fff; font-size:15px; font-weight:900; font-family:inherit; letter-spacing:2px; box-shadow:0 4px 24px rgba(201,162,39,.35); transition:all .2s; }
+.wheel-spin-btn:disabled { opacity:.45; }
+.wheel-spin-btn:not(:disabled):active { transform:scale(.96); }
+
+/* Turnover info */
+.turnover-section { width:100%; margin-top:10px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:10px 12px; }
+.turnover-title { font-size:10px; color:#888; margin-bottom:8px; letter-spacing:.5px; }
+.turnover-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; }
+.to-item { display:flex; justify-content:space-between; font-size:10px; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.to-item span:first-child { color:#aaa; }
+.to-item span:last-child { color:var(--gold2); font-weight:700; }
+
+/* Task cards */
+.tasks-list-section { margin:0 14px 14px; }
+.task-card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+.task-card-row1 { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.task-icon-box { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(201,162,39,.1); border:1px solid rgba(201,162,39,.2); border-radius:8px; }
+.task-text { flex:1; }
+.task-title { font-size:13px; color:#fff; font-weight:600; line-height:1.4; }
+.task-desc { font-size:11px; color:rgba(255,255,255,.4); margin-top:2px; line-height:1.4; }
+.task-card-row2 { display:flex; align-items:center; justify-content:space-between; }
+.task-reward { display:flex; align-items:center; gap:6px; }
+.task-reward-wheel { width:22px; height:22px; }
+.task-reward-text { font-size:13px; color:var(--gold2); font-weight:800; }
+.task-done-badge { display:flex; align-items:center; gap:4px; background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.3); border-radius:20px; padding:5px 10px; font-size:11px; color:#22c55e; font-weight:600; }
+.task-action-btn { background:linear-gradient(135deg,#c9a227,#7a5e10); border:none; border-radius:8px; padding:7px 16px; color:#fff; font-size:12px; font-weight:700; font-family:inherit; }
+.task-action-btn.outlined { background:transparent; border:1px solid rgba(255,255,255,.2); color:#aaa; }
+.task-timer { font-size:11px; color:rgba(255,255,255,.4); font-variant-numeric:tabular-nums; }
+
+/* Spin result popup */
+.spin-result-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:1000; align-items:center; justify-content:center; }
+.spin-result-overlay.show { display:flex; }
+.spin-result-card { background:linear-gradient(160deg,#1a0808,#0d0012); border:2px solid var(--gold); border-radius:20px; padding:32px 28px; text-align:center; max-width:280px; width:90%; animation:popIn .3s ease; }
+@keyframes popIn { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+.spin-result-label { font-size:12px; color:#888; letter-spacing:1px; margin-bottom:8px; }
+.spin-result-amount { font-size:42px; font-weight:900; color:var(--gold2); text-shadow:0 0 30px rgba(255,215,0,.4); margin-bottom:6px; }
+.spin-result-unit { font-size:13px; color:#aaa; margin-bottom:16px; }
+.spin-result-turnover { font-size:11px; color:#888; margin-bottom:20px; line-height:1.6; }
+.spin-result-close { background:linear-gradient(135deg,#c9a227,#7a5e10); border:none; border-radius:10px; padding:12px 32px; color:#fff; font-size:14px; font-weight:700; font-family:inherit; }
+.spin-result-blank { font-size:20px; color:#555; font-weight:700; margin:12px 0; }
+
+/* Spin history */
+.history-section { margin:0 14px 20px; }
+.history-header { font-size:12px; color:#666; margin-bottom:8px; letter-spacing:.5px; }
+.history-item { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.history-item:last-child { border-bottom:none; }
+.history-date { font-size:10px; color:rgba(255,255,255,.35); flex-shrink:0; margin-right:10px; }
+.history-desc { font-size:11px; color:rgba(255,255,255,.6); flex:1; }
+.history-amount { font-size:12px; font-weight:700; color:var(--gold2); flex-shrink:0; }
+.history-empty { font-size:12px; color:#444; padding:20px 0; text-align:center; }
+
+/* ===== PLACEHOLDERS ===== */
+.coming-soon { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); padding:60px 20px; text-align:center; }
+.coming-soon p { font-size:13px; margin-top:14px; }
+.agent-locked { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); padding:40px 20px; text-align:center; background:var(--bg); }
+.agent-locked p { font-size:13px; line-height:1.7; margin-top:14px; }
+.agent-login-btn { margin-top:20px; background:linear-gradient(135deg,var(--blue),var(--blue2)); color:#fff; border:none; border-radius:22px; padding:11px 32px; font-size:14px; font-weight:700; font-family:inherit; }
+
+/* ===== AUTH MODAL ===== */
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:999; align-items:flex-end; justify-content:center; }
+.modal.active { display:flex; }
+.modal-sheet { width:100%; max-width:480px; background:linear-gradient(170deg,#0d1b50,#07112e); border-radius:28px 28px 0 0; padding:0 0 24px; position:relative; animation:slideUp .3s ease; }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.auth-tabs { display:flex; border-bottom:1px solid rgba(255,255,255,.08); }
+.auth-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:18px 10px; font-size:15px; font-weight:600; color:rgba(255,255,255,.4); border-bottom:2px solid transparent; transition:all .2s; font-family:inherit; background:none; border-top:none; border-left:none; border-right:none; }
+.auth-tab.active { color:#fff; border-bottom:2px solid var(--blue); }
+.auth-body { padding:16px 20px 8px; }
+.auth-subtitle { font-size:12px; color:rgba(255,255,255,.5); margin-bottom:16px; text-align:center; }
+.input-group { position:relative; margin-bottom:12px; }
+.input-group .inp-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,.4); pointer-events:none; }
+.input-group input { width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:13px 14px 13px 42px; color:#fff; font-size:14px; font-family:inherit; }
+.input-group input:focus { border-color:rgba(99,130,255,.6); }
+.input-group input::placeholder { color:rgba(255,255,255,.3); }
+.eye-toggle { position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; color:rgba(255,255,255,.5); padding:4px; display:flex; }
+.phone-wrap { display:flex; margin-bottom:12px; }
+.phone-prefix { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-right:none; border-radius:12px 0 0 12px; padding:13px 12px; font-size:13px; color:rgba(255,255,255,.7); flex-shrink:0; }
+.phone-input { flex:1; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-left:none; border-radius:0 12px 12px 0; padding:13px 14px; color:#fff; font-size:14px; font-family:inherit; }
+.phone-input:focus { border-color:rgba(99,130,255,.6); }
+.phone-input::placeholder { color:rgba(255,255,255,.3); }
+.ref-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.ref-row-label { font-size:12px; color:rgba(255,255,255,.5); flex-shrink:0; }
+.ref-dots { display:flex; gap:6px; }
+.ref-dot { width:32px; height:8px; border-radius:999px; }
+.ref-input-wrap { flex:1; }
+.ref-input-wrap input { width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px 12px; color:rgba(255,255,255,.8); font-size:13px; font-family:inherit; }
+.ref-input-wrap input:focus { border-color:rgba(99,130,255,.6); }
+.age-check { display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; }
+.age-check input[type="checkbox"] { width:18px; height:18px; accent-color:#22c55e; flex-shrink:0; margin-top:2px; }
+.age-check label { font-size:12px; color:rgba(255,255,255,.6); line-height:1.5; }
+.age-check label a { color:var(--accent); text-decoration:none; }
+.auth-submit { width:100%; border:none; border-radius:14px; padding:14px; background:linear-gradient(135deg,#1a4fd6,#0e3ab8); color:#fff; font-size:15px; font-weight:700; font-family:inherit; margin-bottom:14px; box-shadow:0 4px 20px rgba(26,79,214,.4); }
+.auth-submit:active { opacity:.85; }
+.auth-footer-link { text-align:center; font-size:12px; }
+.auth-footer-link a { color:rgba(255,255,255,.35); text-decoration:none; }
+.modal-close { position:absolute; bottom:-62px; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; font-family:inherit; }
+</style>
+</head>
+<body>
+
+<div id="topArea">
+  <div class="banner-wrap" id="bannerWrap">
+    <div class="banner-track" id="bannerTrack">
+      <div class="banner-slide" style="background:linear-gradient(135deg,#1a0850,#5a0095);">
+        <div class="banner-placeholder"><div style="font-size:11px;">PRAGMATIC PLAY</div><div class="b-title" style="color:#f5c518;">Gates of OLYMPUS</div><div class="b-sub">ZEUS ရဲ့ အင်အား</div><div class="b-amount">10,000</div></div>
+      </div>
+      <div class="banner-slide" style="background:linear-gradient(135deg,#041840,#0060b0);">
+        <div class="banner-placeholder"><div style="font-size:11px;">LIVE CASINO</div><div class="b-title" style="color:#40cfff;">Real Dealers</div><div class="b-sub">တိုက်ရိုက် ကာစိနို</div><div class="b-amount" style="color:#40cfff;">50,000</div></div>
+      </div>
+      <div class="banner-slide" style="background:linear-gradient(135deg,#300808,#900018);">
+        <div class="banner-placeholder"><div style="font-size:11px;">TOURNAMENT</div><div class="b-title" style="color:#ff5060;">Grand Prize</div><div class="b-sub">နှစ်တိုင်း ဆုငွေကြီး</div><div class="b-amount" style="color:#ff7080;">100,000</div></div>
+      </div>
+    </div>
+    <div class="banner-dots" id="bannerDots"><div class="dot active" data-i="0"></div><div class="dot" data-i="1"></div><div class="dot" data-i="2"></div></div>
+  </div>
+  <div class="quick-nav">
+    <button class="login-btn" id="showAuthBtn">လော့ဂ်အင်</button>
+    <div class="wallet-btns" id="walletBtns">
+      <button class="wallet-btn deposit"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>ငွေသွင်း</button>
+      <button class="wallet-btn withdraw"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>ငွေထုတ်</button>
+    </div>
+    <div class="nav-icons">
+      <a class="nav-icon-btn" href="https://ccorryxx-bot.github.io/glm-45-air_free-to-Cloud-api/" target="_blank" rel="noopener">
+        <div class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg></div><span>ဒေါင်းလုပ်</span>
+      </a>
+      <button class="nav-icon-btn" id="historyBtn">
+        <div class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg></div><span>မှတ်တမ်း</span>
+      </button>
+      <button class="nav-icon-btn" id="langBtn">
+        <div class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10"/><path d="M12 2a15 15 0 0 0-4 10 15 15 0 0 0 4 10"/></svg></div>
+        <span class="lang-label" id="langLabel">မြန်မာ</span>
+      </button>
+    </div>
+  </div>
+  <div class="announce">
+    <span class="announce-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7v3l-2 3h18l-2-3V9a7 7 0 0 0-7-7z"/><path d="M9 19a3 3 0 0 0 6 0"/></svg></span>
+    <div class="announce-ticker"><span>ကြိုဆိုပါတယ်! Diamond-BETT မှာ မှတ်ပုံတင်ပြီး ဆုငွေများ ရယူပါ။</span></div>
+  </div>
+</div>
+
+<div class="main" id="mainContent">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="cat-item active" data-cat="all"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div class="cat-lbl">အားလုံး</div></div>
+    <div class="cat-item" data-cat="show"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="cat-lbl">ဂိမ်း Show</div></div>
+    <div class="cat-item" data-cat="arcade"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></div><div class="cat-lbl">ARCADE</div></div>
+    <div class="cat-item" data-cat="live"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 12h8"/></svg></div><div class="cat-lbl">တိုက်ရိုက်</div></div>
+    <div class="cat-item" data-cat="fish"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M12 12l-4 4"/><path d="M12 12l4 4"/><path d="M12 12l-4-4"/><path d="M12 12l4-4"/></svg></div><div class="cat-lbl">ငါးဖမ်း</div></div>
+    <div class="cat-item" data-cat="sport"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg></div><div class="cat-lbl">အားကစား</div></div>
+    <div class="cat-item" data-cat="lottery"><div class="cat-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/></svg></div><div class="cat-lbl">LOTTERY</div></div>
+  </div>
+
+  <!-- HOME -->
+  <div class="game-area" id="homePageArea">
+    <div class="game-grid" id="gameGrid"></div>
+    <footer class="site-footer">
+      <div class="footer-logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="#f5c518" stroke-width="1.5"/><polygon points="12,5 19,9 19,15 12,19 5,15 5,9" fill="rgba(245,197,24,0.15)" stroke="#f5c518" stroke-width="1"/><text x="12" y="14.5" text-anchor="middle" fill="#f5c518" font-size="5.5" font-weight="900" font-family="sans-serif">DB</text></svg><span class="footer-logo-text">Diamond-BETT</span></div>
+      <div class="footer-links"><a href="#">ကျွန်ုပ်တို့အကြောင်း</a><a href="#">Terms of Condition</a><a href="#">ကိုယ်ရေးလုံခြုံမှု</a><a href="#">ဆက်သွယ်ရန်</a></div>
+      <div class="footer-copy">© 2025 DiamondBett Team. All rights reserved.</div>
+    </footer>
+  </div>
+
+  <!-- TASKS PAGE -->
+  <div class="page-panel" id="tasksPage">
+    <div class="tasks-page">
+      <!-- Header -->
+      <div class="tasks-page-header">
+        <div class="tasks-header-brand">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="#f5c518" stroke-width="1.5"/><polygon points="12,5 19,9 19,15 12,19 5,15 5,9" fill="rgba(245,197,24,0.15)" stroke="#f5c518" stroke-width="1"/><text x="12" y="14.5" text-anchor="middle" fill="#f5c518" font-size="5.5" font-weight="900" font-family="sans-serif">DB</text></svg>
+          <div><div class="tasks-header-title">Tasks & Rewards</div><div class="tasks-header-sub">Diamond-BETT Daily Bonus</div></div>
+        </div>
+        <div class="tasks-spin-count">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span class="tasks-spin-count-num" id="availableSpins">0</span>
+          <span class="tasks-spin-count-lbl">Spins</span>
+        </div>
+      </div>
+
+      <!-- Bonus Code -->
+      <div class="bonus-section">
+        <div class="bonus-label">Bonus Code ထည့်ပါ</div>
+        <div class="bonus-wrap">
+          <input type="text" id="bonusCodeInput" class="bonus-input" placeholder="DIAMOND-XXXX" autocapitalize="characters">
+          <button id="bonusCodeBtn" class="bonus-btn">လက်ခံ</button>
+        </div>
+      </div>
+
+      <!-- Lucky Wheel -->
+      <div class="tasks-divider"><div class="tasks-divider-line"></div><div class="tasks-divider-text">Lucky Wheel</div><div class="tasks-divider-line"></div></div>
+
+      <div class="wheel-section">
+        <div class="wheel-outer">
+          <!-- Pointer -->
+          <div class="wheel-pointer-el">
+            <svg width="28" height="32" viewBox="0 0 28 32">
+              <polygon points="14,32 0,0 28,0" fill="#C9A227"/>
+              <polygon points="14,28 4,4 24,4" fill="#FFD700"/>
+            </svg>
+          </div>
+          <canvas id="wheelCanvas" width="260" height="260"></canvas>
+          <div class="wheel-glow"></div>
+        </div>
+        <button id="spinBtn" class="wheel-spin-btn" disabled>SPIN</button>
+        <!-- Turnover info -->
+        <div class="turnover-section">
+          <div class="turnover-title">TURNOVER သတ်မှတ်ချက်</div>
+          <div class="turnover-grid">
+            <div class="to-item"><span>5,000 ကျပ်</span><span>×5 = 25,000</span></div>
+            <div class="to-item"><span>15,000 ကျပ်</span><span>×6 = 90,000</span></div>
+            <div class="to-item"><span>30,000 ကျပ်</span><span>×7 = 210,000</span></div>
+            <div class="to-item"><span>50,000 ကျပ်</span><span>×10 = 500,000</span></div>
+            <div class="to-item"><span>65,000 ကျပ်</span><span>×12 = 780,000</span></div>
+            <div class="to-item"><span>80,000 ကျပ်</span><span>×15 = 1,200,000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="tasks-divider" style="margin-top:4px;"><div class="tasks-divider-line"></div><div class="tasks-divider-text">အလုပ်များပြီးမြောက်ရန် အာမ်ဆံ</div><div class="tasks-divider-line"></div></div>
+
+      <div class="tasks-list-section">
+        <!-- Task 1: Daily Login -->
+        <div class="task-card">
+          <div class="task-card-row1">
+            <div class="task-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            </div>
+            <div class="task-text">
+              <div class="task-title">နေ့တိုင်း ဂိမ်းထဲ ဝင်ရောက်ပါ</div>
+              <div class="task-desc">1 ကြိမ် ဝင်ရောက်ရင် spin 1 ကြိမ် ရမည်</div>
+            </div>
+            <div id="task1Status"></div>
+          </div>
+          <div class="task-card-row2">
+            <div class="task-reward">
+              <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span class="task-reward-text">+1 Spin</span>
+            </div>
+            <span class="task-timer" id="task1Timer"></span>
+          </div>
+        </div>
+
+        <!-- Task 2: Referral -->
+        <div class="task-card">
+          <div class="task-card-row1">
+            <div class="task-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+            </div>
+            <div class="task-text">
+              <div class="task-title">Referral ကနေ ငွေသွင်းကစားတဲ့သူ ရှိရင်</div>
+              <div class="task-desc">မိတ်ဆက်ပေးတဲ့ Player တစ်ဦးချင်းစီ ငွေသွင်းကစားတိုင်း spin 3 ကြိမ် ရမည်</div>
+            </div>
+          </div>
+          <div class="task-card-row2">
+            <div class="task-reward">
+              <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span class="task-reward-text">+3 Spins</span>
+            </div>
+            <button class="task-action-btn" onclick="window.location.hash='agent'">ဖိတ်ကြားရန်</button>
+          </div>
+        </div>
+
+        <!-- Task 3: Personal Deposit -->
+        <div class="task-card">
+          <div class="task-card-row1">
+            <div class="task-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="task-text">
+              <div class="task-title">ကိုယ်တိုင် ငွေသွင်းကစားပါ</div>
+              <div class="task-desc">ကိုယ်တိုင် ငွေသွင်းပြီး ကစားတိုင်း spin 2 ကြိမ် ရမည်</div>
+            </div>
+          </div>
+          <div class="task-card-row2">
+            <div class="task-reward">
+              <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span class="task-reward-text">+2 Spins</span>
+            </div>
+            <button class="task-action-btn">ငွေသွင်းရန်</button>
+          </div>
+        </div>
+
+        <!-- Task 4: 15-day streak -->
+        <div class="task-card">
+          <div class="task-card-row1">
+            <div class="task-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            </div>
+            <div class="task-text">
+              <div class="task-title">15 ရက်ဆက်တိုက် တစ်ရက်မှမပျက် ဝင်ကစားပါ</div>
+              <div class="task-desc">15 ရက်ဆက်တိုက် ဂိမ်းထဲဝင်ကစားရင် spin 5 ကြိမ် ရမည်</div>
+            </div>
+          </div>
+          <div class="task-card-row2">
+            <div class="task-reward">
+              <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span class="task-reward-text">+5 Spins</span>
+            </div>
+            <div id="streakStatus" class="task-timer">0 / 15 ရက်</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="tasks-divider"><div class="tasks-divider-line"></div><div class="tasks-divider-text">ငါ့မှတ်တမ်း</div><div class="tasks-divider-line"></div></div>
+      <div class="history-section">
+        <div id="spinHistoryList"><div class="history-empty">မှတ်တမ်း မရှိသေးပါ</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT PAGE -->
+  <div class="page-panel" id="agentPage">
+    <div id="agentLocked" class="agent-locked">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1.5" fill="#3a3a6a"/></svg>
+      <p>Agent Panel ကို ဝင်ကြည့်ရန်<br>အကောင့်ဝင်ရောက်ပါ</p>
+      <button class="agent-login-btn" id="agentLoginBtn">အကောင့်ဝင်ရန်</button>
+    </div>
+    <div id="agentUnlocked" style="display:none;flex-direction:column;flex:1;">
+      <div class="agent-header">
+        <div class="agent-header-top">
+          <div class="agent-brand">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="#f5c518" stroke-width="1.5"/><polygon points="12,5 19,9 19,15 12,19 5,15 5,9" fill="rgba(245,197,24,0.15)" stroke="#f5c518" stroke-width="1"/><text x="12" y="14.5" text-anchor="middle" fill="#f5c518" font-size="5.5" font-weight="900" font-family="sans-serif">DB</text></svg>
+            <div><div class="agent-brand-title">Agent Dashboard</div><div class="agent-brand-sub">Diamond-BETT Affiliate</div></div>
+          </div>
+          <div class="agent-header-btns">
+            <button class="wallet-btn deposit" style="padding:7px 12px;font-size:11px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>ငွေသွင်း</button>
+            <button class="wallet-btn withdraw" style="padding:7px 12px;font-size:11px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>ငွေထုတ်</button>
+          </div>
+        </div>
+        <div class="agent-stat-grid">
+          <div class="agent-stat-card"><div class="agent-stat-num">0.00</div><div class="agent-stat-lbl">ကော်မရှင်</div></div>
+          <div class="agent-stat-card"><div class="agent-stat-num" id="statInvited">0</div><div class="agent-stat-lbl">ဖိတ်ခေါ်ခဲ့သူ</div></div>
+          <div class="agent-stat-card"><div class="agent-stat-num" style="color:#22c55e;" id="statBalance">0.00</div><div class="agent-stat-lbl">Balance</div></div>
+        </div>
+      </div>
+      <div class="agent-tabbar" id="agentTabBar">
+        <button class="atab active" data-atab="main">ပင်မ</button>
+        <button class="atab" data-atab="invite">ဖိတ်ခေါ်လင့်</button>
+        <button class="atab" data-atab="mydata">ကျနုပ်၏ ဒေတာ</button>
+        <button class="atab" data-atab="performance">စွမ်းဆောင်ရည်</button>
+        <button class="atab" data-atab="commission">ကော်မရှင်</button>
+        <button class="atab" data-atab="downline">အောက်လက်ငယ်သား</button>
+        <button class="atab" data-atab="lowbet">အဆင့်နိမ့်အလောင်း</button>
+        <button class="atab" data-atab="bank">Bank</button>
+        <button class="atab" data-atab="rebate">ပြန်ပေးကော်မရှင်</button>
+      </div>
+
+      <!-- ပင်မ -->
+      <div id="atab-main" class="atab-content active" style="overflow-y:auto;scrollbar-width:none;flex:1;padding-bottom:16px;">
+        <div class="agent-promo"><div class="agent-promo-label">DIAMOND-BETT AFFILIATE</div><div class="agent-promo-title">မှန်ကန်သော ဖိတ်ကြား</div><div class="agent-promo-sub">ဖိတ်ဆက်ကော်မရှင် ရယူပါ</div><div class="agent-promo-amount">15 သိန်း</div><svg class="agent-promo-deco" width="70" height="70" viewBox="0 0 24 24" fill="none"><polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="#5a1a00" stroke="#5a1a00"/></svg></div>
+        <div class="agent-user-card">
+          <div class="rank-badge">1<div class="rank-help"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="3"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1.2" fill="#ccc"/></svg></div></div>
+          <div style="flex:1;"><div class="user-card-phone" id="agentUserPhone">—</div><div class="user-rank-badge">အမျိုးသားကိုယ်စားလှယ်</div></div>
+          <div class="user-card-right">တာရင်းစပ်မျိုးစုံ: <span>1.00</span><br>တာရင်းသည်ရက်စွဲ: <span id="agentJoinDate">—</span></div>
+        </div>
+        <div class="agent-wallet-card">
+          <div class="wallet-card-header"><span class="wallet-card-title">ကော်မရှင်</span><span class="wallet-countdown" id="commissionCountdown">(နောက်ခြေချချိန်: 00:00:00)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="wallet-row"><div class="wallet-item"><div class="wallet-item-label">ရရှိသည်ငွေ</div><div class="wallet-item-value">0.00</div></div><div class="wallet-item"><div class="wallet-item-label">ဆုလာဘ်</div><div class="wallet-item-value gold">0.00</div></div><button class="wallet-claim-btn">လွတ်...</button></div>
+          <div class="wallet-divider"></div>
+          <div class="wallet-row"><div class="wallet-item"><div class="wallet-item-label">မနေ့ တိုက်ရိုက်ရလဒ်</div><div class="wallet-item-value">0.00</div></div><div class="wallet-item"><div class="wallet-item-label">လစာအပြည်</div><div class="wallet-item-value">0.00</div></div></div>
+        </div>
+        <div class="agent-ticker"><div class="ticker-inner" id="agentTickerText">&rsaquo; သာ ကော်မရှင်: 0.00 &nbsp;&nbsp;&nbsp; &rsaquo; Diamond-BETT Agent System &nbsp;&nbsp;&nbsp; &rsaquo; သာ ကော်မရှင်: 0.00 &nbsp;&nbsp;&nbsp; &rsaquo; Diamond-BETT Agent System &nbsp;&nbsp;&nbsp;</div></div>
+        <div class="agent-invite">
+          <div class="invite-title">သုံးယဆချင်းများကိုဖိတ်ကြားသည်</div>
+          <div class="invite-code-row"><div><span class="invite-code-label">ငါ့ဖိတ်တစ်ကတ်: </span><span class="invite-code-val" id="agentPhoneDisplay">—</span></div><button class="copy-icon-btn" id="copyPhoneBtn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>ကူး</button></div>
+          <div class="invite-qr-row">
+            <div class="qr-placeholder"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/><rect x="2" y="13" width="9" height="9"/><rect x="4" y="4" width="5" height="5" fill="#333"/><rect x="15" y="4" width="5" height="5" fill="#333"/><rect x="4" y="15" width="5" height="5" fill="#333"/><rect x="13" y="13" width="3" height="3" fill="#333"/><rect x="18" y="13" width="3" height="3" fill="#333"/><rect x="13" y="18" width="3" height="3" fill="#333"/><rect x="18" y="18" width="3" height="3" fill="#333"/></svg><span>QR Code</span></div>
+            <div class="invite-link-col">
+              <div class="invite-link-wrap"><input type="text" class="invite-link-input" id="agentShareLinkInput" readonly placeholder="Link loading..."><button class="invite-link-copy" id="agentCopyLinkBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+              <div class="share-btns">
+                <button class="share-btn" id="shareNativeBtn"><div class="share-btn-ico sico-share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></div><span>မျှဝေ</span></button>
+                <button class="share-btn" onclick="shareVia('telegram')"><div class="share-btn-ico sico-telegram"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg></div><span>Telegram</span></button>
+                <button class="share-btn" onclick="shareVia('viber')"><div class="share-btn-ico sico-viber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><span>Viber</span></button>
+                <button class="share-btn" onclick="shareVia('facebook')"><div class="share-btn-ico sico-facebook"><svg width="17" height="17" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></div><span>Facebook</span></button>
+                <button class="share-btn" onclick="shareVia('whatsapp')"><div class="share-btn-ico sico-wa"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><span>WhatsApp</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="agent-action-row">
+          <button class="agent-action-btn gold-btn"><span>အဆင်ခဲ့ဝန်တီးပါ</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+          <button class="agent-action-btn green-btn"><span>ပြန်ပေး ကော်မရှင်အချိုး</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+        <div class="agent-collection"><div><div class="collection-label">ပဲ့အတွက် စုဆောင်းငွေများ</div><div class="collection-val">0.00</div></div><button class="collection-btn">လွတ်ခ...</button></div>
+      </div>
+
+      <!-- ကျနုပ်၏ ဒေတာ -->
+      <div id="atab-mydata" class="atab-content" style="overflow-y:auto;scrollbar-width:none;flex:1;padding-bottom:16px;">
+        <div class="time-pills" id="timePills">
+          <button class="time-pill active" data-period="today">ဒိနေ့</button>
+          <button class="time-pill" data-period="yesterday">မနေက</button>
+          <button class="time-pill" data-period="this_week">ယဇုအပတ်</button>
+          <button class="time-pill" data-period="last_week">ပြီးခဲ့သောအပတ်</button>
+          <button class="time-pill" data-period="this_month">ဒါလ</button>
+          <button class="time-pill" data-period="last_month">ပြီးခဲ့သည်</button>
+        </div>
+        <div class="md-top-grid">
+          <div class="md-top-card"><div class="md-top-val gold" id="md-total-commission">0.00</div><div class="md-top-lbl">ကော်မရှင်</div></div>
+          <div class="md-top-card"><div class="md-top-val white" id="md-direct-bet">0.00</div><div class="md-top-lbl">တိုက်ရိုက်</div></div>
+          <div class="md-top-card"><div class="md-top-val green" id="md-sub-bet">0.00</div><div class="md-top-lbl">အဆြားစုစုပေါင်း</div></div>
+        </div>
+        <div id="mdLoading" class="md-loading" style="display:none;"><div class="md-spin"></div><span>Data ဆွဲနေသည်...</span></div>
+        <div class="md-section"><div class="md-section-title">ဒေတာအားလုံး (အဆြားလက်အောက်ကယ်သားများပါရိသည်)</div>
+          <div class="md-grid3">
+            <div class="md-cell"><div class="md-cell-lbl">စုစုပေါင်းလူ</div><div class="md-cell-val" id="md-total-members">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက်</div><div class="md-cell-val" id="md-direct-members">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">အဆြားအရေ</div><div class="md-cell-val" id="md-sub-members">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက်စွမ်းဆောင်ရည်</div><div class="md-cell-val" id="md-direct-performance">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">အဆြားစွမ်းဆောင်ရည်</div><div class="md-cell-val" id="md-sub-performance">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">စုစုပေါင်းစွမ်းဆောင်ရည်</div><div class="md-cell-val" id="md-total-performance">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက် အားပြည်သင်းမှ</div><div class="md-cell-val" id="md-direct-savings">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက် ငွေထုတ်</div><div class="md-cell-val" id="md-direct-withdraw">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက် စုစည်းမှ</div><div class="md-cell-val" id="md-direct-total-savings">0.00</div></div>
+          </div>
+          <div class="md-grid2">
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">ထိရောက်သော လောင်းကစား</div><div class="md-cell-val" id="md-effective-bets">0.00</div></div>
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">အဆင့်အပြတ် စုစည်းမှ</div><div class="md-cell-val" id="md-level-savings">0.00</div></div>
+          </div>
+        </div>
+        <div class="md-section"><div class="md-section-title">ငါ့စုစုပေါင်းဝင်ငွေ</div>
+          <div class="md-grid3">
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက်ကော်မရှင်</div><div class="md-cell-val gold" id="md-direct-commission">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">အဆြားကော်မရှင်</div><div class="md-cell-val gold" id="md-sub-commission">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">စုစုပေါင်းကော်မရှင်</div><div class="md-cell-val gold" id="md-total-commission2">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ဆုလာဘ်</div><div class="md-cell-val" id="md-bonus">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ရရှိသည်ငွေ</div><div class="md-cell-val" id="md-received">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">လစာအပြည်</div><div class="md-cell-val" id="md-salary">0.00</div></div>
+          </div>
+          <div class="md-grid2">
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">ပရိမိုးရှင်းမှ စုဆောင်းငွေ</div><div class="md-cell-val" id="md-promo-savings">0.00</div></div>
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">အောင်စီးဝင်ပင်းများအတွက် စုဆောင်းငွေ</div><div class="md-cell-val" id="md-achievement-savings">0.00</div></div>
+          </div>
+        </div>
+        <div class="md-section"><div class="md-section-title">အောက်လက်ကယ်သား၏ တာရင်းဒေယား</div>
+          <div class="md-grid3">
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက် မှတ်ပုံတင်ခြင်း</div><div class="md-cell-val" id="md-direct-reg">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ငွေသွင်းသူ အရေ</div><div class="md-cell-val" id="md-deposited-members">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ပထမဆုံး ငွေသွင်းသူ</div><div class="md-cell-val" id="md-first-dep-members">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ပထမ ငွေသွင်းမကာ</div><div class="md-cell-val" id="md-reg-first-dep">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ငွေသွင်းမကာ</div><div class="md-cell-val" id="md-deposit-total">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ပထမဆုံး ငွေသွင်းမကာ</div><div class="md-cell-val" id="md-first-dep-total">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ပထမ ငွေထုတ်မကာ</div><div class="md-cell-val" id="md-reg-first-withdraw">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ငွေထုတ်မကာ</div><div class="md-cell-val" id="md-withdraw-total">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ငွေထုတ်အရေ</div><div class="md-cell-val" id="md-withdraw-count">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">ဆုလာဘ်တောင်းဆို</div><div class="md-cell-val" id="md-bonus-requests">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">Negative count</div><div class="md-cell-val" id="md-negative-count">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">Valid Bets</div><div class="md-cell-val" id="md-valid-bets">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">Bet count</div><div class="md-cell-val" id="md-bet-count">0</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">Win / Loss</div><div class="md-cell-val" id="md-win-loss">0.00</div></div>
+            <div class="md-cell"><div class="md-cell-lbl">တိုက်ရိုက်စွမ်းဆောင်ရည်</div><div class="md-cell-val" id="md-direct-perf2">0.00</div></div>
+          </div>
+        </div>
+        <div class="md-section"><div class="md-section-title">တိုက်ရိုက်ဝင်ငွေမှ</div>
+          <div class="md-grid3">
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">တိုက်ရိုက်ကော်မရှင်</div><div class="md-cell-val gold" id="md-direct-income-commission">0.00</div></div>
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">အဆြားကော်မရှင်</div><div class="md-cell-val gold" id="md-sub-income-commission">0.00</div></div>
+            <div class="md-cell md-last-row"><div class="md-cell-lbl">စုစုပေါင်းကော်မရှင်</div><div class="md-cell-val gold" id="md-total-income-commission">0.00</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOWNLINE TAB -->
+      <div id="atab-downline" class="atab-content" style="flex:1;flex-direction:column;">
+        <div class="dl-filter-bar">
+          <button class="dl-filter-btn" id="dlDateBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span id="dlDateLabel">ဒီနေ့</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dl-filter-relative" id="dlRoleWrap">
+            <button class="dl-filter-btn" id="dlRoleBtn" style="width:100%;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+              <span id="dlRoleLabel" style="flex:1;text-align:left;">ဝင်သည့်ရက်</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="dl-role-dropdown" id="dlRoleDropdown">
+              <div class="dl-role-option active" data-sort="date">အကောင့်ဝင်သည့်ရက်စွဲ အလိုက်စီ</div>
+              <div class="dl-role-option" data-sort="count">လက်အောက်ကယ်သားအရေ အလိုက်စီ</div>
+              <div class="dl-role-option" data-sort="deposit">ငွေသွင်းမကာ အလိုက်စီ</div>
+              <div class="dl-role-option" data-sort="bets">မှန်ကန်သောကစားမှု အများဆုံး</div>
+            </div>
+          </div>
+          <button class="dl-filter-btn" id="dlSearchToggle" style="flex:0 0 auto;padding:8px 10px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span>ID</span>
+          </button>
+        </div>
+        <div class="dl-search-bar" id="dlSearchBar">
+          <div class="dl-search-inner">
+            <input type="text" class="dl-search-input" id="dlSearchInput" placeholder="အောက်လက်ငယ်သား ID ထည့်ပါ">
+            <button class="dl-search-submit" id="dlSearchSubmit">ရှာ</button>
+          </div>
+        </div>
+        <div class="dl-content" id="dlContent">
+          <!-- Empty state (default) -->
+          <div class="dl-empty" id="dlEmpty">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" opacity=".25">
+              <path d="M5 8h14l-1 13H6L5 8z" stroke="#9890c0" stroke-width="1.2"/>
+              <path d="M3 8h18M9 8V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="#9890c0" stroke-width="1.2"/>
+              <path d="M14 4l3-3" stroke="#9890c0" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M17 1l1 1" stroke="#9890c0" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <div class="dl-empty-text">အကြောင်းအရာများ ယာယီ မရှိသေးပါ</div>
+            <div class="dl-empty-sub">Data ရှိပါက ဤနေရာတွင် ပြသမည်</div>
+          </div>
+          <!-- Data table (hidden by default) -->
+          <div class="dl-table-wrap" id="dlTableWrap" style="display:none;">
+            <table class="dl-table">
+              <thead><tr><th>အကောင့်</th><th>အဆင့်</th><th>ဝင်ရောက်ရက်</th><th>Bet</th><th>Deposit</th></tr></thead>
+              <tbody id="dlTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other tabs -->
+      <div id="atab-invite" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><p>ဖိတ်ခေါ်လင့် — Coming Soon</p></div></div>
+      <div id="atab-performance" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><p>စွမ်းဆောင်ရည် — Coming Soon</p></div></div>
+      <div id="atab-commission" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p>ကော်မရှင် — Coming Soon</p></div></div>
+      <div id="atab-lowbet" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><p>အဆင့်နိမ့်အလောင်း — Coming Soon</p></div></div>
+      <div id="atab-bank" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9l9-6 9 6M9 9v12M15 9v12M3 13h18"/></svg><p>Bank — Coming Soon</p></div></div>
+      <div id="atab-rebate" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg><p>ပြန်ပေးကော်မရှင် — Coming Soon</p></div></div>
+    </div>
+  </div>
+
+  <!-- CS PAGE -->
+  <div class="page-panel" id="csPage"><div class="coming-soon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>CS — Coming Soon</p></div></div>
+  <!-- ACCOUNT PAGE -->
+  <div class="page-panel" id="accountPage"><div class="coming-soon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p>Account — Coming Soon</p></div></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bnav-btn active" data-nav="home"><span class="bnav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/><path d="M21 22H3"/></svg></span><span>Home</span></button>
+  <button class="bnav-btn" data-nav="tasks"><span class="bnav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span><span>Tasks</span></button>
+  <button class="bnav-btn" data-nav="agent"><span class="bnav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Agent</span></button>
+  <button class="bnav-btn" data-nav="cs"><span class="bnav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span>CS</span></button>
+  <button class="bnav-btn" data-nav="account"><span class="bnav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>Account</span></button>
+</nav>
+
+<!-- DATE PICKER MODAL -->
+<div class="overlay-backdrop" id="dlBackdrop"></div>
+<div class="dl-date-modal" id="dlDateModal">
+  <div class="dl-modal-handle"></div>
+  <div class="dl-modal-title">ရက်စွဲ ရွေးချယ်ပါ</div>
+  <div class="dl-period-grid">
+    <button class="dl-period-btn active" data-period="today">ဒီနေ့</button>
+    <button class="dl-period-btn" data-period="yesterday">မနေက</button>
+    <button class="dl-period-btn" data-period="this_week">ယဇုအပတ်</button>
+    <button class="dl-period-btn" data-period="last_week">ပြီးခဲ့သောအပတ်</button>
+    <button class="dl-period-btn" data-period="this_month">ဒါလ</button>
+    <button class="dl-period-btn" data-period="last_month">ပြီးခဲ့သည်</button>
+    <button class="dl-period-btn" data-period="all">အားလုံး</button>
+  </div>
+  <div class="dl-custom-title">စိတ်ကြိုက် ရက်ပိုင်းရွေး</div>
+  <div class="dl-date-pickers">
+    <div>
+      <div class="dl-picker-label">စတင်ရက်</div>
+      <div class="dl-picker-selects">
+        <select id="dlStartYear"></select>
+        <select id="dlStartMonth"></select>
+        <select id="dlStartDay"></select>
+      </div>
+    </div>
+    <div>
+      <div class="dl-picker-label">ပြီးဆုံးရက်</div>
+      <div class="dl-picker-selects">
+        <select id="dlEndYear"></select>
+        <select id="dlEndMonth"></select>
+        <select id="dlEndDay"></select>
+      </div>
+    </div>
+  </div>
+  <div class="dl-modal-actions">
+    <button class="dl-btn-cancel" id="dlDateCancel">မလုပ်တော့ပေ</button>
+    <button class="dl-btn-confirm" id="dlDateConfirm">အတည်ပြု</button>
+  </div>
+</div>
+
+<!-- SPIN RESULT POPUP -->
+<div class="spin-result-overlay" id="spinResultOverlay">
+  <div class="spin-result-card">
+    <div class="spin-result-label">ဝမ်းသာပါသည်</div>
+    <div id="spinResultContent"></div>
+    <button class="spin-result-close" id="spinResultClose">ပိတ်မည်</button>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal">
+  <div class="modal-sheet">
+    <div class="auth-tabs">
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg><span>မှတ်ပုံတင်</span></button>
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><span>လော့ဂ်အင်</span></button>
+    </div>
+    <div class="auth-body">
+      <div id="registerForm" style="display:none;">
+        <p class="auth-subtitle">အဆင်တော်ပါသည်! အကောင် မှတ်ပုံတင်ပါ</p>
+        <div class="input-group"><span class="inp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><input type="text" id="regName" placeholder="* နာမည်"></div>
+        <div class="input-group"><span class="inp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><input type="password" id="regPassword" placeholder="* စကားဝှက်"><button class="eye-toggle" onclick="toggleEye('regPassword',this)" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        <div class="ref-row"><span class="ref-row-label">ဆွန်အား</span><div class="ref-dots"><div class="ref-dot" style="background:#e74c3c;"></div><div class="ref-dot" style="background:#e67e22;"></div><div class="ref-dot" style="background:#2ecc71;"></div><div class="ref-dot" style="background:#3498db;"></div></div><div class="ref-input-wrap"><input type="text" id="referrer_code_input" placeholder="Referral Code" maxlength="10"></div></div>
+        <div class="phone-wrap"><div class="phone-prefix">🇲🇲 +95</div><input type="tel" class="phone-input" id="regPhone" placeholder="* ဖုန်းနံပါတ်"></div>
+        <div class="age-check"><input type="checkbox" id="ageCheck"><label for="ageCheck">ကျွန်ုပ်သည် အသက် 18 နှစ်ကျော်သည် 《<a href="#">Terms</a>》ကို ဖတ်ပြီး သဘောတူသည်</label></div>
+        <button class="auth-submit" id="registerBtn">မှတ်ပုံတင်</button>
+        <div class="auth-footer-link"><a href="#">ညည်ဝန်ဆောင်မှု</a></div>
+      </div>
+      <div id="loginForm">
+        <p class="auth-subtitle">ကြိုဆိုပါသည်! အကောင့်ဝင်ပါ</p>
+        <div class="phone-wrap"><div class="phone-prefix">🇲🇲 +95</div><input type="tel" class="phone-input" id="loginPhone" placeholder="* ဖုန်းနံပါတ်"></div>
+        <div class="input-group"><span class="inp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><input type="password" id="loginPassword" placeholder="* စကားဝှက်"><button class="eye-toggle" onclick="toggleEye('loginPassword',this)" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        <button class="auth-submit" id="loginBtn">ဝင်ရန်</button>
+        <div class="auth-footer-link"><a href="#">ညည်ဝန်ဆောင်မှု</a></div>
+      </div>
+    </div>
+    <button class="modal-close" id="modalCloseBtn">&#x2715;</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
