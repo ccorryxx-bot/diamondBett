@@ -4,25 +4,25 @@
 function switchTab(tab) {
   document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
   document.getElementById('loginForm').style.display    = tab==='login'?'block':'none';
-  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
-  document.getElementById('tabLogin').classList.toggle('active',    tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
 }
-function toggleEye(id, btn) {
-  const inp = document.getElementById(id);
-  inp.type = inp.type==='password'?'text':'password';
-  btn.style.color = inp.type==='text'?'#f5c518':'rgba(255,255,255,.5)';
+function toggleEye(id,btn){
+  const inp=document.getElementById(id);
+  inp.type=inp.type==='password'?'text':'password';
+  btn.style.color=inp.type==='text'?'#f5c518':'rgba(255,255,255,.5)';
 }
-function shareVia(platform) {
-  const link = document.getElementById('agentShareLinkInput')?.value;
-  if (!link||link==='—') return alert("Login ဝင်ပြီးမှ Share လုပ်ပါ");
-  const text = encodeURIComponent(`Diamond-BETT မှ ဖိတ်ကြားပါသည်! ${link}`);
-  const urls = {
+function shareVia(platform){
+  const link=document.getElementById('agentShareLinkInput')?.value;
+  if(!link||link==='—')return alert("Login ဝင်ပြီးမှ Share လုပ်ပါ");
+  const text=encodeURIComponent(`Diamond-BETT မှ ဖိတ်ကြားပါသည်! ${link}`);
+  const urls={
     telegram:`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`,
     viber:`viber://forward?text=${text}`,
     facebook:`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`,
     whatsapp:`https://wa.me/?text=${text}`
   };
-  if (urls[platform]) window.open(urls[platform],'_blank');
+  if(urls[platform])window.open(urls[platform],'_blank');
 }
 function fmt(v,d=2){const n=parseFloat(v);return isNaN(n)?'0.00':n.toFixed(d);}
 function setEl(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
@@ -33,23 +33,68 @@ function setEl(id,val){const el=document.getElementById(id);if(el)el.textContent
 document.addEventListener("DOMContentLoaded",()=>{
 
   // SUPABASE
-  const supabaseUrl = "https://xjqrwcsxiaybpztzestb.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcXJ3Y3N4aWF5YnB6dHplc3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NzQxMDksImV4cCI6MjA5NDM1MDEwOX0.Kn5sLOTBdNtlooaH-q8ml0cOEswMlgMTSP7GFe7mbxg";
-  const supabase = window.supabase.createClient(supabaseUrl,supabaseKey);
+  const supabaseUrl="https://xjqrwcsxiaybpztzestb.supabase.co";
+  const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcXJ3Y3N4aWF5YnB6dHplc3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NzQxMDksImV4cCI6MjA5NDM1MDEwOX0.Kn5sLOTBdNtlooaH-q8ml0cOEswMlgMTSP7GFe7mbxg";
+  const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
 
-  let currentUserId  = null;
-  let currentAgentId = null;
-  let availableSpins = 0;
+  let currentUserId=null,currentAgentId=null,availableSpins=0;
 
   // ?ref= auto-fill
-  const urlParams = new URLSearchParams(window.location.search);
-  const invitedBy = urlParams.get('ref');
-  if (invitedBy) {
-    const ri = document.getElementById('referrer_code_input');
-    if (ri){ri.value=invitedBy;ri.readOnly=true;}
+  const urlParams=new URLSearchParams(window.location.search);
+  const invitedBy=urlParams.get('ref');
+  if(invitedBy){
+    const ri=document.getElementById('referrer_code_input');
+    if(ri){ri.value=invitedBy;ri.readOnly=true;}
     switchTab('register');
     document.getElementById('authModal').classList.add('active');
   }
+
+  // ============================================================
+  // NAVIGATION — absolute page panels, single active
+  // ============================================================
+  function showPage(nav){
+    document.querySelectorAll('.page-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('topArea').style.display='';
+
+    if(nav==='home'){
+      document.getElementById('homePage').classList.add('active');
+    } else if(nav==='tasks'){
+      document.getElementById('topArea').style.display='none';
+      document.getElementById('tasksPage').classList.add('active');
+      if(currentUserId&&availableSpins>0)document.getElementById('spinBtn').disabled=false;
+    } else if(nav==='agent'){
+      document.getElementById('topArea').style.display='none';
+      document.getElementById('agentPage').classList.add('active');
+    } else if(nav==='cs'){
+      document.getElementById('csPage').classList.add('active');
+    } else if(nav==='account'){
+      document.getElementById('accountPage').classList.add('active');
+    }
+  }
+
+  // Initial page — home
+  showPage('home');
+  document.querySelector('.bnav-btn[data-nav="home"]').classList.add('active');
+
+  document.querySelectorAll(".bnav-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".bnav-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      showPage(btn.dataset.nav);
+    });
+  });
+
+  document.querySelectorAll(".cat-item").forEach(item=>{
+    item.addEventListener("click",()=>{
+      document.querySelectorAll(".cat-item").forEach(el=>el.classList.remove("active"));
+      item.classList.add("active");
+    });
+  });
+
+  document.getElementById("langBtn").addEventListener("click",()=>{
+    const isEn=document.getElementById('langLabel').textContent==='မြန်မာ';
+    setEl('langLabel',isEn?'EN':'မြန်မာ');
+  });
 
   // ============================================================
   // BANNER
@@ -92,29 +137,77 @@ document.addEventListener("DOMContentLoaded",()=>{
   loadGamesFromDB();
 
   // ============================================================
-  // DASHBOARD STATS — NEW: fetches real commission for header
+  // AGENT LEVEL MODAL
+  // ============================================================
+  const agentLevels=[
+    {lv:1,req:0},{lv:2,req:100},{lv:3,req:300},{lv:4,req:500},
+    {lv:5,req:800},{lv:6,req:1000},{lv:7,req:10000},{lv:8,req:30000},
+    {lv:9,req:50000},{lv:10,req:80000},{lv:11,req:100000},{lv:12,req:1000000},
+    {lv:13,req:3000000},{lv:14,req:5000000},{lv:15,req:8000000},
+    {lv:16,req:10000000},{lv:17,req:100000000},{lv:18,req:300000000},
+    {lv:19,req:500000000},{lv:20,req:800000000},
+  ];
+
+  function getLevelColor(lv){
+    if(lv<=2)return{a:'#CD7F32',b:'#8B4513'};
+    if(lv<=4)return{a:'#A8A9AD',b:'#606060'};
+    if(lv<=6)return{a:'#FFD700',b:'#B8860B'};
+    if(lv<=8)return{a:'#4169E1',b:'#1E3A8A'};
+    if(lv<=10)return{a:'#A855F7',b:'#6B21A8'};
+    if(lv<=14)return{a:'#F97316',b:'#C2410C'};
+    if(lv<=16)return{a:'#06B6D4',b:'#0E7490'};
+    if(lv<=18)return{a:'#C084FC',b:'#7E22CE'};
+    return{a:'#EF4444',b:'#991B1B'};
+  }
+
+  function buildLevelModal(){
+    const body=document.getElementById('levelModalBody');
+    const userLv=parseInt(document.getElementById('userLevelNum').textContent)||1;
+    body.innerHTML=agentLevels.map(({lv,req})=>{
+      const{a,b}=getLevelColor(lv);
+      const isCurrent=lv===userLv;
+      const svg=`<svg width="36" height="36" viewBox="0 0 36 36">
+        <defs><linearGradient id="g${lv}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${a}"/><stop offset="100%" stop-color="${b}"/></linearGradient></defs>
+        <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="url(#g${lv})" opacity=".25" stroke="${a}" stroke-width="1.5"/>
+        <polygon points="18,6 28,12 28,24 18,30 8,24 8,12" fill="url(#g${lv})" opacity=".6"/>
+        <text x="18" y="22" text-anchor="middle" fill="white" font-size="${lv>=10?9:11}" font-weight="900" font-family="sans-serif">${lv}</text>
+      </svg>`;
+      return `<div class="level-row${isCurrent?' current-level':''}">
+        <div class="level-badge-icon">${svg}</div>
+        <div class="level-row-name" style="color:${isCurrent?'var(--accent)':'#fff'}">LV${lv}${isCurrent?' ✓':''}</div>
+        <div class="level-row-req" style="color:${a}">${req===0?'0.00':req.toLocaleString()+'.00'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('levelBtn').addEventListener('click',()=>{
+    buildLevelModal();
+    document.getElementById('levelModal').classList.add('show');
+  });
+  document.getElementById('levelModalClose').addEventListener('click',()=>{
+    document.getElementById('levelModal').classList.remove('show');
+  });
+  document.getElementById('levelModal').addEventListener('click',e=>{
+    if(e.target===document.getElementById('levelModal'))
+      document.getElementById('levelModal').classList.remove('show');
+  });
+
+  // ============================================================
+  // DASHBOARD STATS
   // ============================================================
   async function loadDashboardStats(userId){
-    const{data,error}=await supabase
-      .from('agent_dashboard_stats')
-      .select('today_commission,total_commission,direct_members,received,bonus,yesterday_commission,salary')
-      .eq('agent_id',userId)
-      .eq('period','today')
-      .single();
+    const{data,error}=await supabase.from('agent_dashboard_stats')
+      .select('today_commission,direct_members,received,bonus,yesterday_commission,salary')
+      .eq('agent_id',userId).eq('period','today').single();
     if(error||!data)return;
-    setEl('statCommission', fmt(data.today_commission));
-    setEl('statInvited',    data.direct_members??0);
-    // Populate wallet card with today's data
-    setEl('walletReceived',  fmt(data.received));
-    setEl('walletBonus',     fmt(data.bonus));
-    setEl('walletYesterday', fmt(data.yesterday_commission));
-    setEl('walletSalary',    fmt(data.salary));
-    // Update ticker
+    setEl('statCommission',fmt(data.today_commission));
+    setEl('statInvited',data.direct_members??0);
+    setEl('walletReceived',fmt(data.received));
+    setEl('walletBonus',fmt(data.bonus));
+    setEl('walletYesterday',fmt(data.yesterday_commission));
+    setEl('walletSalary',fmt(data.salary));
     const ticker=document.getElementById('agentTickerText');
-    if(ticker){
-      const t=` &rsaquo; သာ ကော်မရှင်: ${fmt(data.today_commission)} &nbsp;&nbsp;&nbsp; &rsaquo; Diamond-BETT Affiliate &nbsp;&nbsp;&nbsp;`;
-      ticker.innerHTML=t+t;
-    }
+    if(ticker){const t=` &rsaquo; Agent ကော်မရှင်: ${fmt(data.today_commission)} &nbsp;&nbsp;&nbsp; &rsaquo; Diamond-BETT Affiliate &nbsp;&nbsp;&nbsp;`;ticker.innerHTML=t+t;}
   }
 
   // ============================================================
@@ -126,46 +219,34 @@ document.addEventListener("DOMContentLoaded",()=>{
     const{data,error}=await supabase.from('agent_dashboard_stats').select('*').eq('agent_id',agentId).eq('period',period).single();
     if(loading)loading.style.display='none';
     if(error||!data)return;
-    setEl('md-total-commission',fmt(data.total_commission));
-    setEl('md-direct-bet',fmt(data.direct_bet_amount));
-    setEl('md-sub-bet',fmt(data.sub_bet_amount));
-    setEl('md-total-members',data.total_members??0);
-    setEl('md-direct-members',data.direct_members??0);
-    setEl('md-sub-members',data.sub_members??0);
-    setEl('md-direct-performance',fmt(data.direct_performance));
-    setEl('md-sub-performance',fmt(data.sub_performance));
-    setEl('md-total-performance',fmt(data.total_performance));
-    setEl('md-direct-savings',fmt(data.direct_savings));
-    setEl('md-direct-withdraw',fmt(data.direct_withdraw_savings));
-    setEl('md-direct-total-savings',fmt(data.direct_total_savings));
-    setEl('md-effective-bets',fmt(data.effective_bets));
-    setEl('md-level-savings',fmt(data.level_savings));
-    setEl('md-direct-commission',fmt(data.direct_commission));
-    setEl('md-sub-commission',fmt(data.sub_commission));
-    setEl('md-total-commission2',fmt(data.total_commission));
-    setEl('md-bonus',fmt(data.bonus));
-    setEl('md-received',fmt(data.received));
-    setEl('md-salary',fmt(data.salary));
-    setEl('md-promo-savings',fmt(data.promotion_savings));
-    setEl('md-achievement-savings',fmt(data.achievement_savings));
-    setEl('md-direct-reg',data.direct_registrations??0);
-    setEl('md-deposited-members',data.deposited_members??0);
-    setEl('md-first-dep-members',data.first_deposit_members??0);
-    setEl('md-reg-first-dep',data.reg_first_deposit??0);
-    setEl('md-deposit-total',fmt(data.deposit_total));
-    setEl('md-first-dep-total',fmt(data.first_deposit_total));
-    setEl('md-reg-first-withdraw',fmt(data.reg_first_withdraw));
-    setEl('md-withdraw-total',fmt(data.withdrawal_total));
-    setEl('md-withdraw-count',data.withdrawal_count??0);
-    setEl('md-bonus-requests',fmt(data.bonus_requests));
-    setEl('md-negative-count',data.negative_count??0);
-    setEl('md-valid-bets',fmt(data.valid_bets));
-    setEl('md-bet-count',data.bet_count??0);
-    setEl('md-win-loss',fmt(data.win_loss));
-    setEl('md-direct-perf2',fmt(data.direct_performance));
-    setEl('md-direct-income-commission',fmt(data.direct_commission));
-    setEl('md-sub-income-commission',fmt(data.sub_commission));
-    setEl('md-total-income-commission',fmt(data.total_commission));
+    const map={
+      'md-total-commission':fmt(data.total_commission),
+      'md-direct-bet':fmt(data.direct_bet_amount),
+      'md-sub-bet':fmt(data.sub_bet_amount),
+      'md-total-members':data.total_members??0,
+      'md-direct-members':data.direct_members??0,
+      'md-sub-members':data.sub_members??0,
+      'md-direct-performance':fmt(data.direct_performance),
+      'md-sub-performance':fmt(data.sub_performance),
+      'md-total-performance':fmt(data.total_performance),
+      'md-direct-savings':fmt(data.direct_savings),
+      'md-direct-withdraw':fmt(data.direct_withdraw_savings),
+      'md-direct-total-savings':fmt(data.direct_total_savings),
+      'md-effective-bets':fmt(data.effective_bets),
+      'md-level-savings':fmt(data.level_savings),
+      'md-direct-commission':fmt(data.direct_commission),
+      'md-sub-commission':fmt(data.sub_commission),
+      'md-total-commission2':fmt(data.total_commission),
+      'md-bonus':fmt(data.bonus),
+      'md-received':fmt(data.received),
+      'md-salary':fmt(data.salary),
+      'md-promo-savings':fmt(data.promotion_savings),
+      'md-achievement-savings':fmt(data.achievement_savings),
+      'md-direct-income-commission':fmt(data.direct_commission),
+      'md-sub-income-commission':fmt(data.sub_commission),
+      'md-total-income-commission':fmt(data.total_commission),
+    };
+    Object.entries(map).forEach(([id,val])=>setEl(id,val));
   }
 
   document.getElementById('timePills')?.addEventListener('click',e=>{
@@ -179,42 +260,30 @@ document.addEventListener("DOMContentLoaded",()=>{
   // ============================================================
   // DOWNLINE
   // ============================================================
-  let dlCurrentPeriod='today';
-
   const dlBackdrop=document.getElementById('dlBackdrop');
   const dlDateModal=document.getElementById('dlDateModal');
+  const openDl=()=>{dlBackdrop.classList.add('show');dlDateModal.classList.add('show');};
+  const closeDl=()=>{dlBackdrop.classList.remove('show');dlDateModal.classList.remove('show');};
+  const closeRole=()=>{document.getElementById('dlRoleDropdown').style.display='none';};
 
-  const openDateModal=()=>{dlBackdrop.classList.add('show');dlDateModal.classList.add('show');};
-  const closeDateModal=()=>{dlBackdrop.classList.remove('show');dlDateModal.classList.remove('show');};
-  const closeRoleDropdown=()=>{document.getElementById('dlRoleDropdown').style.display='none';};
-
-  document.getElementById('dlDateBtn').addEventListener('click',openDateModal);
-  document.getElementById('dlDateCancel').addEventListener('click',closeDateModal);
-  dlBackdrop.addEventListener('click',()=>{closeDateModal();closeRoleDropdown();});
+  document.getElementById('dlDateBtn').addEventListener('click',openDl);
+  document.getElementById('dlDateCancel').addEventListener('click',closeDl);
+  dlBackdrop.addEventListener('click',()=>{closeDl();closeRole();});
   document.getElementById('dlDateConfirm').addEventListener('click',()=>{
     const ap=dlDateModal.querySelector('.dl-period-btn.active');
-    if(ap){dlCurrentPeriod=ap.dataset.period;setEl('dlDateLabel',ap.textContent);}
-    closeDateModal();loadDownline();
+    if(ap)setEl('dlDateLabel',ap.textContent);
+    closeDl();loadDownline();
   });
   dlDateModal.querySelectorAll('.dl-period-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{dlDateModal.querySelectorAll('.dl-period-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});
   });
 
-  // Date selects
+  // Date selects populate
   (function(){
     const now=new Date(),y=now.getFullYear(),m=now.getMonth()+1,d=now.getDate();
-    ['dlStartYear','dlEndYear'].forEach(id=>{
-      const sel=document.getElementById(id);
-      for(let yr=y-2;yr<=y;yr++){const o=document.createElement('option');o.value=yr;o.textContent=yr;if(yr===y)o.selected=true;sel.appendChild(o);}
-    });
-    ['dlStartMonth','dlEndMonth'].forEach(id=>{
-      const sel=document.getElementById(id);
-      for(let mo=1;mo<=12;mo++){const o=document.createElement('option');o.value=String(mo).padStart(2,'0');o.textContent=String(mo).padStart(2,'0');if(mo===m)o.selected=true;sel.appendChild(o);}
-    });
-    ['dlStartDay','dlEndDay'].forEach(id=>{
-      const sel=document.getElementById(id);
-      for(let dy=1;dy<=31;dy++){const o=document.createElement('option');o.value=String(dy).padStart(2,'0');o.textContent=String(dy).padStart(2,'0');if(dy===d)o.selected=true;sel.appendChild(o);}
-    });
+    ['dlStartYear','dlEndYear'].forEach(id=>{const s=document.getElementById(id);for(let yr=y-2;yr<=y;yr++){const o=document.createElement('option');o.value=yr;o.textContent=yr;if(yr===y)o.selected=true;s.appendChild(o);}});
+    ['dlStartMonth','dlEndMonth'].forEach(id=>{const s=document.getElementById(id);for(let mo=1;mo<=12;mo++){const o=document.createElement('option');o.value=String(mo).padStart(2,'0');o.textContent=String(mo).padStart(2,'0');if(mo===m)o.selected=true;s.appendChild(o);}});
+    ['dlStartDay','dlEndDay'].forEach(id=>{const s=document.getElementById(id);for(let dy=1;dy<=31;dy++){const o=document.createElement('option');o.value=String(dy).padStart(2,'0');o.textContent=String(dy).padStart(2,'0');if(dy===d)o.selected=true;s.appendChild(o);}});
   })();
 
   document.getElementById('dlRoleBtn').addEventListener('click',e=>{
@@ -226,12 +295,11 @@ document.addEventListener("DOMContentLoaded",()=>{
     opt.addEventListener('click',()=>{
       document.getElementById('dlRoleDropdown').querySelectorAll('.dl-role-option').forEach(o=>o.classList.remove('active'));
       opt.classList.add('active');
-      const t=opt.textContent;
-      setEl('dlRoleLabel',t.length>8?t.substring(0,8)+'…':t);
-      closeRoleDropdown();loadDownline();
+      const t=opt.textContent;setEl('dlRoleLabel',t.length>8?t.substring(0,8)+'…':t);
+      closeRole();loadDownline();
     });
   });
-  document.addEventListener('click',()=>closeRoleDropdown());
+  document.addEventListener('click',()=>closeRole());
 
   document.getElementById('dlSearchToggle').addEventListener('click',()=>{
     const bar=document.getElementById('dlSearchBar');
@@ -261,31 +329,40 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 
   // ============================================================
+  // AGENT TAB SWITCHING
+  // ============================================================
+  document.getElementById('agentTabBar').addEventListener('click',e=>{
+    const btn=e.target.closest('.atab');if(!btn)return;
+    document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.atab-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    const target=document.getElementById('atab-'+btn.dataset.atab);
+    if(target)target.classList.add('active');
+    if(btn.dataset.atab==='mydata'&&currentAgentId){
+      const p=document.querySelector('.time-pill.active')?.dataset.period||'today';
+      loadMyData(currentAgentId,p);
+    }
+    if(btn.dataset.atab==='downline'&&currentAgentId)loadDownline();
+  });
+
+  // ============================================================
   // LUCKY WHEEL
   // ============================================================
   const wheelSlots=[
-    {label:'5,000',amount:5000,color:'#6B1010',dark:'#3D0707'},
-    {label:'15,000',amount:15000,color:'#3D0707',dark:'#6B1010'},
-    {label:'30,000',amount:30000,color:'#6B1010',dark:'#3D0707'},
-    {label:'50,000',amount:50000,color:'#3D0707',dark:'#6B1010'},
-    {label:'65,000',amount:65000,color:'#6B1010',dark:'#3D0707'},
-    {label:'80,000',amount:80000,color:'#3D0707',dark:'#6B1010'},
-    {label:'ဗလာ',amount:0,color:'#151525',dark:'#0D0D18'},
-    {label:'ဗလာ',amount:0,color:'#0D0D18',dark:'#151525'},
+    {label:'5,000',amount:5000,color:'#6B1010'},{label:'15,000',amount:15000,color:'#3D0707'},
+    {label:'30,000',amount:30000,color:'#6B1010'},{label:'50,000',amount:50000,color:'#3D0707'},
+    {label:'65,000',amount:65000,color:'#6B1010'},{label:'80,000',amount:80000,color:'#3D0707'},
+    {label:'ဗလာ',amount:0,color:'#151525'},{label:'ဗလာ',amount:0,color:'#0D0D18'},
   ];
   const turnoverMult={5000:5,15000:6,30000:7,50000:10,65000:12,80000:15};
-
   const canvas=document.getElementById('wheelCanvas');
   const ctx=canvas.getContext('2d');
   let wheelAngle=0,isSpinning=false,animId=null;
 
   function drawWheel(angle){
-    const sz=260,cx=sz/2,cy=sz/2,r=118;
-    const sa=(Math.PI*2)/8;
+    const sz=260,cx=sz/2,cy=sz/2,r=118,sa=(Math.PI*2)/8;
     ctx.clearRect(0,0,sz,sz);
-    // Outer ring
-    ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);
-    ctx.strokeStyle='#C9A227';ctx.lineWidth=4;ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);ctx.strokeStyle='#C9A227';ctx.lineWidth=4;ctx.stroke();
     wheelSlots.forEach((slot,i)=>{
       const start=angle+i*sa,end=start+sa;
       ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
@@ -298,7 +375,6 @@ document.addEventListener("DOMContentLoaded",()=>{
       ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=4;
       ctx.fillText(slot.label,r*0.62,0);ctx.restore();
     });
-    // Center
     const cg=ctx.createRadialGradient(cx-5,cy-5,3,cx,cy,22);
     cg.addColorStop(0,'#FFE55C');cg.addColorStop(1,'#8B6014');
     ctx.beginPath();ctx.arc(cx,cy,22,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
@@ -310,16 +386,13 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   function spinToSlot(slotIndex,onDone){
     if(isSpinning)return;
-    isSpinning=true;
-    document.getElementById('spinBtn').disabled=true;
-    const idx=(slotIndex-1)%8;
-    const sa=(Math.PI*2)/8;
+    isSpinning=true;document.getElementById('spinBtn').disabled=true;
+    const idx=(slotIndex-1)%8,sa=(Math.PI*2)/8;
     const targetBase=(3*Math.PI/2)-idx*sa-sa/2;
     const curMod=((wheelAngle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
     const tgtMod=((targetBase%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
-    let diff=tgtMod-curMod; if(diff<0)diff+=Math.PI*2;
-    const total=6*Math.PI*2+diff;
-    const end=wheelAngle+total,start=wheelAngle,t0=performance.now();
+    let diff=tgtMod-curMod;if(diff<0)diff+=Math.PI*2;
+    const total=6*Math.PI*2+diff,end=wheelAngle+total,start=wheelAngle,t0=performance.now();
     const ease=t=>1-Math.pow(1-t,3);
     function animate(now){
       const t=Math.min((now-t0)/5000,1);
@@ -328,18 +401,6 @@ document.addEventListener("DOMContentLoaded",()=>{
       else{animId=null;wheelAngle=end;isSpinning=false;onDone&&onDone();}
     }
     animId=requestAnimationFrame(animate);
-  }
-
-  function showSpinResult(slot){
-    const overlay=document.getElementById('spinResultOverlay');
-    const content=document.getElementById('spinResultContent');
-    if(slot.amount===0){
-      content.innerHTML=`<div class="spin-result-blank">ဗလာ — သင်ကံမကောင်းပါ</div><div class="spin-result-unit" style="margin-bottom:16px;">ထပ်ကြိုးစားပါ</div>`;
-    } else {
-      const to=slot.amount*turnoverMult[slot.amount];
-      content.innerHTML=`<div class="spin-result-amount">${slot.amount.toLocaleString()}</div><div class="spin-result-unit">ကျပ် ရရှိသည်</div><div class="spin-result-turnover">Turnover လိုအပ်ချက်: <strong style="color:var(--gold2);">${to.toLocaleString()} ကျပ်</strong><br>(${slot.amount.toLocaleString()} × ${turnoverMult[slot.amount]})</div>`;
-    }
-    overlay.classList.add('show');
   }
 
   document.getElementById('spinResultClose').addEventListener('click',()=>document.getElementById('spinResultOverlay').classList.remove('show'));
@@ -352,11 +413,19 @@ document.addEventListener("DOMContentLoaded",()=>{
     availableSpins--;setEl('availableSpins',availableSpins);
     const slot=wheelSlots[(data.slot_index-1)%8];
     spinToSlot(data.slot_index,()=>{
-      showSpinResult(slot);
+      const overlay=document.getElementById('spinResultOverlay');
+      const content=document.getElementById('spinResultContent');
+      if(slot.amount===0){
+        content.innerHTML=`<div class="spin-result-blank">ဗလာ — သင်ကံမကောင်းပါ</div><div class="spin-result-unit" style="margin-bottom:16px;">ထပ်ကြိုးစားပါ</div>`;
+      } else {
+        const to=slot.amount*turnoverMult[slot.amount];
+        content.innerHTML=`<div class="spin-result-amount">${slot.amount.toLocaleString()}</div><div class="spin-result-unit">ကျပ် ရရှိသည်</div><div class="spin-result-turnover">Turnover: <strong style="color:var(--gold2);">${to.toLocaleString()} ကျပ်</strong><br>(${slot.amount.toLocaleString()} × ${turnoverMult[slot.amount]})</div>`;
+      }
+      overlay.classList.add('show');
       const list=document.getElementById('spinHistoryList');
       const now=new Date().toLocaleString('en-GB');
       const item=document.createElement('div');item.className='history-item';
-      item.innerHTML=`<span class="history-date">${now}</span><span class="history-desc">Lucky Wheel ဆော့ကစား</span><span class="history-amount">${slot.amount>0?'+'+slot.amount.toLocaleString()+' ကျပ်':'ဗလာ'}</span>`;
+      item.innerHTML=`<span class="history-date">${now}</span><span class="history-desc">Lucky Wheel</span><span class="history-amount">${slot.amount>0?'+'+slot.amount.toLocaleString()+' ကျပ်':'ဗလာ'}</span>`;
       if(list.querySelector('.history-empty'))list.innerHTML='';
       list.prepend(item);
       if(availableSpins>0)document.getElementById('spinBtn').disabled=false;
@@ -385,57 +454,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   updateDailyTimer();setInterval(updateDailyTimer,1000);
 
   // ============================================================
-  // NAVIGATION
-  // ============================================================
-  const topArea=document.getElementById('topArea');
-  const sidebar=document.getElementById('sidebar');
-  const homePageArea=document.getElementById('homePageArea');
-  const agentPage=document.getElementById('agentPage');
-  const tasksPage=document.getElementById('tasksPage');
-  const csPage=document.getElementById('csPage');
-  const accountPage=document.getElementById('accountPage');
-
-  function showPage(nav){
-    [sidebar,homePageArea].forEach(el=>el.style.display='none');
-    [agentPage,tasksPage,csPage,accountPage].forEach(el=>el.classList.remove('active'));
-    topArea.style.display='';
-    if(nav==='home'){sidebar.style.display='block';homePageArea.style.display='block';}
-    else if(nav==='tasks'){topArea.style.display='none';tasksPage.classList.add('active');if(currentUserId&&availableSpins>0)document.getElementById('spinBtn').disabled=false;}
-    else if(nav==='agent'){topArea.style.display='none';agentPage.classList.add('active');}
-    else if(nav==='cs'){csPage.classList.add('active');}
-    else if(nav==='account'){accountPage.classList.add('active');}
-  }
-
-  document.querySelectorAll(".bnav-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      document.querySelectorAll(".bnav-btn").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");showPage(btn.dataset.nav);
-    });
-  });
-  document.querySelectorAll(".cat-item").forEach(item=>{
-    item.addEventListener("click",()=>{document.querySelectorAll(".cat-item").forEach(el=>el.classList.remove("active"));item.classList.add("active");});
-  });
-  document.getElementById("langBtn").addEventListener("click",()=>{
-    const isEn=document.getElementById('langLabel').textContent==='မြန်မာ';
-    setEl('langLabel',isEn?'EN':'မြန်မာ');
-  });
-
-  // Agent tab switching
-  document.getElementById('agentTabBar').addEventListener('click',e=>{
-    const btn=e.target.closest('.atab');if(!btn)return;
-    document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.atab-content').forEach(c=>c.classList.remove('active'));
-    btn.classList.add('active');
-    const target=document.getElementById('atab-'+btn.dataset.atab);
-    if(target)target.classList.add('active');
-    if(btn.dataset.atab==='mydata'&&currentAgentId){
-      const p=document.querySelector('.time-pill.active')?.dataset.period||'today';
-      loadMyData(currentAgentId,p);
-    }
-    if(btn.dataset.atab==='downline'&&currentAgentId)loadDownline();
-  });
-
-  // ============================================================
   // AUTH
   // ============================================================
   const modal=document.getElementById("authModal");
@@ -444,7 +462,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove('active');});
   document.getElementById('agentLoginBtn').addEventListener("click",()=>{modal.classList.add('active');switchTab('login');});
 
-  // REGISTER
   document.getElementById('registerBtn').addEventListener('click',async()=>{
     const phone=document.getElementById('regPhone').value.trim();
     const password=document.getElementById('regPassword').value.trim();
@@ -464,7 +481,6 @@ document.addEventListener("DOMContentLoaded",()=>{
     }catch(err){console.error(err);alert("Edge Function နဲ့ ချိတ်ဆက်လို့ မရပါ");}
   });
 
-  // LOGIN
   document.getElementById('loginBtn').addEventListener('click',async()=>{
     const phone=document.getElementById('loginPhone').value.trim();
     const password=document.getElementById('loginPassword').value.trim();
@@ -483,7 +499,6 @@ document.addEventListener("DOMContentLoaded",()=>{
     document.getElementById('walletBtns').style.display='flex';
 
     const phone=user.phone||user.name||'—';
-    // Build referral link using ref_code from affiliate system
     const agentRefCode=refCode||user.ref_code||'—';
     const shareLink=agentRefCode!=='—'?`https://diamond-bett.vercel.app/?ref=${agentRefCode}`:'—';
     const today=new Date().toLocaleDateString('en-GB');
@@ -493,19 +508,19 @@ document.addEventListener("DOMContentLoaded",()=>{
     setEl('agentJoinDate',today);
     document.getElementById('agentShareLinkInput').value=shareLink;
     setEl('statBalance',fmt(balance));
+    // Update user level display (from DB or default 1)
+    setEl('userLevelNum','1');
 
     document.getElementById('agentLocked').style.display='none';
     document.getElementById('agentUnlocked').style.display='flex';
 
-    // Spin access
     availableSpins=1;setEl('availableSpins',availableSpins);
     document.getElementById('spinBtn').disabled=false;
 
-    // Fetch real stats for header cards — NEW
     if(currentUserId)loadDashboardStats(currentUserId);
   }
 
-  // COPY/SHARE
+  // Copy / Share
   document.getElementById('agentCopyLinkBtn').addEventListener('click',copyAgentLink);
   document.getElementById('copyPhoneBtn').addEventListener('click',()=>{
     navigator.clipboard.writeText(document.getElementById('agentPhoneDisplay').textContent).then(()=>alert("ကူးယူပြီးပါပြီ!"));
@@ -515,14 +530,13 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(!link||link==='—')return;
     navigator.share?await navigator.share({title:'Diamond-BETT',url:link}):copyAgentLink();
   });
-
   function copyAgentLink(){
     const input=document.getElementById('agentShareLinkInput');
     if(!input.value||input.value==='—')return;
     navigator.clipboard.writeText(input.value).then(()=>alert("Link ကူးယူပြီးပါပြီ!")).catch(()=>{input.select();document.execCommand('copy');alert("Link ကူးယူပြီးပါပြီ!");});
   }
 
-  // COUNTDOWN
+  // Commission countdown
   const countEl=document.getElementById('commissionCountdown');
   if(countEl){
     const tick=()=>{
@@ -534,6 +548,20 @@ document.addEventListener("DOMContentLoaded",()=>{
       countEl.textContent=`(နောက်ခြေချချိန်: ${h}:${m}:${s})`;
     };
     tick();setInterval(tick,1000);
+  }
+
+  // Dashboard stats
+  async function loadDashboardStats(userId){
+    const{data,error}=await supabase.from('agent_dashboard_stats')
+      .select('today_commission,direct_members,received,bonus,yesterday_commission,salary')
+      .eq('agent_id',userId).eq('period','today').single();
+    if(error||!data)return;
+    setEl('statCommission',fmt(data.today_commission));
+    setEl('statInvited',data.direct_members??0);
+    setEl('walletReceived',fmt(data.received));
+    setEl('walletBonus',fmt(data.bonus));
+    setEl('walletYesterday',fmt(data.yesterday_commission));
+    setEl('walletSalary',fmt(data.salary));
   }
 
 });// end DOMContentLoaded
