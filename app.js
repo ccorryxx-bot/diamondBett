@@ -339,7 +339,7 @@ async function loadTxHistory(){
 // ============================================================
 // DOM READY
 // ============================================================
-document.addEventListener("DOMContentLoaded", async ()=>{
+document.addEventListener("DOMContentLoaded", ()=>{
 
   if(!window.supabase){
     console.error("Supabase CDN not loaded");
