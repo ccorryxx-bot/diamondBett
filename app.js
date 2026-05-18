@@ -2,10 +2,17 @@
 // GLOBAL SCOPE — Supabase + State
 // ============================================================
 const _SUPA_URL = "https://xjqrwcsxiaybpztzestb.supabase.co";
-const _SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcXJ3Y3N4aWF5YnB6dHplc3RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NzQxMDksImV4cCI6MjA5NDM1MDEwOX0.Kn5sLOTBdNtlooaH-q8ml0cOEswMlgMTSP7GFe7mbxg";
+const _SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
 
+// ✅ Safe init — CDN fail ဖြစ်ရင်လည်း crash မဖြစ်
 let supabase = null;
-let currentUserId = null, currentAgentId = null, availableSpins = 0;
+try {
+  if (window.supabase) {
+    supabase = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
+  }
+} catch(e) {
+  console.error('Supabase SDK failed to load:', e);
+}
 
 // Deposit/Withdraw state
 let _dMethod = null, _dAmt = 0, _dBonus = true, _cdTimer = null;
@@ -339,15 +346,7 @@ async function loadTxHistory(){
 // ============================================================
 // DOM READY
 // ============================================================
-document.addEventListener("DOMContentLoaded", ()=>{
-
-  if(!window.supabase){
-    console.error("Supabase CDN not loaded");
-    gToast("Supabase load failed");
-    return;
-  }
-
-  supabase = window.supabase.createClient(_SUPA_URL, _SUPA_KEY);
+document.addEventListener("DOMContentLoaded",()=>{
 
   // Banner
   (function(){
@@ -617,6 +616,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     setEl('agentUserPhone',phone);setEl('agentPhoneDisplay',phone);setEl('agentJoinDate',today);
     document.getElementById('agentShareLinkInput').value=shareLink;
     setEl('statBalance',fmt(balance));setEl('userLevelNum','1');
+    // Invite tab fields
     const invRef=document.getElementById('inv-refcode');if(invRef)invRef.textContent=agentRefCode;
     const invLink=document.getElementById('inv-link');if(invLink)invLink.value=shareLink;
     document.getElementById('agentLocked').style.display='none';
@@ -647,4 +647,4 @@ document.addEventListener("DOMContentLoaded", ()=>{
   // Init linked account
   initLinked();
 
-}); // end DOMContentLoaded
+});// end DOMContentLoaded
