@@ -1,0 +1,215 @@
+// ============================================================
+// OPEN WITHDRAW
+// ============================================================
+function openWithdrawModal() {
+  if (!window.currentUserId) { openAuthModal('login'); return; }
+  document.getElementById('withdrawModal').classList.add('open');
+  const bal = document.getElementById('statBalance')?.textContent || '0.00';
+  setEl('wdBalShow', bal);
+  setEl('wdBalAmt', bal + ' ကျပ်');
+  initLinked();
+  switchWdTab('wd', document.querySelectorAll('.wd-tab')[0]);
+}
+
+function switchWdTab(tab, el) {
+  document.querySelectorAll('.wd-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.wd-content').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const c = document.getElementById('wdTab-' + tab);
+  if (c) c.classList.add('active');
+  if (tab === 'hist') loadTxHistory();
+}
+
+// ============================================================
+// LINKED ACCOUNT
+// ============================================================
+function initLinked() {
+  const s = localStorage.getItem('db_linked');
+  if (s) { window._linked = JSON.parse(s); renderLinked(); }
+}
+
+function renderLinked() {
+  if (!window._linked) return;
+  document.getElementById('wdNoAcct').style.display  = 'none';
+  document.getElementById('wdHasAcct').style.display = 'block';
+  document.getElementById('wdLinkedLogo').innerHTML  = getProvSvg(window._linked.provider, 40);
+  setEl('wdLinkedName', (window._linked.provider === 'kbz' ? 'KBZ Pay' : 'Wave Money') + ' · ' + window._linked.name);
+  setEl('wdLinkedNum',  maskNum(window._linked.number));
+  updateLinkTab();
+}
+
+function updateLinkTab() {
+  if (!window._linked) return;
+  const isKbz   = window._linked.provider === 'kbz';
+  const itemId  = isKbz ? 'kbzItem'  : 'waveItem';
+  const txtId   = isKbz ? 'kbzLinkedTxt'  : 'waveLinkedTxt';
+  const btnId   = isKbz ? 'kbzLinkBtn'    : 'waveLinkBtn';
+  const otherBtn= isKbz ? 'waveLinkBtn'   : 'kbzLinkBtn';
+
+  document.getElementById(itemId).classList.add('linked');
+  setEl(txtId, window._linked.name + ' · ' + maskNum(window._linked.number));
+
+  const btn = document.getElementById(btnId);
+  btn.textContent = 'ချိတ်ပြီး';
+  btn.classList.add('linked');
+  btn.disabled = true;
+
+  if (!document.querySelector('#' + itemId + ' .acct-linked-badge')) {
+    const badge = document.createElement('div');
+    badge.className   = 'acct-linked-badge';
+    badge.textContent = 'ချိတ်ပြီး';
+    document.getElementById(itemId).prepend(badge);
+  }
+
+  const ob = document.getElementById(otherBtn);
+  ob.disabled     = true;
+  ob.style.opacity = '.35';
+}
+
+// ============================================================
+// LINK SHEET
+// ============================================================
+function openSheet(prov) {
+  if (window._linked) { gToast('အကောင် ချိတ်ပြီးသားဖြစ်၍ မပြောင်းနိုင်ပါ'); return; }
+  window._curProv = prov;
+  document.getElementById('acctSheet').classList.add('open');
+  setEl('sheetTitle', (prov === 'kbz' ? 'KBZ Pay' : 'Wave Money') + ' ချိတ်ဆောင်ရန်');
+  document.getElementById('sheetProvIcon').innerHTML = getProvSvg(prov, 24);
+  document.getElementById('lnkName').value = '';
+  document.getElementById('lnkNum').value  = '';
+}
+
+function closeSheet() {
+  document.getElementById('acctSheet').classList.remove('open');
+}
+
+async function doPaste(id) {
+  try {
+    const t = await navigator.clipboard.readText();
+    document.getElementById(id).value = t;
+  } catch { /* clipboard not granted */ }
+}
+
+async function confirmLink() {
+  const name = document.getElementById('lnkName').value.trim();
+  const num  = document.getElementById('lnkNum').value.trim();
+  if (!name)              { gToast('နာမည် ထည့်ပါ'); return; }
+  if (!num || num.length < 9) { gToast('ဖုန်းနံပါတ် မှန်ကန်စွာ ထည့်ပါ'); return; }
+
+  window._linked = { provider: window._curProv, name, number: num };
+  localStorage.setItem('db_linked', JSON.stringify(window._linked));
+
+  if (window.currentUserId) {
+    window.DB.from('users').update({
+      withdrawal_method : window._curProv === 'kbz' ? 'KBZ Pay' : 'Wave Money',
+      withdrawal_account: num,
+      withdrawal_name   : name
+    }).eq('id', window.currentUserId).then(() => {});
+  }
+
+  closeSheet();
+  renderLinked();
+  updateLinkTab();
+  gToast('အကောင် ချိတ်ဆောင်ပြီးပါပြီ', 'success');
+}
+
+// ============================================================
+// WITHDRAW REQUEST
+// ============================================================
+async function doWithdraw() {
+  if (!window.currentUserId || !window._linked) return;
+  const amount = parseFloat(document.getElementById('wdAmtInput').value);
+  if (!amount || amount <= 0) { gToast('ပမာဏ ထည့်ပါ'); return; }
+
+  const btn = document.getElementById('wdSubmitBtn');
+  btn.disabled = true; btn.textContent = 'စစ်ဆေးနေသည်...';
+
+  try {
+    const [uRes, sRes] = await Promise.all([
+      window.DB.from('users').select('balance,remaining_turnover').eq('id', window.currentUserId).single(),
+      window.DB.from('site_settings').select('min_withdrawal,max_withdrawal').eq('id', 1).single()
+    ]);
+
+    if (uRes.error || sRes.error) throw new Error('ဒေတာ ဆွဲမရပါ');
+
+    const tv  = parseFloat(uRes.data?.remaining_turnover || 0);
+    const bal = parseFloat(uRes.data?.balance || 0);
+    const min = parseFloat(sRes.data?.min_withdrawal || 10000);
+    const max = parseFloat(sRes.data?.max_withdrawal || 1000000);
+
+    if (tv > 0) {
+      setEl('tvAmtVal', tv.toLocaleString());
+      document.getElementById('tvModal').classList.add('open');
+      document.getElementById('wdTvBar').style.display = 'block';
+      setEl('wdTvAmt', tv.toLocaleString() + ' ကျပ်');
+      resetWdBtn(); return;
+    }
+    if (amount < min) { gToast('အနည်းဆုံး ' + min.toLocaleString() + ' ကျပ်', 'error'); resetWdBtn(); return; }
+    if (amount > max) { gToast('အများဆုံး '  + max.toLocaleString() + ' ကျပ်', 'error'); resetWdBtn(); return; }
+    if (amount > bal) { gToast('Balance မလုံလောက်ပါ', 'error'); resetWdBtn(); return; }
+
+    const { error: txErr } = await window.DB.from('transactions').insert([{
+      user_id        : window.currentUserId,
+      type           : 'withdrawal',
+      amount,
+      payment_method : window._linked.provider === 'kbz' ? 'KBZ Pay' : 'Wave Money',
+      payment_details: window._linked.number,
+      status         : 'pending'
+    }]);
+    if (txErr) throw txErr;
+
+    document.getElementById('withdrawModal').classList.remove('open');
+    gToast('ငွေထုတ် တောင်းဆိုမှု အောင်မြင်ပါသည်\nဒိုင်မှ မိနစ် ၃၀ အတွင်း ဆက်သွယ်ပါမည်', 'success');
+  } catch (e) {
+    gToast('မအောင်မြင်ပါ: ' + (e.message || 'ထပ်စမ်းပါ'), 'error');
+    resetWdBtn();
+  }
+}
+
+function resetWdBtn() {
+  const btn = document.getElementById('wdSubmitBtn');
+  btn.disabled    = false;
+  btn.textContent = 'ငွေထုတ်တောင်းဆိုမည်';
+}
+
+// ============================================================
+// TRANSACTION HISTORY
+// ============================================================
+async function loadTxHistory() {
+  if (!window.currentUserId) return;
+  const { data, error } = await window.DB
+    .from('transactions')
+    .select('*')
+    .eq('user_id', window.currentUserId)
+    .order('created_at', { ascending: false })
+    .limit(25);
+
+  const list  = document.getElementById('txList');
+  const empty = document.getElementById('txEmpty');
+
+  if (error || !data?.length) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+
+  list.innerHTML = data.map(tx => {
+    const isDep  = tx.type === 'deposit';
+    const date   = new Date(tx.created_at).toLocaleDateString('en-GB');
+    const sc     = tx.status === 'approved' ? 'approved' : tx.status === 'rejected' ? 'rejected' : 'pending';
+    const stxt   = sc === 'approved' ? 'အတည်ပြုပြီး' : sc === 'rejected' ? 'ငြင်းပယ်ပြီး' : 'စောင့်ဆိုင်း';
+    const color  = isDep ? '#22c55e' : '#ef4444';
+    const icoSvg = isDep
+      ? icon('deposit',  16, color)
+      : icon('withdraw', 16, color);
+    return `<div class="tx-item">
+      <div class="tx-ico ${isDep ? 'dep' : 'wd'}">${icoSvg}</div>
+      <div class="tx-info">
+        <div class="tx-type">${isDep ? 'ငွေသွင်း' : 'ငွေထုတ်'}</div>
+        <div class="tx-date">${date} · ${tx.payment_method || '—'}</div>
+        <div class="tx-badge ${sc}">${stxt}</div>
+      </div>
+      <div class="tx-amount" style="color:${color}">
+        ${isDep ? '+' : '-'}${parseFloat(tx.amount).toLocaleString()}
+        <div style="font-size:9px;color:#555;font-weight:400;margin-top:2px;">ကျပ်</div>
+      </div>
+    </div>`;
+  }).join('');
+}
