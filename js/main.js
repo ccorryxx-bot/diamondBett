@@ -8,14 +8,12 @@ async function loadPartials() {
     { src: 'html/agent.html',  id: 'agentPage'       },
     { src: 'html/modals.html', id: 'modalsContainer' },
   ];
-
   await Promise.all(partials.map(async ({ src, id }) => {
     try {
-      const res  = await fetch(src);
+      const res = await fetch(src);
       if (!res.ok) throw new Error(`${src} — ${res.status}`);
-      const html = await res.text();
-      const el   = document.getElementById(id);
-      if (el) el.innerHTML = html;
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = await res.text();
     } catch (e) {
       console.error('Partial load failed:', e);
     }
@@ -27,13 +25,43 @@ async function loadPartials() {
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
 
-  // 1. Init Supabase (CDN already loaded — script is deferred)
+  // 1. Supabase init (CDN already loaded — deferred scripts)
   window.DB = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-  // 2. Load HTML partials first
+  // 2. Load HTML partials
   await loadPartials();
 
-  // 3. Init all modules (DOM elements now exist)
+  // 3. SESSION RESTORE — refresh လုပ်ရင် session ပြန်ရမည်
+  try {
+    const { data: { session } } = await window.DB.auth.getSession();
+    if (session?.user) {
+      await restoreSession(session.user.id);
+    }
+  } catch (e) {
+    console.error('getSession error:', e);
+  }
+
+  // 4. Auth state listener — tab မျှဝေခြင်း / logout
+  window.DB.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      window.currentUserId  = session.user.id;
+      window.currentAgentId = session.user.id;
+    }
+    if (event === 'SIGNED_OUT') {
+      window.currentUserId  = null;
+      window.currentAgentId = null;
+      const showBtn = document.getElementById('showAuthBtn');
+      const wdBtns  = document.getElementById('walletBtns');
+      if (showBtn) showBtn.style.display = '';
+      if (wdBtns)  wdBtns.style.display  = 'none';
+      const locked   = document.getElementById('agentLocked');
+      const unlocked = document.getElementById('agentUnlocked');
+      if (locked)   locked.style.display   = '';
+      if (unlocked) unlocked.style.display = 'none';
+    }
+  });
+
+  // 5. Init modules
   initBanner();
   initLangBtn();
   initCatItems();
@@ -43,9 +71,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   initWheel();
   startDailyTimer();
   startCommissionCountdown();
-  loadGamesFromDB();
 
-  // 4. Initial page
+  // 6. Load dynamic data
+  await loadBanners();
+  await loadGamesFromDB();
+
+  // 7. Initial page
   showPage('home');
   document.querySelector('.bnav-btn[data-nav="home"]')?.classList.add('active');
 
@@ -53,7 +84,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // EVENT LISTENERS
   // ============================================================
 
-  // Bottom nav
   document.querySelectorAll('.bnav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
@@ -71,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('registerBtn')?.addEventListener('click', registerUser);
   document.getElementById('loginBtn')?.addEventListener('click',    loginUser);
 
-  // Deposit / Withdraw buttons
+  // Deposit / Withdraw
   document.querySelectorAll('.wallet-btn.deposit').forEach(b =>
     b.addEventListener('click', openDepositModal));
   document.querySelectorAll('.wallet-btn.withdraw').forEach(b =>
@@ -85,11 +115,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('withdrawModal')?.classList.remove('open');
   });
 
-  // Bonus code
+  // Misc
   document.getElementById('bonusCodeBtn')?.addEventListener('click', handleBonusCode);
-
-  // Share / Copy
   document.getElementById('agentCopyLinkBtn')?.addEventListener('click', copyAgentLink);
+
   document.getElementById('shareNativeBtn')?.addEventListener('click', async () => {
     const link = document.getElementById('agentShareLinkInput')?.value;
     if (!link || link === '—') return;
@@ -107,12 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (txt) navigator.clipboard.writeText(txt).then(() => gToast('ကူးပြီးပါပြီ', 'success'));
   });
 
-  // Turnover modal close
-  document.querySelector('#tvModal .tv-close-btn')?.addEventListener('click', () => {
-    document.getElementById('tvModal')?.classList.remove('open');
-  });
-
-  // URL ref param
+  // URL ref
   const ref = new URLSearchParams(window.location.search).get('ref');
   if (ref) {
     const ri = document.getElementById('referrer_code_input');
