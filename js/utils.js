@@ -87,7 +87,7 @@ function waveSvg(sz = 40) {
   </svg>`;
 }
 function getProvSvg(provName, sz = 40) {
-  return provName.toLowerCase().includes('kbz') ? kbzSvg(sz) : waveSvg(sz);
+  return provName?.toLowerCase().includes('kbz') ? kbzSvg(sz) : waveSvg(sz);
 }
 
 // ============================================================
