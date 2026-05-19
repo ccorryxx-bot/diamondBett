@@ -1,0 +1,166 @@
+<div class="tasks-page">
+
+  <div class="tasks-page-header">
+    <div class="tasks-header-brand">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="#f5c518" stroke-width="1.5"/>
+        <polygon points="12,5 19,9 19,15 12,19 5,15 5,9" fill="rgba(245,197,24,0.15)" stroke="#f5c518" stroke-width="1"/>
+        <text x="12" y="14.5" text-anchor="middle" fill="#f5c518" font-size="5.5" font-weight="900" font-family="sans-serif">DB</text>
+      </svg>
+      <div>
+        <div class="tasks-header-title">Tasks &amp; Rewards</div>
+        <div class="tasks-header-sub">Diamond-BETT Daily Bonus</div>
+      </div>
+    </div>
+    <div class="tasks-spin-count">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <span class="tasks-spin-count-num" id="availableSpins">0</span>
+      <span class="tasks-spin-count-lbl">Spins</span>
+    </div>
+  </div>
+
+  <!-- Bonus Code -->
+  <div class="bonus-section">
+    <div class="bonus-label">Bonus Code ထည့်ပါ</div>
+    <div class="bonus-wrap">
+      <input type="text" id="bonusCodeInput" class="bonus-input" placeholder="DIAMOND-XXXX" autocapitalize="characters">
+      <button id="bonusCodeBtn" class="bonus-btn">လက်ခံ</button>
+    </div>
+  </div>
+
+  <div class="tasks-scroll">
+
+    <!-- Lucky Wheel -->
+    <div class="tasks-divider" style="margin-top:4px;">
+      <div class="tasks-divider-line"></div>
+      <div class="tasks-divider-text">Lucky Wheel</div>
+      <div class="tasks-divider-line"></div>
+    </div>
+
+    <div class="wheel-section">
+      <div class="wheel-outer">
+        <div class="wheel-pointer-el">
+          <svg width="28" height="32" viewBox="0 0 28 32">
+            <polygon points="14,32 0,0 28,0" fill="#C9A227"/>
+            <polygon points="14,28 4,4 24,4" fill="#FFD700"/>
+          </svg>
+        </div>
+        <canvas id="wheelCanvas" width="260" height="260"></canvas>
+        <div class="wheel-glow"></div>
+      </div>
+      <button id="spinBtn" class="wheel-spin-btn" disabled>SPIN</button>
+
+      <div class="turnover-section">
+        <div class="turnover-title">TURNOVER သတ်မှတ်ချက်</div>
+        <div class="turnover-grid">
+          <div class="to-item"><span>5,000 ကျပ်</span><span>×5</span></div>
+          <div class="to-item"><span>15,000 ကျပ်</span><span>×6</span></div>
+          <div class="to-item"><span>30,000 ကျပ်</span><span>×7</span></div>
+          <div class="to-item"><span>50,000 ကျပ်</span><span>×10</span></div>
+          <div class="to-item"><span>65,000 ကျပ်</span><span>×12</span></div>
+          <div class="to-item"><span>80,000 ကျပ်</span><span>×15</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task List -->
+    <div class="tasks-divider">
+      <div class="tasks-divider-line"></div>
+      <div class="tasks-divider-text">အလုပ်များ</div>
+      <div class="tasks-divider-line"></div>
+    </div>
+
+    <div class="tasks-list-section">
+
+      <div class="task-card">
+        <div class="task-card-row1">
+          <div class="task-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div class="task-text">
+            <div class="task-title">နေ့တိုင်း ဂိမ်းထဲ ဝင်ရောက်ပါ</div>
+            <div class="task-desc">1 ကြိမ် ဝင်ရောက်ရင် spin 1 ကြိမ် ရမည်</div>
+          </div>
+        </div>
+        <div class="task-card-row2">
+          <div class="task-reward">
+            <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="task-reward-text">+1 Spin</span>
+          </div>
+          <span class="task-timer" id="task1Timer"></span>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-row1">
+          <div class="task-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+          </div>
+          <div class="task-text">
+            <div class="task-title">Referral ကနေ ငွေသွင်းကစားတဲ့သူ ရှိရင်</div>
+            <div class="task-desc">မိတ်ဆက်ပေးသူ Player တစ်ဦးချင်း spin 3 ကြိမ် ရမည်</div>
+          </div>
+        </div>
+        <div class="task-card-row2">
+          <div class="task-reward">
+            <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="task-reward-text">+3 Spins</span>
+          </div>
+          <button class="task-action-btn">ဖိတ်ကြားရန်</button>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-row1">
+          <div class="task-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="task-text">
+            <div class="task-title">ကိုယ်တိုင် ငွေသွင်းကစားပါ</div>
+            <div class="task-desc">ကိုယ်တိုင် ငွေသွင်းပြီး ကစားတိုင်း spin 2 ကြိမ် ရမည်</div>
+          </div>
+        </div>
+        <div class="task-card-row2">
+          <div class="task-reward">
+            <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="task-reward-text">+2 Spins</span>
+          </div>
+          <button class="task-action-btn">ငွေသွင်းရန်</button>
+        </div>
+      </div>
+
+      <div class="task-card">
+        <div class="task-card-row1">
+          <div class="task-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          </div>
+          <div class="task-text">
+            <div class="task-title">15 ရက်ဆက်တိုက် ဝင်ကစားပါ</div>
+            <div class="task-desc">15 ရက်ဆက်တိုက် ဝင်ကစားရင် spin 5 ကြိမ် ရမည်</div>
+          </div>
+        </div>
+        <div class="task-card-row2">
+          <div class="task-reward">
+            <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="task-reward-text">+5 Spins</span>
+          </div>
+          <span class="task-timer" id="streakStatus">0 / 15 ရက်</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- History -->
+    <div class="tasks-divider">
+      <div class="tasks-divider-line"></div>
+      <div class="tasks-divider-text">မှတ်တမ်း</div>
+      <div class="tasks-divider-line"></div>
+    </div>
+    <div class="history-section">
+      <div id="spinHistoryList">
+        <div class="history-empty">မှတ်တမ်း မရှိသေးပါ</div>
+      </div>
+    </div>
+
+  </div>
+</div>
