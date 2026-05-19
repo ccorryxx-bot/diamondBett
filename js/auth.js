@@ -2,8 +2,27 @@
 // OPEN / CLOSE AUTH MODAL
 // ============================================================
 function openAuthModal(tab = 'login') {
-  document.getElementById('authModal').classList.add('active');
+  document.getElementById('authModal')?.classList.add('active');
   switchTab(tab);
+}
+
+// ============================================================
+// SESSION RESTORE
+// ============================================================
+async function restoreSession(userId) {
+  try {
+    const { data: ud } = await window.DB
+      .from('users')
+      .select('ref_code,fullname,phone,balance')
+      .eq('id', userId)
+      .single();
+
+    window.currentUserId  = userId;
+    window.currentAgentId = userId;
+    onLoginSuccess(ud || {}, ud?.ref_code, ud?.balance || 0, userId);
+  } catch (e) {
+    console.error('Session restore failed:', e);
+  }
 }
 
 // ============================================================
@@ -17,7 +36,7 @@ async function registerUser() {
   const checked  = document.getElementById('ageCheck').checked;
 
   if (!phone || !password || !name) { gToast('အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်ပါ'); return; }
-  if (!checked)                      { gToast('အသက် 18+ သတ်မှတ်ချက်ကို ဝန်ခံပါ'); return; }
+  if (!checked) { gToast('အသက် 18+ သတ်မှတ်ချက်ကို ဝန်ခံပါ'); return; }
 
   const btn = document.getElementById('registerBtn');
   btn.disabled = true; btn.textContent = 'မှတ်ပုံတင်နေသည်...';
@@ -25,13 +44,17 @@ async function registerUser() {
   try {
     const resp = await fetch(`${SUPA_URL}/functions/v1/register-user`, {
       method : 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
-      body   : JSON.stringify({ phone, password, fullname: name, referrer_code: refCode || null })
+      headers: {
+        'Content-Type' : 'application/json',
+        'apikey'       : SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY
+      },
+      body: JSON.stringify({ phone, password, fullname: name, referrer_code: refCode || null })
     });
     const result = await resp.json();
     if (resp.ok) {
       gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည်', 'success');
-      document.getElementById('authModal').classList.remove('active');
+      document.getElementById('authModal')?.classList.remove('active');
       onLoginSuccess({ phone, name, ref_code: result.ref_code }, result.ref_code, 0, null);
     } else {
       gToast('အမှားအယွင်း: ' + result.error, 'error');
@@ -67,7 +90,7 @@ async function loginUser() {
       .eq('id', data.user.id)
       .single();
 
-    document.getElementById('authModal').classList.remove('active');
+    document.getElementById('authModal')?.classList.remove('active');
     window.currentUserId  = data.user.id;
     window.currentAgentId = data.user.id;
     onLoginSuccess(ud || { phone }, ud?.ref_code, ud?.balance, data.user.id);
@@ -82,41 +105,35 @@ async function loginUser() {
 function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   if (userId) window.currentUserId = userId;
 
-  const phone          = user.phone || user.name || '—';
-  const agentRefCode   = refCode || user.ref_code || '—';
-  const shareLink      = agentRefCode !== '—'
+  const phone        = user.phone || user.name || '—';
+  const agentRefCode = refCode || user.ref_code || '—';
+  const shareLink    = agentRefCode !== '—'
     ? `https://diamond-bett.vercel.app/?ref=${agentRefCode}` : '—';
 
-  // Hide login btn, show wallet btns
   document.getElementById('showAuthBtn').style.display  = 'none';
   document.getElementById('walletBtns').style.display   = 'flex';
 
-  // Populate agent fields
-  setEl('agentUserPhone',  phone);
+  setEl('agentUserPhone',    phone);
   setEl('agentPhoneDisplay', phone);
-  setEl('agentJoinDate',   new Date().toLocaleDateString('en-GB'));
-  setEl('statBalance',     fmt(balance));
-  setEl('userLevelNum',    '1');
+  setEl('agentJoinDate',     new Date().toLocaleDateString('en-GB'));
+  setEl('statBalance',       fmt(balance));
+  setEl('userLevelNum',      '1');
 
   const linkInput = document.getElementById('agentShareLinkInput');
   if (linkInput) linkInput.value = shareLink;
 
-  // Invite tab
   const invRef  = document.getElementById('inv-refcode');
   const invLink = document.getElementById('inv-link');
   if (invRef)  invRef.textContent = agentRefCode;
   if (invLink) invLink.value      = shareLink;
 
-  // Show agent panel
   document.getElementById('agentLocked').style.display   = 'none';
   document.getElementById('agentUnlocked').style.display = 'flex';
 
-  // Spins
   window.availableSpins = 1;
   setEl('availableSpins', 1);
   document.getElementById('spinBtn').disabled = false;
 
-  // Load data
   if (window.currentUserId) {
     loadDashboardStats(window.currentUserId);
     initLinked();
