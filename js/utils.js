@@ -105,3 +105,23 @@ function shareVia(platform) {
   };
   if (urls[platform]) window.open(urls[platform], '_blank');
 }
+// ============================================================
+// REAL-TIME AUTH CHECK (deposit/withdraw မှာ သုံး)
+// ============================================================
+async function getAuthUid() {
+  // window.currentUserId ရှိရင် တိုက်ရိုက်ပြန်
+  if (window.currentUserId) return window.currentUserId;
+
+  // မရှိရင် Supabase ကနေ တိုက်ရိုက်ဆွဲ
+  try {
+    const { data: { user } } = await window.DB.auth.getUser();
+    if (user?.id) {
+      window.currentUserId  = user.id;
+      window.currentAgentId = user.id;
+      return user.id;
+    }
+  } catch (e) {
+    console.error('getAuthUid error:', e);
+  }
+  return null;
+}
