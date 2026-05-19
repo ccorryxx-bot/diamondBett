@@ -1,14 +1,31 @@
 // ============================================================
+// STATE
+// ============================================================
+// (module-level — no window needed)
+let _dMethod = null;
+let _dAmt    = 0;
+let _dBonus  = true;
+
+// ============================================================
 // OPEN DEPOSIT
 // ============================================================
-function openDepositModal() {
-  if (!window.currentUserId) { openAuthModal('login'); return; }
-  document.getElementById('depositModal').classList.add('open');
+async function openDepositModal() {
+  // Real-time auth check — window.currentUserId ကို မှီမနေ
+  const uid = await getAuthUid();
+  if (!uid) { openAuthModal('login'); return; }
+  window.currentUserId = uid; // sync
+
+  const modal = document.getElementById('depositModal');
+  if (!modal) { console.error('depositModal not in DOM'); return; }
+
+  modal.classList.add('open');
   document.getElementById('depStep1').style.display = 'block';
   document.getElementById('depStep2').style.display = 'none';
-  document.getElementById('depBalShow').textContent = document.getElementById('statBalance')?.textContent || '0.00';
-  // reset state
-  window._dMethod = null; window._dAmt = 0; window._dBonus = true;
+  document.getElementById('depBalShow').textContent =
+    document.getElementById('statBalance')?.textContent || '0.00';
+
+  // Reset state
+  _dMethod = null; _dAmt = 0; _dBonus = true;
   document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('depAmtInput').value = '';
   document.getElementById('bOptYes').classList.add('selected');
@@ -23,6 +40,7 @@ function openDepositModal() {
 // ============================================================
 async function fetchDepMethods() {
   const grid = document.getElementById('depMethodGrid');
+  if (!grid) return;
   grid.innerHTML = `<div style="grid-column:span 2;padding:20px;text-align:center;">
     <div class="md-spin" style="margin:0 auto;"></div></div>`;
 
@@ -32,8 +50,8 @@ async function fetchDepMethods() {
     .eq('is_active', true);
 
   if (error || !data?.length) {
-    grid.innerHTML = `<div style="grid-column:span 2;text-align:center;color:#555;font-size:12px;padding:20px;">
-      ငွေသွင်းနည်းလမ်း မရှိသေးပါ</div>`;
+    grid.innerHTML = `<div style="grid-column:span 2;text-align:center;
+      color:#555;font-size:12px;padding:20px;">ငွေသွင်းနည်းလမ်း မရှိသေးပါ</div>`;
     return;
   }
 
@@ -54,13 +72,13 @@ async function fetchDepMethods() {
 // AMOUNT / BONUS
 // ============================================================
 function pickMethod(el, idx) {
-  window._dMethod = window._depMethods[idx];
+  _dMethod = window._depMethods[idx];
   document.querySelectorAll('#depMethodGrid .pm-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
 }
 
 function pickAmt(el, amt) {
-  window._dAmt = amt;
+  _dAmt = amt;
   document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('depAmtInput').value = amt;
@@ -68,13 +86,13 @@ function pickAmt(el, amt) {
 }
 
 function onAmtType(val) {
-  window._dAmt = parseFloat(val) || 0;
+  _dAmt = parseFloat(val) || 0;
   document.querySelectorAll('.amt-btn').forEach(b => b.classList.remove('selected'));
   updatePreview();
 }
 
 function pickBonus(yes) {
-  window._dBonus = yes;
+  _dBonus = yes;
   document.getElementById('bOptYes').classList.toggle('selected', yes);
   document.getElementById('bOptNo').classList.toggle('selected', !yes);
   document.getElementById('depPreview').style.display = yes ? 'block' : 'none';
@@ -82,26 +100,26 @@ function pickBonus(yes) {
 }
 
 function updatePreview() {
-  const bonus = window._dBonus ? window._dAmt : 0;
-  setEl('pvDep',   window._dAmt.toLocaleString() + ' ကျပ်');
+  const bonus = _dBonus ? _dAmt : 0;
+  setEl('pvDep',   _dAmt.toLocaleString() + ' ကျပ်');
   setEl('pvBonus', '+ ' + bonus.toLocaleString() + ' ကျပ်');
-  setEl('pvTotal', (window._dAmt + bonus).toLocaleString() + ' ကျပ်');
+  setEl('pvTotal', (_dAmt + bonus).toLocaleString() + ' ကျပ်');
 }
 
 // ============================================================
 // STEP 2
 // ============================================================
 function goStep2() {
-  if (!window._dMethod)               { gToast('ငွေပေးချေနည်းလမ်း ရွေးပါ'); return; }
-  if (!window._dAmt || window._dAmt < 3000) { gToast('အနည်းဆုံး 3,000 ကျပ် ထည့်ပါ'); return; }
+  if (!_dMethod)               { gToast('ငွေပေးချေနည်းလမ်း ရွေးပါ');      return; }
+  if (!_dAmt || _dAmt < 3000) { gToast('အနည်းဆုံး 3,000 ကျပ် ထည့်ပါ'); return; }
 
   document.getElementById('depStep1').style.display = 'none';
   document.getElementById('depStep2').style.display = 'block';
 
-  document.getElementById('dep2Logo').innerHTML = getProvSvg(window._dMethod.provider_name, 40);
-  setEl('dep2Name',  window._dMethod.provider_name);
-  setEl('dep2Phone', window._dMethod.account_number);
-  setEl('dep2Amt',   window._dAmt.toLocaleString() + ' ကျပ်');
+  document.getElementById('dep2Logo').innerHTML = getProvSvg(_dMethod.provider_name, 40);
+  setEl('dep2Name',  _dMethod.provider_name);
+  setEl('dep2Phone', _dMethod.account_number);
+  setEl('dep2Amt',   _dAmt.toLocaleString() + ' ကျပ်');
 
   const ord = 'DEP-' + Date.now().toString().slice(-8);
   window._depOrd = ord;
@@ -117,10 +135,11 @@ function startCd(sec) {
   let rem = sec;
   const tick = () => {
     const m = Math.floor(rem / 60), s = rem % 60;
-    el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    if (el) el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
     if (rem <= 0) {
       clearInterval(window._cdTimer);
-      el.closest('.countdown-badge').style.background = '#444';
+      const badge = el?.closest('.countdown-badge');
+      if (badge) badge.style.background = '#444';
     }
     rem--;
   };
@@ -134,9 +153,10 @@ function slipMove(el, idx) {
 }
 
 function cpText(id) {
-  navigator.clipboard.writeText(document.getElementById(id).textContent)
-    .then(() => gToast('ကူးပြီးပါပြီ', 'success'));
+  const val = document.getElementById(id)?.textContent;
+  if (val) navigator.clipboard.writeText(val).then(() => gToast('ကူးပြီးပါပြီ', 'success'));
 }
+
 function cpVal(val) {
   if (!val) return;
   navigator.clipboard.writeText(String(val)).then(() => gToast('ကူးပြီးပါပြီ', 'success'));
@@ -155,22 +175,23 @@ async function submitSlip() {
 
   try {
     const { error } = await window.DB.from('transactions').insert([{
-      user_id       : window.currentUserId,
-      type          : 'deposit',
-      amount        : window._dAmt,
-      payment_method: window._dMethod.provider_name,
+      user_id        : window.currentUserId,
+      type           : 'deposit',
+      amount         : _dAmt,
+      payment_method : _dMethod.provider_name,
       payment_details: slip,
-      bonus_opted   : window._dBonus,
-      status        : 'pending',
-      reference     : window._depOrd || null
+      bonus_opted    : _dBonus,
+      status         : 'pending',
+      reference      : window._depOrd || null
     }]);
     if (error) throw error;
 
     clearInterval(window._cdTimer);
-    document.getElementById('depositModal').classList.remove('open');
+    document.getElementById('depositModal')?.classList.remove('open');
     gToast('ငွေသွင်း တောင်းဆိုမှု အောင်မြင်ပါသည်\nမိနစ် 5–10 အတွင်း Wallet ထဲ ရောက်ပါမည်', 'success');
   } catch (e) {
     gToast('မအောင်မြင်ပါ: ' + (e.message || 'ထပ်စမ်းပါ'), 'error');
-    btn.disabled = false; btn.textContent = 'ငွေသွင်းပြီး အတည်ပြုမည်';
+    btn.disabled = false;
+    btn.textContent = 'ငွေသွင်းပြီး အတည်ပြုမည်';
   }
 }
