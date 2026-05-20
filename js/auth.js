@@ -26,7 +26,7 @@ async function restoreSession(userId) {
 }
 
 // ============================================================
-// REGISTER
+// REGISTER (အလိုအလျောက် Auto-Login ဝင်ပြီး uid ပါးစ်လုပ်ရန် ပြင်ဆင်ပြီး)
 // ============================================================
 async function registerUser() {
   const phone    = document.getElementById('regPhone').value.trim();
@@ -52,10 +52,17 @@ async function registerUser() {
       body: JSON.stringify({ phone, password, fullname: name, referrer_code: refCode || null })
     });
     const result = await resp.json();
+    
     if (resp.ok) {
+      // မှတ်ပုံတင်အောင်မြင်ရင် Auto Login တစ်ခါတည်းဝင်ပြီး uid ဆွဲထုတ်မယ်
+      const { data: signData } = await window.DB.auth.signInWithPassword({
+        email: `${phone}@diamondbett.com`, password
+      });
+      const uid = signData?.user?.id || null;
+
       gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည်', 'success');
       document.getElementById('authModal')?.classList.remove('active');
-      onLoginSuccess({ phone, name, ref_code: result.ref_code }, result.ref_code, 0, null);
+      onLoginSuccess({ phone, name, ref_code: result.ref_code }, result.ref_code, 0, uid); // ← uid ပါးစ်လုပ်ပေးထားတယ်
     } else {
       gToast('အမှားအယွင်း: ' + result.error, 'error');
     }
@@ -106,7 +113,7 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   if (userId) {
     window.currentUserId  = userId;
     window.currentAgentId = userId;
-    sessionStorage.setItem('_db_uid', userId); // ← add this line
+    sessionStorage.setItem('_db_uid', userId);
   }
 
   const phone        = user.phone || user.name || '—';
