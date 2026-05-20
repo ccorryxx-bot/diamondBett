@@ -109,19 +109,24 @@ function shareVia(platform) {
 // REAL-TIME AUTH CHECK (deposit/withdraw မှာ သုံး)
 // ============================================================
 async function getAuthUid() {
-  // window.currentUserId ရှိရင် တိုက်ရိုက်ပြန်
+  // Layer 1: in-memory
   if (window.currentUserId) return window.currentUserId;
 
-  // မရှိရင် Supabase ကနေ တိုက်ရိုက်ဆွဲ
+  // Layer 2: sessionStorage (tab-level persist)
+  const sid = sessionStorage.getItem('_db_uid');
+  if (sid) { window.currentUserId = sid; return sid; }
+
+  // Layer 3: Supabase session
   try {
-    const { data: { user } } = await window.DB.auth.getUser();
-    if (user?.id) {
-      window.currentUserId  = user.id;
-      window.currentAgentId = user.id;
-      return user.id;
+    const { data: { session } } = await window.DB.auth.getSession();
+    if (session?.user?.id) {
+      window.currentUserId  = session.user.id;
+      window.currentAgentId = session.user.id;
+      sessionStorage.setItem('_db_uid', session.user.id);
+      return session.user.id;
     }
   } catch (e) {
-    console.error('getAuthUid error:', e);
+    console.error('getAuthUid:', e);
   }
   return null;
 }
