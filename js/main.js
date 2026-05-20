@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.currentAgentId = session.user.id;
       sessionStorage.setItem('_db_uid', session.user.id);
     }
-    
+
     // SIGNED_OUT — စစ်မှန်သော logout အတွက်သာ clear လုပ်မည်
     if (event === 'SIGNED_OUT') {
       window.DB.auth.getSession().then(({ data: { session: s } }) => {
@@ -56,12 +56,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.currentUserId  = null;
           window.currentAgentId = null;
           sessionStorage.removeItem('_db_uid');
-          
+
           const showBtn  = document.getElementById('showAuthBtn');
           const wdBtns   = document.getElementById('walletBtns');
           const locked   = document.getElementById('agentLocked');
           const unlocked = document.getElementById('agentUnlocked');
-          
+
           if (showBtn)  showBtn.style.display  = '';
           if (wdBtns)   wdBtns.style.display   = 'none';
           if (locked)   locked.style.display   = '';
@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAgentTabs();
   initDownline();
   initWheel();
+  initBalRefresh(); // balance refresh button
   startDailyTimer();
   startCommissionCountdown();
 
