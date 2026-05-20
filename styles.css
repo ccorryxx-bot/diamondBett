@@ -493,7 +493,8 @@ input{outline:none;}
 .cc-badge-orange{background:#fb923c;color:#3d1200;}
 .cc-badge-green{background:#34d399;color:#052e16;}
 .cc-name{font-size:14px;font-weight:800;color:#fff;}
-.cc-sub{font-size:10px;color:rgba(255,255,255, **...**.cc-exp-num{width:22px;height:22px;border-radius:50%;background:rgba(245,197,24,.18);color:var(--accent);font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cc-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;}
+.cc-exp-num{width:22px;height:22px;border-radius:50%;background:(245,197,24,.18);color:var(--accent);font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .cc-exp-body{padding:12px 14px;font-size:11px;color:rgba(255,255,255,.62);line-height:1.85;}
 .cc-hl{color:var(--accent);font-weight:700;}
 .cc-formula{font-family:monospace;font-size:11px;color:#aaa;background:rgba(0,0,0,.3);border-radius:7px;padding:7px 10px;margin:4px 0;}
