@@ -103,7 +103,11 @@ async function loginUser() {
 // ON LOGIN SUCCESS
 // ============================================================
 function onLoginSuccess(user, refCode, balance = 0, userId = null) {
-  if (userId) window.currentUserId = userId;
+  if (userId) {
+    window.currentUserId  = userId;
+    window.currentAgentId = userId;
+    sessionStorage.setItem('_db_uid', userId); // ← add this line
+  }
 
   const phone        = user.phone || user.name || '—';
   const agentRefCode = refCode || user.ref_code || '—';
@@ -121,7 +125,6 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
 
   const linkInput = document.getElementById('agentShareLinkInput');
   if (linkInput) linkInput.value = shareLink;
-
   const invRef  = document.getElementById('inv-refcode');
   const invLink = document.getElementById('inv-link');
   if (invRef)  invRef.textContent = agentRefCode;
@@ -132,7 +135,8 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
 
   window.availableSpins = 1;
   setEl('availableSpins', 1);
-  document.getElementById('spinBtn').disabled = false;
+  if (document.getElementById('spinBtn'))
+    document.getElementById('spinBtn').disabled = false;
 
   if (window.currentUserId) {
     loadDashboardStats(window.currentUserId);
