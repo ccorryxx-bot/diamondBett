@@ -41,23 +41,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('getSession error:', e);
   }
 
-  // 4. Auth state listener — tab မျှဝေခြင်း / logout
+  // 4. Auth state listener (FIXED: Aggressive reset မလုပ်တော့ပါ)
   window.DB.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+    if (event === 'SIGNED_IN' && session?.user?.id) {
       window.currentUserId  = session.user.id;
       window.currentAgentId = session.user.id;
+      sessionStorage.setItem('_db_uid', session.user.id);
     }
+    
+    // SIGNED_OUT — စစ်မှန်သော logout အတွက်သာ clear လုပ်မည်
     if (event === 'SIGNED_OUT') {
-      window.currentUserId  = null;
-      window.currentAgentId = null;
-      const showBtn = document.getElementById('showAuthBtn');
-      const wdBtns  = document.getElementById('walletBtns');
-      if (showBtn) showBtn.style.display = '';
-      if (wdBtns)  wdBtns.style.display  = 'none';
-      const locked   = document.getElementById('agentLocked');
-      const unlocked = document.getElementById('agentUnlocked');
-      if (locked)   locked.style.display   = '';
-      if (unlocked) unlocked.style.display = 'none';
+      window.DB.auth.getSession().then(({ data: { session: s } }) => {
+        if (!s) {
+          window.currentUserId  = null;
+          window.currentAgentId = null;
+          sessionStorage.removeItem('_db_uid');
+          
+          const showBtn  = document.getElementById('showAuthBtn');
+          const wdBtns   = document.getElementById('walletBtns');
+          const locked   = document.getElementById('agentLocked');
+          const unlocked = document.getElementById('agentUnlocked');
+          
+          if (showBtn)  showBtn.style.display  = '';
+          if (wdBtns)   wdBtns.style.display   = 'none';
+          if (locked)   locked.style.display   = '';
+          if (unlocked) unlocked.style.display = 'none';
+        }
+      });
     }
   });
 
