@@ -62,7 +62,7 @@ async function registerUser() {
 
       gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည်', 'success');
       document.getElementById('authModal')?.classList.remove('active');
-      onLoginSuccess({ phone, name, ref_code: result.ref_code }, result.ref_code, 0, uid); // ← uid ပါးစ်လုပ်ပေးထားတယ်
+      onLoginSuccess({ phone, name, ref_code: result.ref_code }, result.ref_code, 0, uid);
     } else {
       gToast('အမှားအယွင်း: ' + result.error, 'error');
     }
@@ -120,9 +120,23 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   const agentRefCode = refCode || user.ref_code || '—';
   const shareLink    = agentRefCode !== '—'
     ? `https://diamond-bett.vercel.app/?ref=${agentRefCode}` : '—';
+  const bal          = parseFloat(balance || 0);
 
   document.getElementById('showAuthBtn').style.display  = 'none';
   document.getElementById('walletBtns').style.display   = 'flex';
+
+  // ── payLogos & balanceBar ──────────────────────────────────
+  const payLogos = document.getElementById('payLogos');
+  const balBar   = document.getElementById('balanceBar');
+  if (payLogos) payLogos.style.display = 'flex';
+  if (balBar)   balBar.style.display   = 'flex';
+
+  // ── Balance Bar populate ───────────────────────────────────
+  setEl('balUsername', phone);
+  setEl('qnavBalance', bal.toLocaleString('en-US', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  }));
+  // ──────────────────────────────────────────────────────────
 
   setEl('agentUserPhone',    phone);
   setEl('agentPhoneDisplay', phone);
@@ -160,4 +174,4 @@ function copyAgentLink() {
   navigator.clipboard.writeText(input.value)
     .then(() => gToast('Link ကူးပြီးပါပြီ', 'success'))
     .catch(() => { input.select(); document.execCommand('copy'); gToast('Link ကူးပြီးပါပြီ', 'success'); });
-}
+    }
