@@ -9,8 +9,8 @@ function switchTab(tab) {
 }
 
 function toggleEye(id, btn) {
-  const inp = document.getElementById(id);
-  inp.type  = inp.type === 'password' ? 'text' : 'password';
+  const inp  = document.getElementById(id);
+  inp.type   = inp.type === 'password' ? 'text' : 'password';
   btn.style.color = inp.type === 'text' ? '#f5c518' : 'rgba(255,255,255,.5)';
 }
 
@@ -35,7 +35,7 @@ function showPage(nav) {
 }
 
 // ============================================================
-// BANNER — dynamic slide count support
+// BANNER — dynamic slide count
 // ============================================================
 function initBanner() {
   let cur = 0, tmr = null;
@@ -43,20 +43,18 @@ function initBanner() {
   const wrap  = document.getElementById('bannerWrap');
   if (!track || !wrap) return;
 
-  const count  = () => track.querySelectorAll('.banner-slide').length;
-  const getDots= () => document.querySelectorAll('#bannerDots .dot');
+  const count   = () => track.querySelectorAll('.banner-slide').length;
+  const getDots = () => document.querySelectorAll('#bannerDots .dot');
 
   const update = () => {
     const n = count(); if (!n) return;
     track.style.transform = `translateX(-${cur * 100}%)`;
     getDots().forEach((d, i) => d.classList.toggle('active', i === cur));
   };
-
   const go    = n => { const c = count(); if (!c) return; cur = ((n % c) + c) % c; update(); };
   const start = () => { clearInterval(tmr); tmr = setInterval(() => go(cur + 1), 4000); };
   const restart = () => { cur = 0; update(); start(); };
 
-  // Event delegation for dots (supports dynamically reloaded dots)
   document.getElementById('bannerDots')?.addEventListener('click', e => {
     const dot = e.target.closest('.dot');
     if (dot) { go(+dot.dataset.i); start(); }
@@ -71,8 +69,6 @@ function initBanner() {
   }, { passive: true });
 
   update(); start();
-
-  // Expose restart for after dynamic banner load
   window._restartBanner = restart;
 }
 
@@ -87,15 +83,13 @@ function initLangBtn() {
 }
 
 // ============================================================
-// CATEGORY ITEMS — calls filterGames in games.js
+// CATEGORY ITEMS — filter games on click
 // ============================================================
 function initCatItems() {
   document.querySelectorAll('.cat-item').forEach(item => {
     item.addEventListener('click', () => {
       document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
       item.classList.add('active');
-
-      // Map sidebar data-cat to DB category values
       const catMap = {
         all    : 'all',
         show   : 'show',
@@ -106,8 +100,46 @@ function initCatItems() {
         sport  : 'sport',
         lottery: 'lottery',
       };
-      const cat = catMap[item.dataset.cat] || 'all';
-      filterGames(cat);
+      filterGames(catMap[item.dataset.cat] || 'all');
     });
   });
 }
+
+// ============================================================
+// BALANCE REFRESH (live)
+// ============================================================
+async function refreshBalance() {
+  if (!window.currentUserId) return;
+  const btn = document.getElementById('balRefreshBtn');
+  btn?.classList.add('spinning');
+
+  try {
+    const { data, error } = await window.DB
+      .from('users')
+      .select('balance')
+      .eq('id', window.currentUserId)
+      .single();
+
+    if (!error && data) {
+      const bal = parseFloat(data.balance || 0);
+      const fmt2 = bal.toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+      setEl('qnavBalance', fmt2);
+      setEl('statBalance', fmt(data.balance));
+      gToast('Balance refresh ပြီးပါပြီ', 'success');
+    }
+  } catch (e) {
+    console.error('Balance refresh error:', e);
+    gToast('Balance refresh မရပါ', 'error');
+  } finally {
+    btn?.classList.remove('spinning');
+  }
+}
+
+// ============================================================
+// INIT BALANCE REFRESH BUTTON
+// ============================================================
+function initBalRefresh() {
+  document.getElementById('balRefreshBtn')?.addEventListener('click', refreshBalance);
+      }
