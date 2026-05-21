@@ -38,6 +38,17 @@ async function registerUser() {
   if (!phone || !password || !name) { gToast('အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်ပါ'); return; }
   if (!checked) { gToast('အသက် 18+ သတ်မှတ်ချက်ကို ဝန်ခံပါ'); return; }
 
+  // Validation: No spaces and no Myanmar characters in name
+  if (/\s/.test(name) || /[\u1000-\u109F]/.test(name)) {
+    gToast('နာမည်တွင် Space နှင့် မြန်မာစာ မသုံးရပါ (English Only)', 'error');
+    return;
+  }
+  // Validation: No Myanmar characters in password
+  if (/[\u1000-\u109F]/.test(password)) {
+    gToast('စကားဝှက်တွင် မြန်မာစာ မသုံးရပါ', 'error');
+    return;
+  }
+
   const btn = document.getElementById('registerBtn');
   btn.disabled = true; btn.textContent = 'မှတ်ပုံတင်နေသည်...';
 
@@ -81,6 +92,12 @@ async function loginUser() {
   const phone    = document.getElementById('loginPhone').value.trim();
   const password = document.getElementById('loginPassword').value.trim();
   if (!phone || !password) { gToast('Phone နှင့် Password ဖြည့်ပါ'); return; }
+
+  // Validation: No Myanmar characters in password
+  if (/[\u1000-\u109F]/.test(password)) {
+    gToast('စကားဝှက်တွင် မြန်မာစာ မသုံးရပါ', 'error');
+    return;
+  }
 
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = 'ဝင်နေသည်...';
