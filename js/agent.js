@@ -280,3 +280,28 @@ function startCommissionCountdown() {
   };
   tick(); setInterval(tick, 1000);
 }
+
+function generateAgentQR(link) {
+  const container = document.getElementById('agentQRCode');
+  if (!container || !link) return;
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: link,
+    width: 128,
+    height: 128,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+// Hook into link setting logic if exists, or add to loadDashboardStats
+// Looking at agent.html, agentShareLinkInput is where the link goes.
+// We should update generateAgentQR when that link is set.
+const originalSetEl = window.setEl;
+window.setEl = function(id, val) {
+  if (originalSetEl) originalSetEl(id, val);
+  if (id === 'agentShareLinkInput' && val && val !== 'Link loading...') {
+    generateAgentQR(val);
+  }
+};
