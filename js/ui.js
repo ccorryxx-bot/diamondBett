@@ -131,7 +131,7 @@ function initAgentOrb() {
   if (!canvas) return;
 
   const dpr = Math.max(window.devicePixelRatio || 1, 1);
-  const sz  = 26;
+  const sz  = 32;
   canvas.width        = sz * dpr;
   canvas.height       = sz * dpr;
   canvas.style.width  = sz + 'px';
@@ -161,19 +161,19 @@ function initAgentOrb() {
     const sin2 = Math.sin(t * 0.0013);
 
     // ── Ambient outer glow ──
-    const ambient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 13);
+    const ambient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 16);
     ambient.addColorStop(0,   'rgba(0,200,255,0.10)');
     ambient.addColorStop(0.6, 'rgba(0,100,200,0.04)');
     ambient.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2);
     ctx.fillStyle = ambient; ctx.fill();
 
     // ── Hologram rings ──
     for (const ring of RINGS) {
       const rot = t * ring.speed + ring.phase;
       const tilt = ring.tiltBase + Math.sin(t * 0.0004 + ring.phase) * 0.25;
-      const rx = 9;
-      const ry = Math.max(0.4, rx * Math.abs(Math.cos(tilt)));
+      const rx = 11;
+      const ry = Math.max(0.5, rx * Math.abs(Math.cos(tilt)));
       const alpha = 0.45 + 0.30 * Math.sin(t * 0.0016 + ring.phase);
 
       ctx.save();
@@ -201,15 +201,15 @@ function initAgentOrb() {
     }
 
     // ── Scanner line sweep ──
-    const scanY   = cy + 9 * Math.sin(t * 0.0017);
+    const scanY   = cy + 11 * Math.sin(t * 0.0017);
     const scanA   = 0.22 + 0.14 * sin2;
-    const scanGrd = ctx.createLinearGradient(cx - 10, scanY, cx + 10, scanY);
+    const scanGrd = ctx.createLinearGradient(cx - 12, scanY, cx + 12, scanY);
     scanGrd.addColorStop(0,   'rgba(0,255,200,0)');
     scanGrd.addColorStop(0.35, `rgba(0,255,200,${scanA})`);
     scanGrd.addColorStop(0.65, `rgba(0,220,255,${scanA})`);
     scanGrd.addColorStop(1,   'rgba(0,255,200,0)');
     ctx.beginPath();
-    ctx.moveTo(cx - 10, scanY); ctx.lineTo(cx + 10, scanY);
+    ctx.moveTo(cx - 12, scanY); ctx.lineTo(cx + 12, scanY);
     ctx.strokeStyle = scanGrd;
     ctx.lineWidth   = 0.9;
     ctx.stroke();
@@ -220,14 +220,14 @@ function initAgentOrb() {
       tr.angle  += ring.speed * 10;
       const rot  = t * ring.speed + ring.phase;
       const tilt = ring.tiltBase + Math.sin(t * 0.0004 + ring.phase) * 0.25;
-      const rx   = 9, ry = Math.max(0.4, rx * Math.abs(Math.cos(tilt)));
+      const rx   = 11, ry = Math.max(0.5, rx * Math.abs(Math.cos(tilt)));
 
       const ex = cx + rx * Math.cos(tr.angle + rot);
       const ey = cy + ry * Math.sin(tr.angle + rot);
       const pa = 0.55 + 0.45 * Math.abs(Math.sin(t * 0.003 + tr.angle));
 
       ctx.beginPath();
-      ctx.arc(ex, ey, 1.3, 0, Math.PI * 2);
+      ctx.arc(ex, ey, 1.6, 0, Math.PI * 2);
       ctx.fillStyle   = `hsla(${ring.hue},100%,85%,${pa})`;
       ctx.shadowColor = `hsl(${ring.hue},100%,70%)`;
       ctx.shadowBlur  = 7 * dpr;
@@ -237,12 +237,12 @@ function initAgentOrb() {
 
     // ── Core sphere — pulsing bright center ──
     const cPulse = 0.70 + 0.30 * sin1;
-    const core   = ctx.createRadialGradient(cx - 1, cy - 1, 0, cx, cy, 5 * cPulse);
+    const core   = ctx.createRadialGradient(cx - 1, cy - 1, 0, cx, cy, 6 * cPulse);
     core.addColorStop(0,   'rgba(220,255,255,1)');
     core.addColorStop(0.3, 'rgba(0,220,255,0.85)');
     core.addColorStop(0.7, 'rgba(0,130,220,0.40)');
     core.addColorStop(1,   'rgba(0,80,180,0)');
-    ctx.beginPath(); ctx.arc(cx, cy, 5 * cPulse, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, 6 * cPulse, 0, Math.PI * 2);
     ctx.fillStyle   = core;
     ctx.shadowColor = 'rgba(0,220,255,1)';
     ctx.shadowBlur  = 10 * dpr;
@@ -250,7 +250,7 @@ function initAgentOrb() {
     ctx.shadowBlur  = 0;
 
     // ── Hard white center pinpoint ──
-    ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
     ctx.fillStyle   = 'rgba(255,255,255,0.98)';
     ctx.shadowColor = 'rgba(180,240,255,1)';
     ctx.shadowBlur  = 8 * dpr;
@@ -259,7 +259,7 @@ function initAgentOrb() {
 
     // ── Outer boundary ring (faint) ──
     const bA = 0.12 + 0.08 * sin2;
-    ctx.beginPath(); ctx.arc(cx, cy, 11.5, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2);
     ctx.strokeStyle = `rgba(0,200,255,${bA})`;
     ctx.lineWidth   = 0.8;
     ctx.stroke();

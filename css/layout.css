@@ -124,8 +124,8 @@ html, body {
   background: radial-gradient(ellipse at 50% 35%, rgba(0,210,255,.18) 0%, transparent 65%);
 }
 .agent-icon-wrap {
-  width: 26px !important;
-  height: 26px !important;
+  width: 32px !important;
+  height: 32px !important;
 }
 #agentOrb { display: block; }
 .agent-orb-label {
