@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initBanner();
   initBalRefresh();
+  initAgentOrb();
   initLangBtn();
   initCatItems();
   initLevelModal();

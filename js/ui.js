@@ -124,6 +124,154 @@ function initBalRefresh() {
 }
 
 // ============================================================
+// AGENT HOLOGRAM ORB — Canvas 2D + rAF animation
+// ============================================================
+function initAgentOrb() {
+  const canvas = document.getElementById('agentOrb');
+  if (!canvas) return;
+
+  const dpr = Math.max(window.devicePixelRatio || 1, 1);
+  const sz  = 26;
+  canvas.width        = sz * dpr;
+  canvas.height       = sz * dpr;
+  canvas.style.width  = sz + 'px';
+  canvas.style.height = sz + 'px';
+
+  const ctx = canvas.getContext('2d');
+  const cx = sz / 2, cy = sz / 2;
+
+  // 3 hologram rings — different tilt, speed, hue
+  const RINGS = [
+    { tiltBase: 0.35, speed:  0.00090, phase: 0,               hue: 185 },
+    { tiltBase: 1.05, speed: -0.00055, phase: Math.PI / 3,      hue: 200 },
+    { tiltBase: 1.65, speed:  0.00120, phase: (Math.PI * 2) / 3, hue: 165 },
+  ];
+
+  // Light trail dots — 2 per ring
+  const TRAILS = RINGS.flatMap((ring, ri) =>
+    [0, 1].map(k => ({ angle: k * Math.PI + ring.phase, ri }))
+  );
+
+  function draw(t) {
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, sz, sz);
+
+    const sin1 = Math.sin(t * 0.0020);
+    const sin2 = Math.sin(t * 0.0013);
+
+    // ── Ambient outer glow ──
+    const ambient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 13);
+    ambient.addColorStop(0,   'rgba(0,200,255,0.10)');
+    ambient.addColorStop(0.6, 'rgba(0,100,200,0.04)');
+    ambient.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+    ctx.fillStyle = ambient; ctx.fill();
+
+    // ── Hologram rings ──
+    for (const ring of RINGS) {
+      const rot = t * ring.speed + ring.phase;
+      const tilt = ring.tiltBase + Math.sin(t * 0.0004 + ring.phase) * 0.25;
+      const rx = 9;
+      const ry = Math.max(0.4, rx * Math.abs(Math.cos(tilt)));
+      const alpha = 0.45 + 0.30 * Math.sin(t * 0.0016 + ring.phase);
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+
+      // Ring glow (drawn twice — blur layer first)
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${ring.hue},100%,70%,${alpha * 0.5})`;
+      ctx.lineWidth   = 2.4;
+      ctx.shadowColor = `hsl(${ring.hue},100%,65%)`;
+      ctx.shadowBlur  = 6 * dpr;
+      ctx.stroke();
+      ctx.shadowBlur  = 0;
+
+      // Ring sharp line
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${ring.hue},100%,78%,${alpha})`;
+      ctx.lineWidth   = 0.7;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // ── Scanner line sweep ──
+    const scanY   = cy + 9 * Math.sin(t * 0.0017);
+    const scanA   = 0.22 + 0.14 * sin2;
+    const scanGrd = ctx.createLinearGradient(cx - 10, scanY, cx + 10, scanY);
+    scanGrd.addColorStop(0,   'rgba(0,255,200,0)');
+    scanGrd.addColorStop(0.35, `rgba(0,255,200,${scanA})`);
+    scanGrd.addColorStop(0.65, `rgba(0,220,255,${scanA})`);
+    scanGrd.addColorStop(1,   'rgba(0,255,200,0)');
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, scanY); ctx.lineTo(cx + 10, scanY);
+    ctx.strokeStyle = scanGrd;
+    ctx.lineWidth   = 0.9;
+    ctx.stroke();
+
+    // ── Light trails on rings ──
+    for (const tr of TRAILS) {
+      const ring = RINGS[tr.ri];
+      tr.angle  += ring.speed * 10;
+      const rot  = t * ring.speed + ring.phase;
+      const tilt = ring.tiltBase + Math.sin(t * 0.0004 + ring.phase) * 0.25;
+      const rx   = 9, ry = Math.max(0.4, rx * Math.abs(Math.cos(tilt)));
+
+      const ex = cx + rx * Math.cos(tr.angle + rot);
+      const ey = cy + ry * Math.sin(tr.angle + rot);
+      const pa = 0.55 + 0.45 * Math.abs(Math.sin(t * 0.003 + tr.angle));
+
+      ctx.beginPath();
+      ctx.arc(ex, ey, 1.3, 0, Math.PI * 2);
+      ctx.fillStyle   = `hsla(${ring.hue},100%,85%,${pa})`;
+      ctx.shadowColor = `hsl(${ring.hue},100%,70%)`;
+      ctx.shadowBlur  = 7 * dpr;
+      ctx.fill();
+      ctx.shadowBlur  = 0;
+    }
+
+    // ── Core sphere — pulsing bright center ──
+    const cPulse = 0.70 + 0.30 * sin1;
+    const core   = ctx.createRadialGradient(cx - 1, cy - 1, 0, cx, cy, 5 * cPulse);
+    core.addColorStop(0,   'rgba(220,255,255,1)');
+    core.addColorStop(0.3, 'rgba(0,220,255,0.85)');
+    core.addColorStop(0.7, 'rgba(0,130,220,0.40)');
+    core.addColorStop(1,   'rgba(0,80,180,0)');
+    ctx.beginPath(); ctx.arc(cx, cy, 5 * cPulse, 0, Math.PI * 2);
+    ctx.fillStyle   = core;
+    ctx.shadowColor = 'rgba(0,220,255,1)';
+    ctx.shadowBlur  = 10 * dpr;
+    ctx.fill();
+    ctx.shadowBlur  = 0;
+
+    // ── Hard white center pinpoint ──
+    ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle   = 'rgba(255,255,255,0.98)';
+    ctx.shadowColor = 'rgba(180,240,255,1)';
+    ctx.shadowBlur  = 8 * dpr;
+    ctx.fill();
+    ctx.shadowBlur  = 0;
+
+    // ── Outer boundary ring (faint) ──
+    const bA = 0.12 + 0.08 * sin2;
+    ctx.beginPath(); ctx.arc(cx, cy, 11.5, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,200,255,${bA})`;
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+
+    ctx.restore();
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+}
+
+// ============================================================
 // CYBERPUNK NFT AVATAR — unique per userId, Canvas 2D + rAF
 // ============================================================
 let _nftAnimId = null;

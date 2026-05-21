@@ -106,6 +106,42 @@ html, body {
   transform: scale(1.1);
 }
 
+/* ── Agent Hologram Orb Button ─────────────────────────────── */
+.agent-orb-btn {
+  position: relative;
+  overflow: visible;
+}
+.agent-orb-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 35%, rgba(0,210,255,.07) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.agent-orb-btn.active::before {
+  background: radial-gradient(ellipse at 50% 35%, rgba(0,210,255,.18) 0%, transparent 65%);
+}
+.agent-icon-wrap {
+  width: 26px !important;
+  height: 26px !important;
+}
+#agentOrb { display: block; }
+.agent-orb-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: #5a5090;
+  transition: color .2s;
+}
+.agent-orb-btn.active .agent-orb-label {
+  background: linear-gradient(90deg, #00d4ff, #00a8ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Scrollbar styling */
 .page-panel::-webkit-scrollbar {
   width: 0px;
