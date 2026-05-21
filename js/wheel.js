@@ -13,52 +13,93 @@ const TURNOVER_MULT = { 5000: 5, 15000: 6, 30000: 7, 50000: 10, 65000: 12, 80000
 let _wheelAngle = 0, _isSpinning = false, _animId = null;
 
 // ============================================================
-// DRAW
+// DRAW  — HD canvas (device pixel ratio aware)
 // ============================================================
 function drawWheel(angle) {
+  // FIX 1: Guard against NaN angle (caused by bad RPC data → slot_index undefined)
+  if (typeof angle !== 'number' || isNaN(angle)) {
+    angle = 0;
+    _wheelAngle = 0;
+  }
+
   const canvas = document.getElementById('wheelCanvas');
   if (!canvas) return;
+
+  // FIX 2: Scale canvas buffer by devicePixelRatio for HD/crisp text on high-DPI screens
+  const dpr      = Math.max(window.devicePixelRatio || 1, 1);
+  const logical  = 260; // CSS size stays 260px
+
+  if (canvas.width !== logical * dpr || canvas.height !== logical * dpr) {
+    canvas.width        = logical * dpr;
+    canvas.height       = logical * dpr;
+    canvas.style.width  = logical + 'px';
+    canvas.style.height = logical + 'px';
+  }
+
   const ctx = canvas.getContext('2d');
-  const sz = 260, cx = sz / 2, cy = sz / 2, r = 118, sa = (Math.PI * 2) / 8;
+  ctx.save();
+  ctx.scale(dpr, dpr); // All coordinates now in logical (CSS) px
+
+  const sz = logical, cx = sz / 2, cy = sz / 2, r = 118, sa = (Math.PI * 2) / 8;
 
   ctx.clearRect(0, 0, sz, sz);
+
+  // Outer gold ring
   ctx.beginPath(); ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
   ctx.strokeStyle = '#C9A227'; ctx.lineWidth = 4; ctx.stroke();
 
+  // Sector slices
   WHEEL_SLOTS.forEach((slot, i) => {
     const start = angle + i * sa, end = start + sa;
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, end); ctx.closePath();
     ctx.fillStyle = slot.color; ctx.fill();
     ctx.strokeStyle = '#C9A227'; ctx.lineWidth = 1.5; ctx.stroke();
 
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(start + sa / 2);
-    ctx.fillStyle      = slot.amount === 0 ? '#333' : '#FFD700';
-    ctx.font           = 'bold 10px "Segoe UI",sans-serif';
-    ctx.textAlign      = 'center'; ctx.textBaseline = 'middle';
-    ctx.shadowColor    = 'rgba(0,0,0,.9)'; ctx.shadowBlur = 4;
-    ctx.fillText(slot.label, r * 0.62, 0); ctx.restore();
+    // Label text — HD font size adjusted for DPR
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + sa / 2);
+    ctx.fillStyle     = slot.amount === 0 ? '#444' : '#FFD700';
+    ctx.font          = 'bold 11px "Segoe UI",Arial,sans-serif';
+    ctx.textAlign     = 'center';
+    ctx.textBaseline  = 'middle';
+    ctx.shadowColor   = 'rgba(0,0,0,.95)';
+    ctx.shadowBlur    = 5;
+    ctx.fillText(slot.label, r * 0.62, 0);
+    ctx.restore();
   });
 
-  // Center hub
+  // Center hub — gold radial gradient
   const cg = ctx.createRadialGradient(cx - 5, cy - 5, 3, cx, cy, 22);
-  cg.addColorStop(0, '#FFE55C'); cg.addColorStop(1, '#8B6014');
+  cg.addColorStop(0, '#FFE55C');
+  cg.addColorStop(1, '#8B6014');
   ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2);
   ctx.fillStyle = cg; ctx.fill();
   ctx.strokeStyle = '#C9A227'; ctx.lineWidth = 2; ctx.stroke();
 
-  // Diamond center
+  // Diamond center icon
   ctx.beginPath();
-  ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 7, cy); ctx.lineTo(cx, cy + 9); ctx.lineTo(cx - 7, cy);
-  ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+  ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 7, cy);
+  ctx.lineTo(cx, cy + 9); ctx.lineTo(cx - 7, cy);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fill();
+
+  ctx.restore(); // Undo DPR scale
 }
 
 // ============================================================
 // SPIN
 // ============================================================
 function spinToSlot(slotIndex, onDone) {
+  // FIX: guard against null / undefined / NaN slot index from RPC
+  slotIndex = Math.max(1, parseInt(slotIndex) || 1);
+
   if (_isSpinning) return;
   _isSpinning = true;
   document.getElementById('spinBtn').disabled = true;
+
+  // FIX: if _wheelAngle is somehow NaN, reset it
+  if (isNaN(_wheelAngle)) _wheelAngle = 0;
 
   const idx        = (slotIndex - 1) % 8;
   const sa         = (Math.PI * 2) / 8;
@@ -80,7 +121,9 @@ function spinToSlot(slotIndex, onDone) {
     if (t < 1) {
       _animId = requestAnimationFrame(animate);
     } else {
-      _animId = null; _wheelAngle = start + total; _isSpinning = false;
+      _animId = null;
+      _wheelAngle = start + total;
+      _isSpinning = false;
       onDone?.();
     }
   }
@@ -95,15 +138,23 @@ function initWheel() {
 
   document.getElementById('spinBtn').addEventListener('click', async () => {
     if (!window.currentUserId) { openAuthModal('login'); return; }
-    if (window.availableSpins <= 0) { gToast('လှည့်ပိုင်ခွင့် မရှိသေးပါ'); return; }
+
+    // FIX: treat undefined as 0 (don't let NaN comparison pass)
+    const spins = parseInt(window.availableSpins) || 0;
+    if (spins <= 0) { gToast('လှည့်ပိုင်ခွင့် မရှိသေးပါ'); return; }
 
     const { data, error } = await window.DB.rpc('spin_lucky_wheel', { p_user_id: window.currentUserId });
-    if (error) { gToast('Spin မအောင်မြင်ပါ: ' + error.message, 'error'); return; }
+
+    // FIX: validate RPC response before using slot_index
+    if (error || !data || data.slot_index == null) {
+      gToast('Spin မအောင်မြင်ပါ: ' + (error?.message || 'Server response error'), 'error');
+      return;
+    }
 
     window.availableSpins--;
     setEl('availableSpins', window.availableSpins);
 
-    const slot = WHEEL_SLOTS[(data.slot_index - 1) % 8];
+    const slot = WHEEL_SLOTS[(Math.max(1, parseInt(data.slot_index) || 1) - 1) % 8];
     spinToSlot(data.slot_index, () => {
       const overlay = document.getElementById('spinResultOverlay');
       const content = document.getElementById('spinResultContent');
