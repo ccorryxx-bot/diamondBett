@@ -52,6 +52,14 @@ html, body {
   flex-direction: column;
 }
 
+#homeContent {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100%;
+  flex: 1;
+}
+
 /* Bottom nav — fixed at bottom */
 .bottom-nav {
   height: var(--bottom-h);

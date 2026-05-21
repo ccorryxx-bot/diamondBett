@@ -24,6 +24,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadPartials();
 
+  // Bind Auth Events (Loaded via Modals Partial)
+  document.getElementById('modalCloseBtn')?.addEventListener('click', () => {
+    document.getElementById('authModal')?.classList.remove('active');
+  });
+  document.getElementById('loginBtn')?.addEventListener('click', loginUser);
+  document.getElementById('registerBtn')?.addEventListener('click', registerUser);
+
   initBanner();
   initBalRefresh();
   initLangBtn();
@@ -67,6 +74,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       showPage(btn.dataset.nav);
     });
   });
+
+  // Login Button Listener
+  document.getElementById('showAuthBtn')?.addEventListener('click', () => {
+    if (typeof openAuthModal === 'function') {
+      openAuthModal('login');
+    } else {
+      console.error('openAuthModal function not found');
+    }
+  });
+
+  // Supabase connection check
+  if (!window.DB) {
+    console.error('Supabase client (window.DB) failed to initialize. Check config.js and Supabase SDK.');
+  }
 
   showPage('home');
 });
