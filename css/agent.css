@@ -169,10 +169,17 @@
   color: #fff;
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 0, 0, 0.5);
   font-weight: 700;
-  animation: ticker 18s linear infinite, hologramDistort 3s ease-in-out infinite;
+  animation: ticker 18s linear infinite;
   padding-left: 100%;
   position: relative;
   z-index: 1;
+}
+.agent-ticker:hover .ticker-inner {
+  animation-play-state: paused;
+}
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 @keyframes liquidMetal {
   0% { background-position: 0% 50%; }

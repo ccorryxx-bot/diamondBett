@@ -283,16 +283,25 @@ function startCommissionCountdown() {
 
 function generateAgentQR(link) {
   const container = document.getElementById('agentQRCode');
-  if (!container || !link) return;
+  if (!container || !link || link === '—') return;
+  
+  // Clear placeholder
   container.innerHTML = '';
-  new QRCode(container, {
-    text: link,
-    width: 128,
-    height: 128,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
+  
+  try {
+    new QRCode(container, {
+      text: link,
+      width: 128,
+      height: 128,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    console.log('QR Generated for:', link);
+  } catch (e) {
+    console.error('QR Generation failed:', e);
+    container.innerHTML = '<div class="qr-placeholder">Error</div>';
+  }
 }
 
 // Hook into link setting logic if exists, or add to loadDashboardStats

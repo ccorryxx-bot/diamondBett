@@ -176,7 +176,11 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   setEl('userLevelNum',      '1');
 
   const linkInput = document.getElementById('agentShareLinkInput');
-  if (linkInput) linkInput.value = shareLink;
+  if (linkInput) {
+    linkInput.value = shareLink;
+    // Explicitly generate QR
+    if (typeof generateAgentQR === 'function') generateAgentQR(shareLink);
+  }
   const invRef  = document.getElementById('inv-refcode');
   const invLink = document.getElementById('inv-link');
   if (invRef)  invRef.textContent = agentRefCode;
