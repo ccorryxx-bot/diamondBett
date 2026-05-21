@@ -73,6 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 5. Init modules
   initBanner();
+  initScrollObserver();  // full-page scroll snap sync
+  initBalRefresh();      // balance refresh button
   initLangBtn();
   initCatItems();
   initLevelModal();
