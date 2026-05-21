@@ -84,6 +84,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Deposit & Withdraw Button Listeners (Event Delegation for dynamic content)
+  document.addEventListener('click', (e) => {
+    const depBtn = e.target.closest('.wallet-btn.deposit');
+    if (depBtn) {
+      if (typeof openDepositModal === 'function') openDepositModal();
+      return;
+    }
+    const wdBtn = e.target.closest('.wallet-btn.withdraw');
+    if (wdBtn) {
+      if (typeof openWithdrawModal === 'function') openWithdrawModal();
+      return;
+    }
+  });
+
   // Supabase connection check
   if (!window.DB) {
     console.error('Supabase client (window.DB) failed to initialize. Check config.js and Supabase SDK.');
