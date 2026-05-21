@@ -1,6 +1,3 @@
-// ============================================================
-// AUTH MODAL TABS
-// ============================================================
 function switchTab(tab) {
   document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
   document.getElementById('loginForm').style.display    = tab === 'login'    ? 'block' : 'none';
