@@ -1,9 +1,10 @@
 async function loadPartials() {
   const partials = [
-    { src: 'html/home.html',   id: 'homeContent'     },
-    { src: 'html/tasks.html',  id: 'tasksPage'       },
-    { src: 'html/agent.html',  id: 'agentPage'       },
-    { src: 'html/modals.html', id: 'modalsContainer' },
+    { src: 'html/home.html',    id: 'homeContent'     },
+    { src: 'html/tasks.html',   id: 'tasksPage'       },
+    { src: 'html/agent.html',   id: 'agentPage'       },
+    { src: 'html/modals.html',  id: 'modalsContainer' },
+    { src: 'html/account.html', id: 'accountPage'     },
   ];
   await Promise.all(partials.map(async ({ src, id }) => {
     try {
@@ -123,7 +124,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelectorAll('.bnav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      showPage(btn.dataset.nav);
+      const nav = btn.dataset.nav;
+      if (nav === 'account' && !window.currentUserId) {
+        if (typeof gToast === 'function')
+          gToast('Account page ကြည့်ရန် အကောင့် အရင်ဝင်ပါ');
+        return;
+      }
+      showPage(nav);
     });
   });
 

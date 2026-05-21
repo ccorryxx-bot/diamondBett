@@ -1,0 +1,246 @@
+<!-- =====================================================
+     ACCOUNT PAGE PARTIAL
+     ===================================================== -->
+
+<!-- ── GUEST STATE (not logged in) ───────────────────── -->
+<div class="acct-guest" id="acctGuest">
+  <div class="acct-guest-wrap">
+    <div class="acct-guest-icon">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="30" fill="rgba(245,197,24,.08)" stroke="rgba(245,197,24,.2)" stroke-width="1.5"/>
+        <circle cx="32" cy="24" r="10" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+        <path d="M10 52c0-12 44-12 44 0" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.2)" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="24" y="36" width="16" height="20" rx="4" fill="rgba(245,197,24,.15)" stroke="rgba(245,197,24,.3)" stroke-width="1"/>
+        <path d="M28 44v4M36 44v4" stroke="rgba(245,197,24,.5)" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="32" cy="42" r="2.5" fill="rgba(245,197,24,.6)"/>
+      </svg>
+    </div>
+    <p class="acct-guest-title">Account Page ကြည့်ရန်</p>
+    <p class="acct-guest-sub">အကောင့် အရင်ဝင်ပါ</p>
+    <button class="acct-guest-btn" onclick="openAuthModal('login')">ဝင်ရောက်မည်</button>
+  </div>
+</div>
+
+<!-- ── LOGGED-IN STATE ────────────────────────────────── -->
+<div class="acct-body" id="acctBody" style="display:none;">
+
+  <!-- Profile Header -->
+  <div class="acct-header">
+    <div class="acct-avatar-wrap">
+      <canvas id="acctAvatar" class="acct-avatar" width="52" height="52"></canvas>
+      <div class="acct-avatar-ring"></div>
+    </div>
+    <div class="acct-hdr-info">
+      <div class="acct-name-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#f5c518" style="flex-shrink:0"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span id="acctName" class="acct-name">—</span>
+        <button class="acct-ico-btn" onclick="copyAcctField('acctName')" title="Copy">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      </div>
+      <div class="acct-id-row">
+        <span class="acct-idlbl">ID:</span>
+        <span id="acctId" class="acct-id">—</span>
+        <button class="acct-ico-btn" onclick="copyAcctField('acctId')" title="Copy">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+        <span class="acct-mm-flag">🇲🇲</span>
+        <span id="acctHeaderBal" class="acct-hdr-bal">0.00</span>
+        <button class="acct-ico-btn acct-bal-ref" id="acctBalRefBtn" onclick="refreshAcctBal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposit / Withdraw Action Row -->
+  <div class="acct-action-row">
+    <button class="acct-act-btn" onclick="if(typeof openWithdrawModal==='function')openWithdrawModal()">
+      <div class="acct-act-ico wd-ico">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect x="4" y="10" width="40" height="28" rx="6" fill="rgba(245,197,24,.15)" stroke="rgba(245,197,24,.4)" stroke-width="1.5"/>
+          <rect x="4" y="18" width="40" height="8" fill="rgba(245,197,24,.1)"/>
+          <rect x="10" y="24" width="12" height="4" rx="2" fill="#f5c518" opacity=".7"/>
+        </svg>
+      </div>
+      <span>ငွေထုတ်ရန်</span>
+    </button>
+    <button class="acct-act-btn acct-act-dep" onclick="if(typeof openDepositModal==='function')openDepositModal()">
+      <div class="acct-act-ico dep-ico">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <path d="M6 28c1.5-10 28-10 36 0" stroke="rgba(34,197,94,.5)" stroke-width="2" stroke-linecap="round"/>
+          <rect x="8" y="14" width="32" height="22" rx="5" fill="rgba(34,197,94,.15)" stroke="rgba(34,197,94,.4)" stroke-width="1.5"/>
+          <circle cx="24" cy="25" r="6" fill="rgba(34,197,94,.3)" stroke="rgba(34,197,94,.6)" stroke-width="1.5"/>
+          <path d="M21 25h6M24 22v6" stroke="rgba(34,197,94,.9)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span>ငွေသွင်းရန်</span>
+    </button>
+  </div>
+
+  <!-- VIP Level Banner -->
+  <div class="acct-vip-wrap">
+    <div class="acct-vip">
+      <div class="vip-badge-col">
+        <div class="vip-badge-ring">
+          <div class="vip-badge-inner" id="acctVipCircle">
+            <span id="acctVipNum">1</span>
+          </div>
+        </div>
+        <span class="vip-v-label">V<span id="acctVipLv">1</span></span>
+      </div>
+      <div class="vip-data-col">
+        <div class="vip-promo-line">ပရိုမိုးရှင်းကြေးငွေ <strong id="acctPromoAmt">488.00</strong></div>
+        <div class="vip-prog-wrap">
+          <div class="vip-bar-track">
+            <div class="vip-bar-fill" id="acctDepFill" style="width:21%"></div>
+          </div>
+          <div class="vip-prog-row">
+            <span id="acctDepProg" class="vip-prog-cur">8,000.00/38,000.00</span>
+            <span class="vip-prog-need">VIP လိုအပ်သည်: ငွေသွင်းရန် <strong><span id="acctDepNeed">30,000</span></strong></span>
+          </div>
+        </div>
+        <div class="vip-prog-wrap">
+          <div class="vip-bar-track">
+            <div class="vip-bar-fill vip-tov-fill" id="acctTovFill" style="width:6%"></div>
+          </div>
+          <div class="vip-prog-row">
+            <span id="acctTovProg" class="vip-prog-cur">16,479.00/250,000.00</span>
+            <span class="vip-prog-need">VIP လိုအပ်သည်: အသောင်းအစား <strong><span id="acctTovNeed">233,521</span></strong></span>
+          </div>
+        </div>
+      </div>
+      <svg class="vip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- Menu Group 1 -->
+  <div class="acct-menu-card">
+    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+      <div class="acct-mico" style="background:rgba(245,197,24,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="1.8" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      </div>
+      <div class="acct-mtext">
+        <span class="acct-mlabel">ငါမ်တမ်း</span>
+        <span class="acct-mhint">အသိပေးစာ၊ လောင်းကစားများ လက်ကျန်</span>
+      </div>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+      <div class="acct-mico" style="background:rgba(239,68,68,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M16 12h.01M2 10h20"/></svg>
+      </div>
+      <span class="acct-mlabel">ငွေထုတ်စီမံခန့်ခွဲမှု</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- Menu Group 2 -->
+  <div class="acct-menu-card">
+    <div class="acct-mitem" onclick="showPage('agent')">
+      <div class="acct-mico" style="background:rgba(99,102,241,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <span class="acct-mlabel">အဆောင်</span>
+      <span class="acct-mval">တပ်လဝင်ငွေ တပ်သန်း</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+      <div class="acct-mico" style="background:rgba(251,146,60,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <span class="acct-mlabel">ကိုယ်ရေးအချက်အလက်များ</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+      <div class="acct-mico" style="background:rgba(34,197,94,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <span class="acct-mlabel">လုံခြုံရေးစင်တာ</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem" onclick="gToast('မြန်မာဘာသာ ကို အသုံးပြုနေသည်')">
+      <div class="acct-mico" style="background:rgba(56,189,248,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      </div>
+      <span class="acct-mlabel">ဘာသာစကား</span>
+      <span class="acct-mval">မြန်မာဘာသာ</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem" onclick="showPage('cs')">
+      <div class="acct-mico" style="background:rgba(168,85,247,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <span class="acct-mlabel">မောက်သည်ဝန်ဆောင်မှု</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+      <div class="acct-mico" style="background:rgba(234,179,8,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.8" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <span class="acct-mlabel">အကြိုပေးချက်</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <div class="acct-mitem acct-logout-item" onclick="logoutUser()">
+      <div class="acct-mico" style="background:rgba(239,68,68,.1);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </div>
+      <span class="acct-mlabel acct-logout-label">အကောင့်ထွက်ရန်</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+</div>
+
+<script>
+function copyAcctField(id) {
+  const txt = document.getElementById(id)?.textContent || '';
+  if (!txt || txt === '—') return;
+  navigator.clipboard?.writeText(txt).then(() => gToast('ကူးပြီးပါပြီ', 'success'))
+    .catch(() => gToast('ကူးယူရန် မရနိုင်ပါ'));
+}
+
+async function refreshAcctBal() {
+  if (!window.currentUserId) return;
+  const btn = document.getElementById('acctBalRefBtn');
+  if (btn) btn.style.opacity = '0.4';
+  try {
+    const { data } = await window.DB.from('users').select('balance').eq('id', window.currentUserId).single();
+    if (data) {
+      const b = parseFloat(data.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const el = document.getElementById('acctHeaderBal');
+      if (el) el.textContent = b;
+      const qnav = document.getElementById('qnavBalance');
+      if (qnav) qnav.textContent = b;
+    }
+  } catch(e) { console.error(e); }
+  finally { if (btn) btn.style.opacity = '1'; }
+}
+
+async function logoutUser() {
+  if (!window.DB) return;
+  await window.DB.auth.signOut();
+  window.currentUserId = null;
+  sessionStorage.removeItem('_db_uid');
+  const acctGuest = document.getElementById('acctGuest');
+  const acctBody  = document.getElementById('acctBody');
+  if (acctGuest) acctGuest.style.display = 'flex';
+  if (acctBody)  acctBody.style.display  = 'none';
+  const showBtn = document.getElementById('showAuthBtn');
+  const wdBtns  = document.getElementById('walletBtns');
+  const balWrap = document.getElementById('qnavBalanceWrap');
+  if (showBtn) showBtn.style.display = 'block';
+  if (wdBtns)  wdBtns.style.display  = 'none';
+  if (balWrap) balWrap.style.display  = 'none';
+  if (typeof showPage === 'function') showPage('home');
+  if (typeof gToast   === 'function') gToast('ထွက်ပြီးပြီ', 'success');
+}
+</script>

@@ -204,6 +204,23 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
     loadDashboardStats(window.currentUserId);
     initLinked();
   }
+
+  // ── Populate Account Page ──────────────────────────────
+  const shortId = (() => {
+    if (!userId) return '000000000';
+    const hex = userId.replace(/-/g, '').slice(0, 10);
+    return String(Math.abs(parseInt(hex, 16)) % 1000000000).padStart(9, '0');
+  })();
+  const acctGuest = document.getElementById('acctGuest');
+  const acctBody  = document.getElementById('acctBody');
+  if (acctGuest) acctGuest.style.display = 'none';
+  if (acctBody)  acctBody.style.display  = 'flex';
+  setEl('acctName', displayName);
+  setEl('acctId',   shortId);
+  const acctBalEl = document.getElementById('acctHeaderBal');
+  if (acctBalEl) acctBalEl.textContent = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (typeof generateNFTAvatar === 'function')
+    generateNFTAvatar(userId || displayName, 'acctAvatar', 52);
 }
 
 // ============================================================

@@ -274,7 +274,7 @@ function initAgentOrb() {
 // ============================================================
 // CYBERPUNK NFT AVATAR — unique per userId, Canvas 2D + rAF
 // ============================================================
-let _nftAnimId = null;
+const _nftAnims = new Map();
 
 function _nftRoundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -290,14 +290,17 @@ function _nftRoundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function generateNFTAvatar(userId) {
-  const canvas = document.getElementById('nftAvatar');
+// canvasId — target canvas element id
+// sz       — CSS display size in px (canvas draws in 30×30 logical space, scaled to sz)
+function generateNFTAvatar(userId, canvasId = 'nftAvatar', sz = 30) {
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
 
-  if (_nftAnimId) { cancelAnimationFrame(_nftAnimId); _nftAnimId = null; }
+  if (_nftAnims.has(canvasId)) { cancelAnimationFrame(_nftAnims.get(canvasId)); _nftAnims.delete(canvasId); }
 
-  const dpr = Math.max(window.devicePixelRatio || 1, 1);
-  const sz  = 30;
+  const dpr   = Math.max(window.devicePixelRatio || 1, 1);
+  const base  = 30;                       // logical drawing space
+  const scale = (sz / base) * dpr;
   canvas.width        = sz * dpr;
   canvas.height       = sz * dpr;
   canvas.style.width  = sz + 'px';
@@ -313,7 +316,7 @@ function generateNFTAvatar(userId) {
   const hue  = h % 360;
   const hue2 = (hue + 150) % 360;
 
-  // Floating particles — deterministic positions & velocities
+  // Floating particles — deterministic positions & velocities in 30×30 space
   const pts = Array.from({ length: 4 }, (_, i) => ({
     x : 2 + ((h >> (i * 4)) & 0x1f) % 26,
     y : 2 + ((h >> (i * 3)) & 0x1f) % 26,
@@ -324,10 +327,10 @@ function generateNFTAvatar(userId) {
 
   function draw(t) {
     ctx.save();
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, sz, sz);
+    ctx.scale(scale, scale);              // one scale handles both DPR and size
+    ctx.clearRect(0, 0, base, base);
 
-    const cx   = sz / 2, cy = sz / 2;
+    const cx   = base / 2, cy = base / 2;
     const sin1 = Math.sin(t * 0.0018);
     const sin2 = Math.sin(t * 0.0011);
 
@@ -335,7 +338,7 @@ function generateNFTAvatar(userId) {
     const bg = ctx.createRadialGradient(cx, cy - 2, 0, cx, cy, 18);
     bg.addColorStop(0, `hsl(${hue},55%,12%)`);
     bg.addColorStop(1, '#04040e');
-    _nftRoundRect(ctx, 0, 0, sz, sz, 7);
+    _nftRoundRect(ctx, 0, 0, base, base, 7);
     ctx.fillStyle = bg;
     ctx.fill();
 
@@ -392,7 +395,7 @@ function generateNFTAvatar(userId) {
 
     // Border glow pulse
     const bA = 0.35 + 0.25 * sin2;
-    _nftRoundRect(ctx, 0.5, 0.5, sz - 1, sz - 1, 6.5);
+    _nftRoundRect(ctx, 0.5, 0.5, base - 1, base - 1, 6.5);
     ctx.strokeStyle = `hsla(${hue},100%,65%,${bA})`;
     ctx.lineWidth   = 1;
     ctx.stroke();
@@ -400,8 +403,8 @@ function generateNFTAvatar(userId) {
     // Floating neon particles
     for (const p of pts) {
       p.x += p.vx; p.y += p.vy;
-      if (p.x < 1 || p.x > sz - 1) p.vx *= -1;
-      if (p.y < 1 || p.y > sz - 1) p.vy *= -1;
+      if (p.x < 1 || p.x > base - 1) p.vx *= -1;
+      if (p.y < 1 || p.y > base - 1) p.vy *= -1;
       const pa = 0.35 + 0.65 * Math.abs(Math.sin(t * 0.002 + p.x * 0.3));
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -413,8 +416,8 @@ function generateNFTAvatar(userId) {
     }
 
     ctx.restore();
-    _nftAnimId = requestAnimationFrame(draw);
+    _nftAnims.set(canvasId, requestAnimationFrame(draw));
   }
 
-  _nftAnimId = requestAnimationFrame(draw);
+  _nftAnims.set(canvasId, requestAnimationFrame(draw));
 }
