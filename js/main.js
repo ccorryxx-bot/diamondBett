@@ -17,6 +17,43 @@ async function loadPartials() {
   }));
 }
 
+// ============================================================
+// SUPABASE REALTIME — Notification subscription
+// ============================================================
+let _notiChannel = null;
+
+function subscribeNotifications(userId) {
+  if (!window.DB || !userId) return;
+
+  // Remove any existing channel first to prevent duplicate subscriptions
+  if (_notiChannel) {
+    window.DB.removeChannel(_notiChannel);
+    _notiChannel = null;
+  }
+
+  _notiChannel = window.DB
+    .channel('noti-' + userId)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+      (payload) => {
+        const msg = payload.new?.message || 'အသိပေးချက် ရှိသည်';
+        const type = payload.new?.type || 'normal';
+        gToast(msg, type);
+      }
+    )
+    .subscribe((status, err) => {
+      if (err) console.error('Notification channel error:', err);
+    });
+}
+
+function unsubscribeNotifications() {
+  if (_notiChannel && window.DB) {
+    window.DB.removeChannel(_notiChannel);
+    _notiChannel = null;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.supabase) {
     window.DB = window.supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -63,6 +100,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (wdBtns) wdBtns.style.display = 'flex';
         if (balWrap) balWrap.style.display = 'flex';
         refreshBalance();
+        // FIX: Subscribe to realtime notifications after login
+        subscribeNotifications(session.user.id);
       }
       if (event === 'SIGNED_OUT') {
         window.currentUserId = null;
@@ -72,6 +111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (showBtn) showBtn.style.display = 'block';
         if (wdBtns) wdBtns.style.display = 'none';
         if (balWrap) balWrap.style.display = 'none';
+        // FIX: Clean up notification channel on logout
+        unsubscribeNotifications();
       }
     });
   }
