@@ -66,16 +66,27 @@ async function registerUser() {
     
     if (resp.ok) {
       // မှတ်ပုံတင်အောင်မြင်ရင် Auto Login တစ်ခါတည်းဝင်ပြီး uid ဆွဲထုတ်မယ်
-      const { data: signData } = await window.DB.auth.signInWithPassword({
+      const { data: signData, error: signError } = await window.DB.auth.signInWithPassword({
         email: `${phone}@diamondbett.com`, password
       });
-      const uid = signData?.user?.id || null;
+      
+      if (signError) {
+        gToast('မှတ်ပုံတင်အောင်မြင်သော်လည်း Login မဝင်နိုင်ပါ၊ ပြန်လည် Login ဝင်ပေးပါ', 'warning');
+        switchTab('login');
+        return;
+      }
 
+      const uid = signData?.user?.id || null;
       gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည်', 'success');
       document.getElementById('authModal')?.classList.remove('active');
-      onLoginSuccess({ phone, name, ref_code: result.ref_code }, result.ref_code, 0, uid);
+      onLoginSuccess({ phone, fullname: name, ref_code: result.ref_code }, result.ref_code, 0, uid);
     } else {
-      gToast('အမှားအယွင်း: ' + result.error, 'error');
+      // Handle Supabase error message more gracefully
+      let errMsg = result.error || 'မသိရသောအမှား';
+      if (errMsg.includes('already been registered')) {
+        errMsg = 'ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်သည်';
+      }
+      gToast('အမှားအယွင်း: ' + errMsg, 'error');
     }
   } catch (err) {
     console.error(err);
@@ -144,15 +155,18 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
 
   // ── payLogos & balanceBar ──────────────────────────────────
   const payLogos = document.getElementById('payLogos');
-  const balBar   = document.getElementById('balanceBar');
+  const balWrap  = document.getElementById('qnavBalanceWrap');
   if (payLogos) payLogos.style.display = 'flex';
-  if (balBar)   balBar.style.display   = 'flex';
+  if (balWrap)  balWrap.style.display  = 'flex';
 
   // ── Balance Bar populate ───────────────────────────────────
   setEl('balUsername', phone);
-  setEl('qnavBalance', bal.toLocaleString('en-US', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2
-  }));
+  const qnavBal = document.getElementById('qnavBalance');
+  if (qnavBal) {
+    qnavBal.textContent = bal.toLocaleString('en-US', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  }
   // ──────────────────────────────────────────────────────────
 
   setEl('agentUserPhone',    phone);

@@ -6,6 +6,7 @@
 .modal-sheet{
   width:100%;
   max-width:480px;
+  max-height: 90vh;
   background: linear-gradient(165deg, #0f0d22 0%, #1a1635 100%);
   border-radius:24px 24px 0 0;
   padding:20px 20px 32px;
@@ -13,8 +14,10 @@
   animation:slideUp .3s cubic-bezier(.25,.8,.25,1);
   box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
   border-top: 1px solid rgba(255,255,255,0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.modal-sheet::-webkit-scrollbar { display: none; }
 
 .modal-sheet::before {
   content: '';
@@ -40,16 +43,13 @@
 .auth-tab.active{background:rgba(255,255,255,.1);color:#fff;}
 .auth-body{
   padding:0 2px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  display: block;
 }
 
 #registerForm, #loginForm {
-  grid-column: span 2;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 .auth-subtitle { grid-column: span 2; }

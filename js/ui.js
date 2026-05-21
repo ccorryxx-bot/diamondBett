@@ -1,8 +1,11 @@
 function switchTab(tab) {
-  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
-  document.getElementById('loginForm').style.display    = tab === 'login'    ? 'block' : 'none';
-  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
-  document.getElementById('tabLogin').classList.toggle('active',    tab === 'login');
+  const regForm = document.getElementById('registerForm');
+  const logForm = document.getElementById('loginForm');
+  if (regForm) regForm.style.display = tab === 'register' ? 'grid' : 'none';
+  if (logForm) logForm.style.display = tab === 'login'    ? 'grid' : 'none';
+  
+  document.getElementById('tabRegister')?.classList.toggle('active', tab === 'register');
+  document.getElementById('tabLogin')?.classList.toggle('active',    tab === 'login');
 }
 
 function toggleEye(id, btn) {
