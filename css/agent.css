@@ -234,3 +234,76 @@
 .cc-formula{background:rgba(0,0,0,.3);border-radius:6px;padding:6px 10px;font-size:11px;color:#aaa;margin:4px 0;font-family:monospace;}
 .cc-formula span{color:var(--accent);font-weight:700;}
 .cc-formula-final{border:1px solid rgba(245,197,24,.2);}
+
+/* ================================================
+   NEW COOL BANNER DESIGN — Glassmorphism + Glow
+   ================================================ */
+.agent-promo-new{
+  margin:10px;border-radius:16px;
+  position:relative;overflow:hidden;
+  height:200px;display:flex;align-items:center;justify-content:space-between;padding:24px 20px;
+  background:linear-gradient(135deg,rgba(6,15,48,.95),rgba(14,58,184,.95));
+  border:1.5px solid rgba(255,255,255,.1);
+  box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.1);
+  backdrop-filter:blur(10px);
+}
+.agent-promo-new::before{
+  content:'';position:absolute;inset:0;
+  background-image:url('./assets/wolf_bg.png');
+  background-size:cover;background-position:center;
+  opacity:.25;z-index:0;
+}
+.agent-promo-new::after{
+  content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+  animation:glassShimmer 4s ease-in-out infinite;z-index:1;
+}
+.agent-promo-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(10,8,32,.8),rgba(14,58,184,.6));
+  z-index:0;
+}
+.agent-promo-overlay{
+  position:absolute;inset:0;
+  background:radial-gradient(circle at 100% 0%,rgba(99,179,237,.15),transparent 50%),
+              radial-gradient(circle at 0% 100%,rgba(168,85,247,.1),transparent 50%);
+  z-index:1;
+}
+.agent-promo-content{
+  position:relative;z-index:2;flex:1;min-width:0;
+}
+.agent-promo-label-new{
+  font-size:11px;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;margin-bottom:6px;
+}
+.agent-promo-title-new{
+  font-size:22px;font-weight:900;color:#fff;margin:0 0 4px;
+  text-shadow:0 2px 8px rgba(0,0,0,.4);
+  background:linear-gradient(135deg,#fff,rgba(255,255,255,.8));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.agent-promo-sub-new{
+  font-size:12px;color:rgba(255,255,255,.7);margin-bottom:8px;
+  text-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.agent-promo-amount-new{
+  font-size:28px;font-weight:900;color:#f5c518;
+  text-shadow:0 0 12px rgba(245,197,24,.5);
+  margin-top:6px;
+}
+.agent-promo-icon{
+  position:relative;z-index:2;flex-shrink:0;margin-left:16px;
+  width:120px;height:120px;display:flex;align-items:center;justify-content:center;
+}
+.affiliate-icon-img{
+  width:100%;height:100%;object-fit:contain;
+  filter:drop-shadow(0 0 16px rgba(99,179,237,.6)) drop-shadow(0 0 8px rgba(168,85,247,.4));
+  animation:floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon{
+  0%, 100% { transform:translateY(0px); }
+  50% { transform:translateY(-8px); }
+}
