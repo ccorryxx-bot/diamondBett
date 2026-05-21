@@ -28,6 +28,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('modalCloseBtn')?.addEventListener('click', () => {
     document.getElementById('authModal')?.classList.remove('active');
   });
+
+  // Close Deposit Modal
+  document.getElementById('depCloseBtn')?.addEventListener('click', () => {
+    document.getElementById('depositModal')?.classList.remove('open');
+  });
+
+  // Close Withdraw Modal
+  document.getElementById('wdCloseBtn')?.addEventListener('click', () => {
+    document.getElementById('withdrawModal')?.classList.remove('open');
+  });
   document.getElementById('loginBtn')?.addEventListener('click', loginUser);
   document.getElementById('registerBtn')?.addEventListener('click', registerUser);
 
