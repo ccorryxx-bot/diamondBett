@@ -12,53 +12,36 @@ function toggleEye(id, btn) {
 }
 
 // ============================================================
-// PAGE NAVIGATION — scroll snap
+// PAGE NAVIGATION — SPA Style (Show/Hide)
 // ============================================================
-const PAGE_ORDER = ['home', 'tasks', 'agent', 'cs', 'account'];
-const PAGE_MAP   = { home:'homePage', tasks:'tasksPage', agent:'agentPage', cs:'csPage', account:'accountPage' };
+const PAGE_MAP = { 
+  home: 'homePage', 
+  tasks: 'tasksPage', 
+  agent: 'agentPage', 
+  cs: 'csPage', 
+  account: 'accountPage' 
+};
 
 function showPage(nav) {
-  const main   = document.getElementById('mainContent');
-  const target = document.getElementById(PAGE_MAP[nav]);
-  if (!main || !target) return;
+  const targetId = PAGE_MAP[nav];
+  if (!targetId) return;
 
-  // Smooth scroll to page panel
-  main.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  // Update Panel Visibility
+  Object.values(PAGE_MAP).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.toggle('active', id === targetId);
+      if (id === targetId) el.scrollTop = 0;
+    }
+  });
 
-  // topArea visibility
-  const hideTop = ['tasks', 'agent'];
-  const topArea = document.getElementById('topArea');
-  if (topArea) topArea.style.display = hideTop.includes(nav) ? 'none' : '';
-
-  // Update nav active state
+  // Update Nav Active State
   document.querySelectorAll('.bnav-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.nav === nav));
 }
 
-// ============================================================
-// INTERSECTION OBSERVER — sync nav with scroll
-// ============================================================
 function initScrollObserver() {
-  const main = document.getElementById('mainContent');
-  if (!main) return;
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-        const nav = Object.keys(PAGE_MAP).find(k => PAGE_MAP[k] === entry.target.id);
-        if (!nav) return;
-        document.querySelectorAll('.bnav-btn').forEach(b =>
-          b.classList.toggle('active', b.dataset.nav === nav));
-        const topArea = document.getElementById('topArea');
-        if (topArea) topArea.style.display = ['tasks','agent'].includes(nav) ? 'none' : '';
-      }
-    });
-  }, { root: main, threshold: 0.5 });
-
-  Object.values(PAGE_MAP).forEach(id => {
-    const el = document.getElementById(id);
-    if (el) observer.observe(el);
-  });
+  console.log('SPA Mode: ScrollObserver disabled');
 }
 
 // ============================================================
@@ -97,9 +80,6 @@ function initBanner() {
   window._restartBanner = restart;
 }
 
-// ============================================================
-// LANGUAGE TOGGLE
-// ============================================================
 function initLangBtn() {
   document.getElementById('langBtn')?.addEventListener('click', () => {
     const lbl = document.getElementById('langLabel');
@@ -107,23 +87,17 @@ function initLangBtn() {
   });
 }
 
-// ============================================================
-// CATEGORY ITEMS
-// ============================================================
 function initCatItems() {
   document.querySelectorAll('.cat-item').forEach(item => {
     item.addEventListener('click', () => {
       document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
       item.classList.add('active');
       const catMap = { all:'all', show:'show', slot:'slot', arcade:'arcade', live:'live', fish:'fish', sport:'sport', lottery:'lottery' };
-      filterGames(catMap[item.dataset.cat] || 'all');
+      if (typeof filterGames === 'function') filterGames(catMap[item.dataset.cat] || 'all');
     });
   });
 }
 
-// ============================================================
-// BALANCE REFRESH
-// ============================================================
 async function refreshBalance() {
   if (!window.currentUserId) return;
   const btn = document.getElementById('balRefreshBtn');
@@ -133,13 +107,15 @@ async function refreshBalance() {
     if (data) {
       const bal  = parseFloat(data.balance || 0);
       const fmt2 = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      setEl('qnavBalance', fmt2);
-      setEl('statBalance', fmt(data.balance));
+      const qnavBal = document.getElementById('qnavBalance');
+      if (qnavBal) qnavBal.textContent = fmt2;
     }
   } catch (e) { console.error('Balance refresh:', e); }
   finally { btn?.classList.remove('spinning'); }
 }
 
 function initBalRefresh() {
-  document.getElementById('balRefreshBtn')?.addEventListener('click', refreshBalance);
-                                                                         }
+  document.querySelectorAll('#balRefreshBtn').forEach(btn => {
+    btn.addEventListener('click', refreshBalance);
+  });
+}

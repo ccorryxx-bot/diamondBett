@@ -1,78 +1,104 @@
 /* ================================================
-   LAYOUT — full-page scroll snap
+   LAYOUT — Modern SPA Style (No Scroll-Snap)
    ================================================ */
 
-/* Top area sticky */
-#topArea{position:relative;z-index:100;flex-shrink:0;}
-
-/* Main scroll container — snap */
-.main{
-  flex:1;
-  overflow-y:scroll;
-  overflow-x:hidden;
-  scroll-snap-type:y mandatory;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  min-height:0;
-  position:relative;
-}
-.main::-webkit-scrollbar{display:none;}
-
-/* Page panels — each full height, always in flow */
-.page-panel{
-  min-height:calc(100dvh - var(--bottom-h));
-  scroll-snap-align:start;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-  position:relative;
+/* Document level fix */
+html, body {
+  height: 100%;
+  overflow: hidden;
 }
 
-/* Home page horizontal split */
-#homePage{flex-direction:row;overflow:hidden;height:calc(100dvh - var(--bottom-h));}
-#homePage .sidebar{overflow-y:auto;}
-#homePage .game-area{overflow-y:auto;flex:1;}
+/* Top area - inside homePage flow */
+#topArea {
+  position: relative;
+  z-index: 100;
+  width: 100%;
+  flex-shrink: 0;
+}
 
-/* Tasks + Agent fill full height */
-#tasksPage,#agentPage{height:calc(100dvh - var(--bottom-h));}
+/* Main container */
+.main {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Page panels - Show/Hide Logic */
+.page-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+  padding-bottom: calc(var(--bottom-h) + 20px);
+}
+
+.page-panel.active {
+  display: flex;
+}
+
+/* Home page internal layout */
+#homePage {
+  flex-direction: column;
+}
 
 /* Bottom nav — fixed at bottom */
-.bottom-nav{
-  height:var(--bottom-h);
-  background:#0a0820;
-  border-top:1px solid #201c44;
-  display:flex;
-  flex-shrink:0;
-  position:relative;
-  z-index:200;
+.bottom-nav {
+  height: var(--bottom-h);
+  background: #0a0820;
+  border-top: 1px solid #201c44;
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
-.bnav-btn{
-  flex:1;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:2px;background:none;border:none;
-  color:#5a5090;font-size:9px;font-family:inherit;
-  transition:color .2s;
-  position:relative;
-}
-.bnav-btn.active{color:var(--accent);}
-.bnav-icon{
-  width:22px;height:22px;
-  display:flex;align-items:center;justify-content:center;
-  transition:transform .2s;
-}
-.bnav-btn.active .bnav-icon{transform:scale(1.1);}
 
-/* Agent nav btn — coin + neoglow */
-.bnav-btn[data-nav="agent"]{
-  transition:color .2s,background .2s;
+.bnav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: #5a5090;
+  font-size: 9px;
+  font-family: inherit;
+  transition: color .2s;
+  position: relative;
 }
-.bnav-btn[data-nav="agent"].active{
-  background:rgba(245,197,24,.08);
-  border-radius:14px 14px 0 0;
-  box-shadow:0 -2px 12px rgba(245,197,24,.2),
-             inset 0 1px 0 rgba(255,255,255,.06);
+
+.bnav-btn.active {
+  color: var(--accent);
 }
-.bnav-btn[data-nav="agent"].active .bnav-icon svg{
-  animation:coinFlip .6s ease-out;
-  filter:drop-shadow(0 0 6px rgba(245,197,24,.8));
+
+.bnav-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .2s;
+}
+
+.bnav-btn.active .bnav-icon {
+  transform: scale(1.1);
+}
+
+/* Scrollbar styling */
+.page-panel::-webkit-scrollbar {
+  width: 0px;
 }
