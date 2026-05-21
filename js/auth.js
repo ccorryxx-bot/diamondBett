@@ -160,12 +160,18 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   if (balWrap)  balWrap.style.display  = 'flex';
 
   // ── Balance Bar populate ───────────────────────────────────
-  setEl('balUsername', phone);
+  // Show fullname (not phone) in balance bar
+  const displayName = user.fullname || user.name || phone;
+  setEl('balUsername', displayName);
   const qnavBal = document.getElementById('qnavBalance');
   if (qnavBal) {
     qnavBal.textContent = bal.toLocaleString('en-US', {
       minimumFractionDigits: 2, maximumFractionDigits: 2
     });
+  }
+  // Generate unique Cyberpunk NFT avatar for this user
+  if (typeof generateNFTAvatar === 'function') {
+    generateNFTAvatar(userId || window.currentUserId || displayName);
   }
   // ──────────────────────────────────────────────────────────
 

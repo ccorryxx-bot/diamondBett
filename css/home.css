@@ -122,9 +122,16 @@
   display:none;align-items:center;gap:7px;
   margin-left:auto;flex-shrink:0;
 }
-.user-3d-avatar{width:30px;height:30px;flex-shrink:0;}
+.nft-avatar-canvas{
+  width:30px;height:30px;flex-shrink:0;border-radius:7px;
+  animation:nftGlowPulse 2.8s ease-in-out infinite;
+}
+@keyframes nftGlowPulse{
+  0%,100%{box-shadow:0 0 5px rgba(0,220,255,.3),0 0 10px rgba(0,220,255,.1);}
+  50%{box-shadow:0 0 10px rgba(0,220,255,.55),0 0 20px rgba(120,0,255,.2);}
+}
 .qnav-user-info{display:flex;flex-direction:column;gap:0;min-width:0;}
-.qnav-username{font-size:10px;color:rgba(255,255,255,.55);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68px;}
+.qnav-username{font-size:10px;color:rgba(255,255,255,.65);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px;letter-spacing:.2px;}
 .qnav-amount-row{display:flex;align-items:baseline;gap:2px;}
 .qnav-bal-num{font-size:13px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;}
 .qnav-bal-unit{font-size:8px;color:rgba(245,197,24,.55);font-weight:600;}
@@ -134,8 +141,9 @@
   color:rgba(255,255,255,.4);flex-shrink:0;
   display:flex;align-items:center;justify-content:center;transition:all .2s;
 }
-.qnav-refresh:active{background:rgba(255,255,255,.14);}
+.qnav-refresh:active{background:rgba(255,255,255,.18);color:rgba(0,220,255,.9);}
 .qnav-refresh.spinning svg{animation:balSpin .7s linear infinite;}
+@keyframes balSpin{to{transform:rotate(360deg);}}
 
 /* ================================================
    ANNOUNCE
