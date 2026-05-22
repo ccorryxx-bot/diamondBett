@@ -13,7 +13,7 @@ async function restoreSession(userId) {
   try {
     const { data: ud, error } = await window.DB
       .from('users')
-      .select('ref_code,fullname,phone,balance,is_admin,role')
+      .select('ref_code,fullname,phone,balance,is_admin,role,total_deposited')
       .eq('id', userId)
       .single();
 
@@ -149,7 +149,7 @@ async function loginUser() {
 
     const { data: ud } = await window.DB
       .from('users')
-      .select('ref_code,fullname,phone,balance,is_admin,role')
+      .select('ref_code,fullname,phone,balance,is_admin,role,total_deposited')
       .eq('id', data.user.id)
       .single();
 
@@ -231,22 +231,36 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
 
   if (userId && window.DB) {
     const todayISO = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    window.DB.from('lucky_wheel_history')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('spun_at', todayISO + 'T00:00:00')
-      .then(({ count, error }) => {
-        const spunToday = !error && count > 0;
-        window.availableSpins = spunToday ? 0 : 1;
-        setEl('availableSpins', window.availableSpins);
-        const spinBtn = document.getElementById('spinBtn');
-        if (spinBtn) spinBtn.disabled = spunToday;
-      });
-  }
+    
+    // Optimization: Run independent async tasks in parallel
+    const loginTasks = [];
 
-  if (window.currentUserId) {
-    loadDashboardStats(window.currentUserId);
-    initLinked();
+    // Task 1: Check lucky wheel
+    loginTasks.push(
+      window.DB.from('lucky_wheel_history')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('spun_at', todayISO + 'T00:00:00')
+        .then(({ count, error }) => {
+          const spunToday = !error && count > 0;
+          window.availableSpins = spunToday ? 0 : 1;
+          setEl('availableSpins', window.availableSpins);
+          const spinBtn = document.getElementById('spinBtn');
+          if (spinBtn) spinBtn.disabled = spunToday;
+        })
+    );
+
+    // Task 2: Load dashboard stats
+    if (typeof loadDashboardStats === 'function') {
+      loginTasks.push(loadDashboardStats(userId));
+    }
+
+    // Task 3: Initialize linked accounts
+    if (typeof initLinked === 'function') {
+      initLinked(); // This is local, but good to keep in sequence
+    }
+
+    Promise.all(loginTasks).catch(err => console.error('onLoginSuccess parallel tasks failed:', err));
   }
 
   // ── Populate Account Page ──────────────────────────────
@@ -268,13 +282,18 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
 
   // ── Load VIP + subscribe Realtime ─────────────────────
   if (userId && window.DB) {
-    window.DB.from('users').select('total_deposited').eq('id', userId).single()
-      .then(({ data }) => {
-        if (typeof loadUserVip === 'function')
-          loadUserVip(userId, parseFloat(data?.total_deposited || 0));
-        if (typeof subscribeVipRealtime === 'function')
-          subscribeVipRealtime(userId);
-      });
+    // Optimization: Since we already have the user object in restoreSession/loginUser, 
+    // we should use the balance/deposited from there if possible, 
+    // but here we ensure loadUserVip gets the latest data.
+    const dep = parseFloat(user.total_deposited || 0);
+    
+    if (typeof loadUserVip === 'function') {
+      loadUserVip(userId, dep);
+    }
+    
+    if (typeof subscribeVipRealtime === 'function') {
+      subscribeVipRealtime(userId);
+    }
   }
 }
 
@@ -287,4 +306,4 @@ function copyAgentLink() {
   navigator.clipboard.writeText(input.value)
     .then(() => gToast('Link ကူးပြီးပါပြီ', 'success'))
     .catch(() => { input.select(); document.execCommand('copy'); gToast('Link ကူးပြီးပါပြီ', 'success'); });
-    }
+}
