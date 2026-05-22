@@ -201,30 +201,134 @@
 </div>
 
 <script>
+// ── Copy helper ───────────────────────────────────────────
 function copyAcctField(id) {
   const txt = document.getElementById(id)?.textContent || '';
   if (!txt || txt === '—') return;
-  navigator.clipboard?.writeText(txt).then(() => gToast('ကူးပြီးပါပြီ', 'success'))
+  navigator.clipboard?.writeText(txt)
+    .then(() => gToast('ကူးပြီးပါပြီ', 'success'))
     .catch(() => gToast('ကူးယူရန် မရနိုင်ပါ'));
 }
 
+// ── Balance refresh ───────────────────────────────────────
 async function refreshAcctBal() {
   if (!window.currentUserId) return;
   const btn = document.getElementById('acctBalRefBtn');
   if (btn) btn.style.opacity = '0.4';
   try {
-    const { data } = await window.DB.from('users').select('balance').eq('id', window.currentUserId).single();
+    const { data } = await window.DB
+      .from('users')
+      .select('balance, total_deposited')
+      .eq('id', window.currentUserId)
+      .single();
     if (data) {
-      const b = parseFloat(data.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const b = parseFloat(data.balance || 0)
+        .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const el = document.getElementById('acctHeaderBal');
       if (el) el.textContent = b;
       const qnav = document.getElementById('qnavBalance');
       if (qnav) qnav.textContent = b;
+      // refresh VIP bar too
+      if (data.total_deposited != null)
+        await loadUserVip(window.currentUserId, parseFloat(data.total_deposited || 0));
     }
   } catch(e) { console.error(e); }
   finally { if (btn) btn.style.opacity = '1'; }
 }
 
+// ── VIP level loader ──────────────────────────────────────
+// Called after login (from auth.js) and on balance refresh.
+// Reads vip_levels table and updates the banner accordingly.
+async function loadUserVip(userId, totalDeposited) {
+  if (!window.DB) return;
+
+  try {
+    const { data: levels, error } = await window.DB
+      .from('vip_levels')
+      .select('level, label, min_deposit, rebate_pct, promo_amt')
+      .order('level', { ascending: true });
+
+    if (error || !levels?.length) {
+      // Table not yet created — show placeholder values, no crash
+      console.warn('vip_levels table not found or empty. Run sql/vip_levels.sql first.');
+      return;
+    }
+
+    const dep = parseFloat(totalDeposited || 0);
+
+    // Current level = highest level whose min_deposit the user has met
+    const current = [...levels].reverse().find(l => dep >= parseFloat(l.min_deposit)) || levels[0];
+    // Next level = one step above current (null if maxed out)
+    const nextIdx  = levels.findIndex(l => l.level === current.level) + 1;
+    const next     = nextIdx < levels.length ? levels[nextIdx] : null;
+
+    // Decide progress against next level's requirement
+    const depTarget = next ? parseFloat(next.min_deposit) : parseFloat(current.min_deposit);
+    const depPct    = next ? Math.min(100, (dep / depTarget) * 100) : 100;
+
+    // Friendly MMK formatter
+    const fmt = n => parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtShort = n => {
+      n = parseFloat(n);
+      if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
+      if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+      return n.toFixed(0);
+    };
+
+    // ── Update DOM ────────────────────────────────────────
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+    set('acctVipNum', current.level);
+    set('acctVipLv',  current.level);
+
+    // Promotional bonus (admin-controlled)
+    const promo = parseFloat(current.promo_amt || 0);
+    set('acctPromoAmt', fmt(promo));
+
+    // Deposit progress bar
+    set('acctDepProg', `${fmt(dep)} / ${fmt(depTarget)}`);
+    const depFill = document.getElementById('acctDepFill');
+    if (depFill) depFill.style.width = depPct.toFixed(1) + '%';
+
+    if (next) {
+      const depNeed = Math.max(0, depTarget - dep);
+      set('acctDepNeed', fmtShort(depNeed));
+    } else {
+      set('acctDepNeed', 'Max Level');
+    }
+
+    // Turnover bar — use remaining_turnover from users table if available
+    const { data: uRow } = await window.DB
+      .from('users')
+      .select('remaining_turnover, required_turnover')
+      .eq('id', userId)
+      .single();
+
+    if (uRow) {
+      const tReq = parseFloat(uRow.required_turnover  || 0);
+      const tRem = parseFloat(uRow.remaining_turnover || 0);
+      const tDone = Math.max(0, tReq - tRem);
+      const tPct  = tReq > 0 ? Math.min(100, (tDone / tReq) * 100) : 0;
+      set('acctTovProg', `${fmt(tDone)} / ${fmt(tReq)}`);
+      const tovFill = document.getElementById('acctTovFill');
+      if (tovFill) tovFill.style.width = tPct.toFixed(1) + '%';
+      set('acctTovNeed', fmtShort(tRem));
+    }
+
+    // Label in VIP badge background colour (tint by level)
+    const circle = document.getElementById('acctVipCircle');
+    if (circle) {
+      const hues = [145,200,260,30,0,280,170,50,320,80,220,10,130,190,60,340,100,240,15,300];
+      const hue  = hues[(current.level - 1) % hues.length];
+      circle.style.background = `linear-gradient(135deg,hsl(${hue},70%,30%),hsl(${hue},60%,15%))`;
+    }
+
+  } catch(e) {
+    console.error('loadUserVip error:', e);
+  }
+}
+
+// ── Logout ────────────────────────────────────────────────
 async function logoutUser() {
   if (!window.DB) return;
   await window.DB.auth.signOut();

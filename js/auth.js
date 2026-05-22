@@ -221,6 +221,15 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   if (acctBalEl) acctBalEl.textContent = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (typeof generateNFTAvatar === 'function')
     generateNFTAvatar(userId || displayName, 'acctAvatar', 52);
+
+  // ── Load VIP level from vip_levels table ──────────────
+  if (userId && window.DB) {
+    window.DB.from('users').select('total_deposited').eq('id', userId).single()
+      .then(({ data }) => {
+        if (typeof loadUserVip === 'function')
+          loadUserVip(userId, parseFloat(data?.total_deposited || 0));
+      });
+  }
 }
 
 // ============================================================
