@@ -424,3 +424,161 @@
 }
 .acct-logout-item .acct-mlabel,
 .acct-logout-label { color: #ef4444 !important; }
+
+/* ── Transaction History Bottom Sheet ─────────────────────── */
+.tx-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.tx-backdrop.open { opacity: 1; pointer-events: all; }
+
+.tx-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #080220;
+  border-top: 1px solid rgba(0,245,255,.25);
+  border-radius: 20px 20px 0 0;
+  z-index: 201;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform .32s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 -4px 40px rgba(0,245,255,.08), 0 -1px 0 rgba(0,245,255,.15);
+}
+.tx-sheet.open { transform: translateY(0); }
+
+.tx-handle {
+  width: 36px; height: 4px;
+  background: rgba(255,255,255,.14);
+  border-radius: 99px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+.tx-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 8px;
+  flex-shrink: 0;
+}
+.tx-title { flex: 1; font-size: 15px; font-weight: 900; color: #fff; }
+.tx-rt-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  transition: background .3s;
+}
+.tx-rt-dot.active {
+  background: #00f5ff;
+  box-shadow: 0 0 8px #00f5ff;
+  animation: txRtBlink 1.5s ease-in-out infinite;
+}
+@keyframes txRtBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.tx-close {
+  background: none; border: none;
+  color: rgba(255,255,255,.45);
+  padding: 4px; display: flex; align-items: center;
+  cursor: pointer; border-radius: 6px;
+}
+.tx-close:active { color: #fff; }
+
+.tx-admin-filter { padding: 0 14px 6px; flex-shrink: 0; }
+.tx-user-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(0,245,255,.05);
+  border: 1px solid rgba(0,245,255,.2);
+  border-radius: 8px;
+  color: rgba(255,255,255,.8);
+  font-size: 12px;
+  padding: 8px 12px;
+  font-family: inherit;
+  outline: none;
+}
+.tx-user-input::placeholder { color: rgba(255,255,255,.3); }
+
+.tx-tabs {
+  display: flex;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.tx-tab {
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  font-size: 12px; font-weight: 700;
+  color: rgba(255,255,255,.38);
+  cursor: pointer; font-family: inherit;
+  transition: all .2s;
+}
+.tx-tab.active { color: #00f5ff; border-bottom-color: #00f5ff; }
+
+.tx-list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px calc(var(--bottom-h, 58px) + 14px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,245,255,.2) transparent;
+}
+.tx-list-wrap::-webkit-scrollbar { width: 3px; }
+.tx-list-wrap::-webkit-scrollbar-thumb { background: rgba(0,245,255,.2); border-radius: 99px; }
+
+.tx-spinner {
+  width: 26px; height: 26px;
+  border: 2px solid rgba(0,245,255,.15);
+  border-top-color: #00f5ff;
+  border-radius: 50%;
+  animation: txSpin .75s linear infinite;
+  margin: 28px auto;
+}
+@keyframes txSpin { to { transform: rotate(360deg); } }
+
+.tx-empty {
+  text-align: center;
+  padding: 36px 16px;
+  color: rgba(255,255,255,.28);
+  font-size: 13px;
+}
+
+/* Transaction list items */
+.txi {
+  background: #0d0328;
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.txi.txi-dep { border-left: 3px solid rgba(0,245,255,.45); }
+.txi.txi-wd  { border-left: 3px solid rgba(200,0,255,.45); }
+.txi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.txi-type { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.55); }
+.txi-amt  { font-size: 13px; font-weight: 900; color: #fff; }
+.txi-dep .txi-amt { color: #00f5ff; }
+.txi-wd  .txi-amt { color: #c800ff; }
+.txi-sub {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.txi-meth { font-size: 9.5px; color: rgba(255,255,255,.38); }
+.txi-date { font-size: 9.5px; color: rgba(255,255,255,.28); }
+.txs {
+  font-size: 10px; font-weight: 700;
+  border-radius: 20px; padding: 2px 9px;
+  display: inline-block;
+}
+.txs-pend { background: rgba(245,197,24,.12); color: #f5c518; }
+.txs-ok   { background: rgba(34,197,94,.12);  color: #22c55e; }
+.txs-rej  { background: rgba(239,68,68,.12);  color: #ef4444; }

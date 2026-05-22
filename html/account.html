@@ -138,18 +138,18 @@
 
   <!-- Menu Group 1 -->
   <div class="acct-menu-card">
-    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+    <div class="acct-mitem" onclick="openTxHistory()">
       <div class="acct-mico" style="background:rgba(245,197,24,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="1.8" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
       </div>
       <div class="acct-mtext">
         <span class="acct-mlabel">ငါမ်တမ်း</span>
-        <span class="acct-mhint">အသိပေးစာ၊ လောင်းကစားများ လက်ကျန်</span>
+        <span class="acct-mhint">ငွေသွင်း/ထုတ် မှတ်တမ်းများ · Real-Time</span>
       </div>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
-    <div class="acct-mitem" onclick="gToast('မကြာမီ ရနိုင်မည်')">
+    <div class="acct-mitem" onclick="if(typeof openWithdrawModal==='function')openWithdrawModal()">
       <div class="acct-mico" style="background:rgba(239,68,68,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M16 12h.01M2 10h20"/></svg>
       </div>
@@ -208,6 +208,16 @@
       </div>
       <span class="acct-mlabel">အကြိုပေးချက်</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="acct-divider"></div>
+    <!-- Admin Dashboard — shown only when is_admin = true -->
+    <div class="acct-mitem" id="adminDashBtn" style="display:none" onclick="showPage('admin')">
+      <div class="acct-mico" style="background:rgba(200,0,255,.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c800ff" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+      </div>
+      <span class="acct-mlabel" style="color:#c800ff">Admin Dashboard</span>
+      <span class="acct-mval" style="color:rgba(200,0,255,.7);font-size:10px">⚡ Admin</span>
+      <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c800ff" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
     <div class="acct-mitem acct-logout-item" onclick="logoutUser()">
@@ -386,6 +396,96 @@ async function loadUserVip(userId, totalDeposited) {
   }
 }
 
+// ── Transaction History Sheet ─────────────────────────────
+let _txType = 'all', _txRtCh = null, _txAllData = [];
+
+function openTxHistory() {
+  if (!window.currentUserId) { gToast('အကောင့် ဝင်ပါ'); return; }
+  document.getElementById('txBackdrop')?.classList.add('open');
+  document.getElementById('txSheet')?.classList.add('open');
+  const af = document.getElementById('txAdminFilter');
+  if (af) af.style.display = window.currentIsAdmin ? 'block' : 'none';
+  _txType = 'all';
+  document.querySelectorAll('.tx-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  fetchTxHistory();
+  subscribeTxRt();
+}
+
+function closeTxHistory() {
+  document.getElementById('txBackdrop')?.classList.remove('open');
+  document.getElementById('txSheet')?.classList.remove('open');
+  if (_txRtCh && window.DB) { window.DB.removeChannel(_txRtCh); _txRtCh = null; }
+  const dot = document.getElementById('txRtDot');
+  if (dot) dot.classList.remove('active');
+}
+
+function switchTxTab(btn, type) {
+  document.querySelectorAll('.tx-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  _txType = type;
+  renderTxList(_txAllData);
+}
+
+async function fetchTxHistory() {
+  const spinner = document.getElementById('txSpinner');
+  const empty   = document.getElementById('txEmpty');
+  const list    = document.getElementById('txItems');
+  if (spinner) spinner.style.display = 'flex';
+  if (empty)   empty.style.display   = 'none';
+  if (list)    list.innerHTML         = '';
+  if (!window.DB) return;
+  let q = window.DB.from('transactions').select('*').order('created_at', { ascending: false }).limit(80);
+  if (!window.currentIsAdmin) q = q.eq('user_id', window.currentUserId);
+  const { data, error } = await q;
+  if (spinner) spinner.style.display = 'none';
+  if (error || !data?.length) { if (empty) empty.style.display = 'flex'; return; }
+  _txAllData = data;
+  renderTxList(data);
+}
+
+function renderTxList(data) {
+  const list  = document.getElementById('txItems');
+  const empty = document.getElementById('txEmpty');
+  if (!list) return;
+  const rows = _txType === 'all' ? data : data.filter(t => t.type === _txType);
+  if (!rows.length) { list.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+  if (empty) empty.style.display = 'none';
+  const stM = { pending: { l: '⏳ ဆိုင်းငံ့', c: 'txs-pend' }, approved: { l: '✓ အတည်', c: 'txs-ok' }, rejected: { l: '✕ ငြင်းပယ်', c: 'txs-rej' } };
+  const tyM = { deposit: { l: '⬇ ငွေသွင်း', c: 'txi-dep' }, withdrawal: { l: '⬆ ငွေထုတ်', c: 'txi-wd' } };
+  const p2  = n => String(n).padStart(2, '0');
+  list.innerHTML = rows.map(t => {
+    const ty  = tyM[t.type]   || { l: t.type,   c: '' };
+    const st  = stM[t.status] || { l: t.status,  c: '' };
+    const dt  = new Date(t.created_at);
+    const dts = `${dt.getFullYear()}-${p2(dt.getMonth()+1)}-${p2(dt.getDate())} ${p2(dt.getHours())}:${p2(dt.getMinutes())}`;
+    const amt = parseFloat(t.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+    return `<div class="txi ${ty.c}">
+      <div class="txi-head">
+        <span class="txi-type">${ty.l}</span>
+        <span class="txi-amt">${t.type === 'deposit' ? '+' : '-'} ${amt} ks</span>
+      </div>
+      <div class="txi-sub">
+        <span class="txi-meth">${t.payment_method || '—'}</span>
+        <span class="txi-date">${dts}</span>
+      </div>
+      <span class="txs ${st.c}">${st.l}</span>
+    </div>`;
+  }).join('');
+}
+
+function subscribeTxRt() {
+  if (!window.DB) return;
+  if (_txRtCh) { window.DB.removeChannel(_txRtCh); _txRtCh = null; }
+  const cfg = { event: '*', schema: 'public', table: 'transactions' };
+  if (!window.currentIsAdmin) cfg.filter = `user_id=eq.${window.currentUserId}`;
+  _txRtCh = window.DB.channel('tx-rt-sheet')
+    .on('postgres_changes', cfg, () => fetchTxHistory())
+    .subscribe(() => {
+      const dot = document.getElementById('txRtDot');
+      if (dot) dot.classList.add('active');
+    });
+}
+
 // ── Logout ────────────────────────────────────────────────
 async function logoutUser() {
   if (!window.DB) return;
@@ -402,6 +502,9 @@ async function logoutUser() {
   if (showBtn) showBtn.style.display = 'block';
   if (wdBtns)  wdBtns.style.display  = 'none';
   if (balWrap) balWrap.style.display  = 'none';
+  window.currentIsAdmin = false;
+  const adminBtn = document.getElementById('adminDashBtn');
+  if (adminBtn) adminBtn.style.display = 'none';
   if (typeof showPage === 'function') showPage('home');
   if (typeof gToast   === 'function') gToast('ထွက်ပြီးပြီ', 'success');
 }

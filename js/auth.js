@@ -121,13 +121,17 @@ async function loginUser() {
 
     const { data: ud } = await window.DB
       .from('users')
-      .select('ref_code,fullname,phone,balance')
+      .select('ref_code,fullname,phone,balance,is_admin,role')
       .eq('id', data.user.id)
       .single();
 
     document.getElementById('authModal')?.classList.remove('active');
     window.currentUserId  = data.user.id;
     window.currentAgentId = data.user.id;
+    window.currentIsAdmin = !!(ud?.is_admin);
+    // Show admin button if applicable
+    const adminBtn = document.getElementById('adminDashBtn');
+    if (adminBtn) adminBtn.style.display = window.currentIsAdmin ? 'flex' : 'none';
     onLoginSuccess(ud || { phone }, ud?.ref_code, ud?.balance, data.user.id);
   } finally {
     btn.disabled = false; btn.textContent = 'ဝင်ရောက်မည်';

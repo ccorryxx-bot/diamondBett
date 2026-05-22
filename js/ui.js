@@ -22,7 +22,8 @@ const PAGE_MAP = {
   tasks: 'tasksPage', 
   agent: 'agentPage', 
   cs: 'csPage', 
-  account: 'accountPage' 
+  account: 'accountPage',
+  admin: 'adminPage'
 };
 
 function showPage(nav) {
@@ -41,6 +42,11 @@ function showPage(nav) {
   // Update Nav Active State
   document.querySelectorAll('.bnav-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.nav === nav));
+
+  // Admin init hook
+  if (nav === 'admin' && typeof initAdminDashboard === 'function') {
+    initAdminDashboard();
+  }
 }
 
 function initScrollObserver() {
