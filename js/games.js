@@ -93,7 +93,8 @@ function renderGames() {
     const hasImg = g.image_url && !g.image_url.includes('placeholder');
     return `<div class="game-card" onclick="playGame('${g.game_code}')">
       ${hasImg
-        ? `<img src="${g.image_url}" class="gc-bg" loading="lazy"
+        ? `<img src="${g.image_url}" class="gc-bg" loading="lazy" 
+             decoding="async"
              onerror="this.style.display='none'">`
         : `<div class="gc-bg" style="background:linear-gradient(145deg,
              hsl(${hue},60%,30%),hsl(${hue + 20},70%,20%));"></div>
