@@ -135,8 +135,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (balWrap)  balWrap.style.display   = 'none';
         if (payLogos) payLogos.style.display  = 'none';
         if (adminBtn) adminBtn.style.display  = 'none';
-        // Pre-fill form with last credentials
+        // Pre-fill LOGIN form with last credentials, then open modal on login tab
         if (typeof prefillLoginForm === 'function') prefillLoginForm();
+        if (typeof openAuthModal === 'function') openAuthModal('login');
         // Clean up notification channel
         unsubscribeNotifications();
         showPage('home');
