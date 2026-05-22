@@ -6,6 +6,7 @@ async function loadPartials() {
     { src: 'html/modals.html',  id: 'modalsContainer' },
     { src: 'html/account.html', id: 'accountPage'     },
     { src: 'html/admin.html',   id: 'adminPage'       },
+    { src: 'html/cs.html',     id: 'csPage'          },
   ];
   await Promise.all(partials.map(async ({ src, id }) => {
     try {
