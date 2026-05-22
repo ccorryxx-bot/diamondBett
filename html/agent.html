@@ -14,6 +14,7 @@
 
   <!-- Header -->
   <div class="agent-header">
+    <canvas id="agentHudCanvas"></canvas>
     <div class="agent-header-top">
       <div class="agent-brand">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -77,9 +78,15 @@
 
       <div class="agent-user-card">
         <button class="rank-badge-btn" id="levelBtn">
-          <span id="userLevelNum">1</span>
+          <div class="hud-ring-wrap">
+            <div class="hud-ring-1"></div>
+            <div class="hud-ring-2"></div>
+            <div class="hud-ring-3"></div>
+          </div>
+          <div class="hud-scan-line"></div>
+          <span class="rank-num" id="userLevelNum">1</span>
           <div class="rank-badge-indicator">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1.2" fill="#aaa"/></svg>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(0,255,255,.7)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1.2" fill="rgba(0,255,255,.7)"/></svg>
           </div>
         </button>
         <div class="user-info">
@@ -470,10 +477,108 @@
   </div>
 
   <!-- Coming Soon Tabs -->
-  <div id="atab-performance" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><p>စွမ်းဆောင်ရည် — Coming Soon</p></div></div>
-  <div id="atab-commission" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p>ကော်မရှင် — Coming Soon</p></div></div>
-  <div id="atab-lowbet" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><p>အဆင့်နိမ့် — Coming Soon</p></div></div>
-  <div id="atab-bank" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9l9-6 9 6M9 9v12M15 9v12M3 13h18"/></svg><p>Bank — Coming Soon</p></div></div>
-  <div id="atab-rebate" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg><p>Rebate — Coming Soon</p></div></div>
+  <div id="atab-performance" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0af" stroke-width="1.4"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg><p style="color:rgba(0,200,255,.25);">စွမ်းဆောင်ရည် — Coming Soon</p></div></div>
+  <div id="atab-commission" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0af" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p style="color:rgba(0,200,255,.25);">ကော်မရှင် — Coming Soon</p></div></div>
+  <div id="atab-lowbet" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0af" stroke-width="1.4"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><p style="color:rgba(0,200,255,.25);">အဆင့်နိမ့် — Coming Soon</p></div></div>
+  <div id="atab-bank" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0af" stroke-width="1.4"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9l9-6 9 6M9 9v12M15 9v12M3 13h18"/></svg><p style="color:rgba(0,200,255,.25);">Bank — Coming Soon</p></div></div>
+  <div id="atab-rebate" class="atab-content"><div class="coming-soon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0af" stroke-width="1.4"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg><p style="color:rgba(0,200,255,.25);">Rebate — Coming Soon</p></div></div>
 
 </div>
+
+<!-- ── Agent HUD Canvas FX ─────────────────────── -->
+<script>
+(function(){
+  function initAgentHud(){
+    var canvas = document.getElementById('agentHudCanvas');
+    if(!canvas) return;
+    var header = canvas.parentElement;
+    var W = header.offsetWidth, H = header.offsetHeight;
+    canvas.width  = W * (window.devicePixelRatio||1);
+    canvas.height = H * (window.devicePixelRatio||1);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    var ctx = canvas.getContext('2d');
+    ctx.scale(window.devicePixelRatio||1, window.devicePixelRatio||1);
+
+    var particles = [];
+    for(var i=0;i<28;i++){
+      particles.push({
+        x: Math.random()*W, y: Math.random()*H,
+        vx:(Math.random()-.5)*.25, vy:(Math.random()-.5)*.25,
+        r: Math.random()*1.2+.3,
+        a: Math.random()
+      });
+    }
+
+    var scanY = -10, scanDir = 1;
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+
+      /* particles */
+      particles.forEach(function(p){
+        p.x += p.vx; p.y += p.vy;
+        if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+        if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle='rgba(0,220,255,'+p.a*.45+')';
+        ctx.fill();
+      });
+
+      /* horizontal scan sweep */
+      scanY += scanDir * .6;
+      if(scanY>H+10){scanY=-10;}
+      var sg = ctx.createLinearGradient(0,scanY-8,0,scanY+8);
+      sg.addColorStop(0,'rgba(0,255,255,0)');
+      sg.addColorStop(.5,'rgba(0,255,255,.08)');
+      sg.addColorStop(1,'rgba(0,255,255,0)');
+      ctx.fillStyle=sg;
+      ctx.fillRect(0,scanY-8,W,16);
+
+      /* corner brackets */
+      var bL=8,bT=8,bS=12,bW=1.5,bC='rgba(0,255,255,.55)';
+      ctx.strokeStyle=bC; ctx.lineWidth=bW;
+      /* TL */
+      ctx.beginPath();ctx.moveTo(bL,bT+bS);ctx.lineTo(bL,bT);ctx.lineTo(bL+bS,bT);ctx.stroke();
+      /* TR */
+      ctx.beginPath();ctx.moveTo(W-bL-bS,bT);ctx.lineTo(W-bL,bT);ctx.lineTo(W-bL,bT+bS);ctx.stroke();
+      /* BL */
+      ctx.beginPath();ctx.moveTo(bL,H-bT-bS);ctx.lineTo(bL,H-bT);ctx.lineTo(bL+bS,H-bT);ctx.stroke();
+      /* BR */
+      ctx.beginPath();ctx.moveTo(W-bL-bS,H-bT);ctx.lineTo(W-bL,H-bT);ctx.lineTo(W-bL,H-bT-bS);ctx.stroke();
+
+      /* data readout strings */
+      ctx.font='bold 7px monospace';
+      ctx.fillStyle='rgba(0,255,255,.22)';
+      ctx.fillText('SYS.OK',bL+16,bT+8);
+      ctx.fillText('LIVE',W-bL-30,bT+8);
+      ctx.fillText('AGENT_HUD v2.0',bL+16,H-bT-4);
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  /* Run after agent panel is shown */
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(initAgentHud,800);});
+  } else {
+    setTimeout(initAgentHud,800);
+  }
+  /* Also trigger when agent panel is revealed */
+  document.addEventListener('click',function(e){
+    if(e.target && e.target.id==='agentLoginBtn') setTimeout(initAgentHud,600);
+  });
+  /* MutationObserver to catch panel show */
+  var _hudInited=false;
+  var _obs=new MutationObserver(function(){
+    var el=document.getElementById('agentUnlocked');
+    if(el && el.style.display!=='none' && !_hudInited){
+      _hudInited=true;
+      setTimeout(initAgentHud,300);
+    }
+  });
+  _obs.observe(document.body,{subtree:true,attributes:true,attributeFilter:['style']});
+})();
+</script>
