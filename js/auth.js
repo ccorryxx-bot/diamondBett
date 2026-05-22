@@ -11,18 +11,33 @@ function openAuthModal(tab = 'login') {
 // ============================================================
 async function restoreSession(userId) {
   try {
-    const { data: ud } = await window.DB
+    const { data: ud, error } = await window.DB
       .from('users')
-      .select('ref_code,fullname,phone,balance')
+      .select('ref_code,fullname,phone,balance,is_admin,role')
       .eq('id', userId)
       .single();
 
+    if (error || !ud) { console.warn('restoreSession: user not found'); return; }
+
     window.currentUserId  = userId;
     window.currentAgentId = userId;
-    onLoginSuccess(ud || {}, ud?.ref_code, ud?.balance || 0, userId);
+    window.currentIsAdmin = !!(ud.is_admin);
+    const adminBtn = document.getElementById('adminDashBtn');
+    if (adminBtn) adminBtn.style.display = window.currentIsAdmin ? 'flex' : 'none';
+    onLoginSuccess(ud, ud.ref_code, ud.balance || 0, userId);
   } catch (e) {
     console.error('Session restore failed:', e);
   }
+}
+
+// ── Pre-fill login form from last credentials ──────────────────────────────
+function prefillLoginForm() {
+  const phone = localStorage.getItem('_db_phone') || '';
+  const pass  = localStorage.getItem('_db_pass')  || '';
+  const phoneEl = document.getElementById('loginPhone');
+  const passEl  = document.getElementById('loginPassword');
+  if (phoneEl && phone) phoneEl.value = phone;
+  if (passEl  && pass)  passEl.value  = pass;
 }
 
 // ============================================================
@@ -132,6 +147,10 @@ async function loginUser() {
     // Show admin button if applicable
     const adminBtn = document.getElementById('adminDashBtn');
     if (adminBtn) adminBtn.style.display = window.currentIsAdmin ? 'flex' : 'none';
+    // Save credentials for pre-fill + clear logout flag
+    localStorage.setItem('_db_phone', phone);
+    localStorage.setItem('_db_pass',  password);
+    localStorage.removeItem('_db_logout');
     onLoginSuccess(ud || { phone }, ud?.ref_code, ud?.balance, data.user.id);
   } finally {
     btn.disabled = false; btn.textContent = 'ဝင်ရောက်မည်';
