@@ -222,12 +222,14 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   if (typeof generateNFTAvatar === 'function')
     generateNFTAvatar(userId || displayName, 'acctAvatar', 52);
 
-  // ── Load VIP level from vip_levels table ──────────────
+  // ── Load VIP + subscribe Realtime ─────────────────────
   if (userId && window.DB) {
     window.DB.from('users').select('total_deposited').eq('id', userId).single()
       .then(({ data }) => {
         if (typeof loadUserVip === 'function')
           loadUserVip(userId, parseFloat(data?.total_deposited || 0));
+        if (typeof subscribeVipRealtime === 'function')
+          subscribeVipRealtime(userId);
       });
   }
 }
