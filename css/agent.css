@@ -2,9 +2,149 @@
    AGENT — AI Operator HUD System | Cyberpunk Edition
    ================================================ */
 
-/* ── Locked State ── */
-.agent-locked{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px 20px;text-align:center;color:#3a3a6a;font-size:13px;line-height:1.7;}
-.agent-login-btn{background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:12px;padding:12px 28px;color:#fff;font-size:14px;font-weight:700;font-family:inherit;box-shadow:0 4px 16px rgba(26,79,214,.35);}
+/* ═══════════════════════════════════════════════════
+   LOCKED STATE — Casino Glow Pulse HUD
+   ═══════════════════════════════════════════════════ */
+.agent-locked {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 50px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 65vh;
+  background: radial-gradient(ellipse at 50% 40%, rgba(0,40,70,.85) 0%, rgba(2,4,20,1) 65%);
+}
+.lock-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Lock Icon + Rings ── */
+.lock-icon-wrap {
+  position: relative;
+  width: 94px;
+  height: 94px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.lock-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0,220,255,.35);
+  animation: lockRingExpand 2.6s ease-out infinite;
+}
+.lock-ring-1 { width: 74px;  height: 74px;  animation-delay: 0s; }
+.lock-ring-2 { width: 94px;  height: 94px;  animation-delay: .7s;  border-color: rgba(0,220,255,.2); }
+.lock-ring-3 { width: 116px; height: 116px; animation-delay: 1.4s; border-color: rgba(0,220,255,.1); }
+@keyframes lockRingExpand {
+  0%   { transform: scale(.8);  opacity: .8; }
+  70%  { transform: scale(1.08); opacity: .3; }
+  100% { transform: scale(1.22); opacity: 0;  }
+}
+.lock-svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 7px rgba(0,220,255,.85)) drop-shadow(0 0 2px #c800ff);
+  animation: lockGlowBreath 2s ease-in-out infinite alternate;
+}
+@keyframes lockGlowBreath {
+  0%   { filter: drop-shadow(0 0 5px rgba(0,220,255,.7)) drop-shadow(0 0 1px #c800ff); }
+  100% { filter: drop-shadow(0 0 16px rgba(0,240,255,1)) drop-shadow(0 0 8px #c800ff) drop-shadow(0 0 24px rgba(0,200,255,.45)); }
+}
+.agent-locked-text {
+  color: rgba(140,200,255,.65);
+  font-size: 13px;
+  line-height: 1.9;
+  z-index: 1;
+  text-shadow: 0 0 12px rgba(0,200,255,.25);
+}
+
+/* ── Agent Login Button — Glow Pulse Casino ── */
+.agent-login-btn {
+  position: relative;
+  background: linear-gradient(135deg, #0048e8, #00aaff, #0060ff);
+  border: none;
+  border-radius: 14px;
+  padding: 13px 38px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 1;
+  box-shadow:
+    0 0 0 1.5px rgba(0,200,255,.5),
+    0 0 14px rgba(0,170,255,.65),
+    0 0 32px rgba(0,80,255,.4),
+    0 5px 22px rgba(0,40,220,.55);
+  animation: btnCyanBreath 2.4s ease-in-out infinite;
+  transition: transform .12s;
+}
+.agent-login-btn:active { transform: scale(.96) !important; }
+.agent-login-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.22) 50%, transparent 100%);
+  transform: translateX(-120%);
+  animation: btnShimmerPass 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.agent-login-btn::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 18px;
+  background: conic-gradient(from 0deg, rgba(0,220,255,.5), rgba(200,0,255,.3), rgba(0,100,255,.5), rgba(0,220,255,.5));
+  z-index: -1;
+  animation: btnAuraRotate 3.5s linear infinite;
+  filter: blur(7px);
+}
+.btn-aura {
+  position: absolute;
+  inset: -10px;
+  border-radius: 24px;
+  background: radial-gradient(ellipse at center, rgba(0,150,255,.32) 0%, transparent 70%);
+  animation: btnAuraPulse 2s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: -1;
+}
+.btn-label { position: relative; z-index: 1; letter-spacing: .3px; }
+
+@keyframes btnCyanBreath {
+  0%,100% {
+    box-shadow: 0 0 0 1.5px rgba(0,200,255,.5), 0 0 14px rgba(0,170,255,.65), 0 0 32px rgba(0,80,255,.4), 0 5px 22px rgba(0,40,220,.55);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(0,230,255,.8), 0 0 26px rgba(0,210,255,.95), 0 0 50px rgba(0,100,255,.55), 0 7px 34px rgba(0,40,220,.7);
+    transform: scale(1.028);
+  }
+}
+@keyframes btnShimmerPass {
+  0%     { transform: translateX(-120%); }
+  55%,100% { transform: translateX(220%); }
+}
+@keyframes btnAuraRotate {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+@keyframes btnAuraPulse {
+  0%   { opacity: .45; transform: scale(.92); }
+  100% { opacity: 1;   transform: scale(1.08); }
+}
 
 .agent-panel-wrap{display:flex;flex-direction:column;width:100%;}
 
