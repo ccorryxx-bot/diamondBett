@@ -6,18 +6,33 @@
 <div class="acct-guest" id="acctGuest">
   <div class="acct-guest-wrap">
     <div class="acct-guest-icon">
-      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-        <circle cx="32" cy="32" r="30" fill="rgba(245,197,24,.08)" stroke="rgba(245,197,24,.2)" stroke-width="1.5"/>
-        <circle cx="32" cy="24" r="10" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
-        <path d="M10 52c0-12 44-12 44 0" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.2)" stroke-width="1.5" stroke-linecap="round"/>
-        <rect x="24" y="36" width="16" height="20" rx="4" fill="rgba(245,197,24,.15)" stroke="rgba(245,197,24,.3)" stroke-width="1"/>
-        <path d="M28 44v4M36 44v4" stroke="rgba(245,197,24,.5)" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="32" cy="42" r="2.5" fill="rgba(245,197,24,.6)"/>
-      </svg>
+      <div class="lock-icon-wrap acct-lock-wrap">
+        <div class="lock-ring lock-ring-1"></div>
+        <div class="lock-ring lock-ring-2"></div>
+        <div class="lock-ring lock-ring-3"></div>
+        <svg class="lock-svg acct-lock-svg" width="58" height="58" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="acctLockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f5c518"/>
+              <stop offset="100%" stop-color="#ff8c00"/>
+            </linearGradient>
+            <filter id="acctLockGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.8" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect x="3" y="11" width="18" height="11" rx="2.5" stroke="url(#acctLockGrad)" stroke-width="1.5" fill="rgba(245,197,24,.07)" filter="url(#acctLockGlow)"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="url(#acctLockGrad)" stroke-width="1.5" fill="none" filter="url(#acctLockGlow)"/>
+          <circle cx="12" cy="16" r="1.6" fill="#f5c518" opacity=".95"/>
+        </svg>
+      </div>
     </div>
-    <p class="acct-guest-title">Account Page ကြည့်ရန်</p>
-    <p class="acct-guest-sub">အကောင့် အရင်ဝင်ပါ</p>
-    <button class="acct-guest-btn" onclick="openAuthModal('login')">ဝင်ရောက်မည်</button>
+    <p class="acct-guest-title">Account ကြည့်ရန် အကောင့်ဝင်ရန်လိုအပ်သည်</p>
+    <p class="acct-guest-sub">Diamond-BETT Account Panel</p>
+    <button class="acct-guest-btn" onclick="openAuthModal('login')">
+      <span class="btn-aura acct-btn-aura"></span>
+      <span class="btn-label">အကောင့်ဝင်ရန်</span>
+    </button>
   </div>
 </div>
 
