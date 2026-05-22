@@ -57,33 +57,38 @@ function initScrollObserver() {
 // BANNER — dynamic count
 // ============================================================
 function initBanner() {
-  let cur = 0, tmr = null;
-  const track = document.getElementById('bannerTrack');
-  const wrap  = document.getElementById('bannerWrap');
-  if (!track || !wrap) return;
+  // Select all instances of banners (Home & Agent)
+  const tracks = document.querySelectorAll('.banner-track');
+  const wraps  = document.querySelectorAll('.banner-wrap');
+  if (!tracks.length) return;
 
-  const count   = () => track.querySelectorAll('.banner-slide').length;
-  const getDots = () => document.querySelectorAll('#bannerDots .dot');
+  let cur = 0, tmr = null;
+  const count   = () => tracks[0].querySelectorAll('.banner-slide').length;
   const update  = () => {
     const n = count(); if (!n) return;
-    track.style.transform = `translateX(-${cur * 100}%)`;
-    getDots().forEach((d, i) => d.classList.toggle('active', i === cur));
+    tracks.forEach(track => track.style.transform = `translateX(-${cur * 100}%)`);
+    document.querySelectorAll('.banner-dots').forEach(dotWrap => {
+      dotWrap.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+    });
   };
   const go      = n => { const c = count(); if (!c) return; cur = ((n % c) + c) % c; update(); };
   const start   = () => { clearInterval(tmr); tmr = setInterval(() => go(cur + 1), 4000); };
   const restart = () => { cur = 0; update(); start(); };
 
-  document.getElementById('bannerDots')?.addEventListener('click', e => {
+  document.addEventListener('click', e => {
     const dot = e.target.closest('.dot');
     if (dot) { go(+dot.dataset.i); start(); }
   });
-  let sx = 0;
-  wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-  wrap.addEventListener('touchend',   e => {
-    const diff = sx - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) go(diff > 0 ? cur + 1 : cur - 1);
-    start();
-  }, { passive: true });
+
+  wraps.forEach(wrap => {
+    let sx = 0;
+    wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+    wrap.addEventListener('touchend',   e => {
+      const diff = sx - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) go(diff > 0 ? cur + 1 : cur - 1);
+      start();
+    }, { passive: true });
+  });
 
   update(); start();
   window._restartBanner = restart;
@@ -109,18 +114,20 @@ function initCatItems() {
 
 async function refreshBalance() {
   if (!window.currentUserId) return;
-  const btn = document.getElementById('balRefreshBtn');
-  btn?.classList.add('spinning');
+  // Spinner for all refresh buttons
+  const btns = document.querySelectorAll('#balRefreshBtn');
+  btns.forEach(btn => btn.classList.add('spinning'));
+  
   try {
     const { data } = await window.DB.from('users').select('balance').eq('id', window.currentUserId).single();
     if (data) {
       const bal  = parseFloat(data.balance || 0);
       const fmt2 = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const qnavBal = document.getElementById('qnavBalance');
-      if (qnavBal) qnavBal.textContent = fmt2;
+      // Update all balance displays
+      document.querySelectorAll('#qnavBalance').forEach(el => el.textContent = fmt2);
     }
   } catch (e) { console.error('Balance refresh:', e); }
-  finally { btn?.classList.remove('spinning'); }
+  finally { btns.forEach(btn => btn.classList.remove('spinning')); }
 }
 
 function initBalRefresh() {

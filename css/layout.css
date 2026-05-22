@@ -60,6 +60,13 @@ html, body {
   flex: 1;
 }
 
+#topAreaAgent {
+  position: relative;
+  z-index: 100;
+  width: 100%;
+  flex-shrink: 0;
+}
+
 /* Bottom nav — fixed at bottom */
 .bottom-nav {
   height: var(--bottom-h);

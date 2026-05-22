@@ -186,25 +186,18 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
     ? `https://diamond-bett.vercel.app/?ref=${agentRefCode}` : '—';
   const bal          = parseFloat(balance || 0);
 
-  document.getElementById('showAuthBtn').style.display  = 'none';
-  document.getElementById('walletBtns').style.display   = 'flex';
-
-  // ── payLogos & balanceBar ──────────────────────────────────
-  const payLogos = document.getElementById('payLogos');
-  const balWrap  = document.getElementById('qnavBalanceWrap');
-  if (payLogos) payLogos.style.display = 'flex';
-  if (balWrap)  balWrap.style.display  = 'flex';
-
-  // ── Balance Bar populate ───────────────────────────────────
-  // Show fullname (not phone) in balance bar
   const displayName = user.fullname || user.name || phone;
-  setEl('balUsername', displayName);
-  const qnavBal = document.getElementById('qnavBalance');
-  if (qnavBal) {
-    qnavBal.textContent = bal.toLocaleString('en-US', {
-      minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
-  }
+  const fmt2 = bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Update all header instances (Home & Agent)
+  document.querySelectorAll('#showAuthBtn').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#walletBtns').forEach(el => el.style.display = 'flex');
+  document.querySelectorAll('#qnavBalanceWrap').forEach(el => el.style.display = 'flex');
+  document.querySelectorAll('#payLogos').forEach(el => el.style.display = 'flex');
+
+  // Populate all balance/username fields
+  document.querySelectorAll('#balUsername').forEach(el => el.textContent = displayName);
+  document.querySelectorAll('#qnavBalance').forEach(el => el.textContent = fmt2);
   // Generate unique Cyberpunk NFT avatar for this user
   if (typeof generateNFTAvatar === 'function') {
     generateNFTAvatar(userId || window.currentUserId || displayName);
