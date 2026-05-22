@@ -2,8 +2,9 @@
    ACCOUNT PAGE
    ===================================================== */
 
+/* ── Page background — uniform deep-space dark ── */
 #accountPage {
-  background: #0a0820;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,30,60,.7) 0%, #020414 55%);
   overflow-y: auto;
   scrollbar-width: none;
   padding-bottom: calc(var(--bottom-h) + 10px);
@@ -11,75 +12,60 @@
 #accountPage::-webkit-scrollbar { display: none; }
 
 /* ═══════════════════════════════════════════════════
-   GUEST STATE — Casino Glow Pulse
+   GUEST STATE — Same design as Agent locked (Cyan HUD)
    ═══════════════════════════════════════════════════ */
 .acct-guest {
-  min-height: 70vh;
+  min-height: calc(100vh - var(--bottom-h, 62px));
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
-  background: radial-gradient(ellipse at 50% 38%, rgba(25,15,5,.9) 0%, rgba(4,3,14,1) 65%);
+  background: transparent;
 }
 .acct-guest-wrap {
   text-align: center;
   position: relative;
-}
-.acct-guest-icon {
-  margin-bottom: 22px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-}
-
-/* Gold lock rings for account page */
-.acct-lock-wrap .lock-ring   { border-color: rgba(245,197,24,.35); }
-.acct-lock-wrap .lock-ring-2 { border-color: rgba(245,197,24,.2); }
-.acct-lock-wrap .lock-ring-3 { border-color: rgba(245,197,24,.1); }
-.acct-lock-svg {
-  filter: drop-shadow(0 0 7px rgba(245,197,24,.85)) drop-shadow(0 0 2px #ff8c00) !important;
-  animation: acctLockGlowBreath 2s ease-in-out infinite alternate !important;
-}
-@keyframes acctLockGlowBreath {
-  0%   { filter: drop-shadow(0 0 5px rgba(245,197,24,.7)) drop-shadow(0 0 1px #ff8c00); }
-  100% { filter: drop-shadow(0 0 16px rgba(255,215,0,1)) drop-shadow(0 0 9px #ff8c00) drop-shadow(0 0 24px rgba(245,197,24,.5)); }
+  gap: 0;
 }
 
 .acct-guest-title {
   font-size: 15px;
   font-weight: 800;
-  color: #fff;
-  margin-bottom: 6px;
-  text-shadow: 0 0 14px rgba(245,197,24,.25);
-  line-height: 1.5;
+  color: rgba(200,240,255,.85);
+  margin: 20px 0 6px;
+  text-shadow: 0 0 14px rgba(0,200,255,.22);
+  line-height: 1.55;
 }
 .acct-guest-sub {
   font-size: 11px;
-  color: rgba(245,197,24,.38);
+  color: rgba(0,200,255,.35);
   margin-bottom: 28px;
   letter-spacing: 2px;
   text-transform: uppercase;
 }
 
-/* ── Account Guest Button — Gold Glow Pulse ── */
+/* ── Account Guest Button — Cyan Glow Pulse (matches agent-login-btn) ── */
 .acct-guest-btn {
   position: relative;
-  background: linear-gradient(135deg, #c87d00, #f5c518, #ffe033);
+  background: linear-gradient(135deg, #0048e8, #00aaff, #0060ff);
   border: none;
   border-radius: 14px;
   padding: 13px 44px;
   font-size: 15px;
   font-weight: 800;
-  color: #1a0d00;
+  color: #fff;
   font-family: inherit;
   cursor: pointer;
   overflow: hidden;
   box-shadow:
-    0 0 0 1.5px rgba(245,197,24,.55),
-    0 0 14px rgba(245,180,0,.65),
-    0 0 30px rgba(220,140,0,.42),
-    0 5px 22px rgba(160,100,0,.5);
-  animation: goldBtnBreath 2.4s ease-in-out infinite;
+    0 0 0 1.5px rgba(0,200,255,.5),
+    0 0 14px rgba(0,170,255,.65),
+    0 0 32px rgba(0,80,255,.4),
+    0 5px 22px rgba(0,40,220,.55);
+  animation: btnCyanBreath 2.4s ease-in-out infinite;
   transition: transform .12s;
 }
 .acct-guest-btn:active { transform: scale(.96) !important; }
@@ -87,7 +73,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.3) 50%, transparent 100%);
+  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.22) 50%, transparent 100%);
   transform: translateX(-120%);
   animation: btnShimmerPass 2.8s ease-in-out infinite;
   pointer-events: none;
@@ -97,32 +83,32 @@
   position: absolute;
   inset: -4px;
   border-radius: 18px;
-  background: conic-gradient(from 0deg, rgba(245,197,24,.55), rgba(255,100,0,.3), rgba(245,197,24,.55));
+  background: conic-gradient(from 0deg, rgba(0,220,255,.5), rgba(200,0,255,.3), rgba(0,100,255,.5), rgba(0,220,255,.5));
   z-index: -1;
   animation: btnAuraRotate 3.5s linear infinite;
   filter: blur(7px);
 }
-.acct-btn-aura {
+.btn-aura {
   position: absolute;
   inset: -10px;
   border-radius: 24px;
-  background: radial-gradient(ellipse at center, rgba(245,180,0,.3) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(0,150,255,.32) 0%, transparent 70%);
   animation: btnAuraPulse 2s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: -1;
 }
-@keyframes goldBtnBreath {
+
+/* Shared keyframes */
+@keyframes btnCyanBreath {
   0%,100% {
-    box-shadow: 0 0 0 1.5px rgba(245,197,24,.55), 0 0 14px rgba(245,180,0,.65), 0 0 30px rgba(220,140,0,.42), 0 5px 22px rgba(160,100,0,.5);
+    box-shadow: 0 0 0 1.5px rgba(0,200,255,.5), 0 0 14px rgba(0,170,255,.65), 0 0 32px rgba(0,80,255,.4), 0 5px 22px rgba(0,40,220,.55);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 2px rgba(255,220,30,.8), 0 0 26px rgba(255,200,0,.95), 0 0 48px rgba(220,140,0,.58), 0 7px 34px rgba(160,100,0,.65);
+    box-shadow: 0 0 0 2px rgba(0,230,255,.8), 0 0 26px rgba(0,210,255,.95), 0 0 50px rgba(0,100,255,.55), 0 7px 34px rgba(0,40,220,.7);
     transform: scale(1.028);
   }
 }
-
-/* Shared keyframes (used by both agent + account) */
 @keyframes btnShimmerPass {
   0%     { transform: translateX(-120%); }
   55%,100% { transform: translateX(220%); }
