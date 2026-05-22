@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   await loadPartials();
+  if (typeof prefillLoginForm === 'function') prefillLoginForm();
 
   // Bind Auth Events (Loaded via Modals Partial)
   document.getElementById('modalCloseBtn')?.addEventListener('click', () => {
@@ -108,27 +109,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.DB) {
     window.DB.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user?.id) {
+        // If user intentionally logged out, force sign-out and stay logged out
+        if (localStorage.getItem('_db_logout') === '1') {
+          window.DB.auth.signOut();
+          return;
+        }
         window.currentUserId = session.user.id;
-        const showBtn = document.getElementById('showAuthBtn');
-        const wdBtns = document.getElementById('walletBtns');
-        const balWrap = document.getElementById('qnavBalanceWrap');
-        if (showBtn) showBtn.style.display = 'none';
-        if (wdBtns) wdBtns.style.display = 'flex';
-        if (balWrap) balWrap.style.display = 'flex';
-        refreshBalance();
-        // FIX: Subscribe to realtime notifications after login
+        // Fully restore UI (username, balance, agent panel, etc.)
+        if (typeof restoreSession === 'function') {
+          restoreSession(session.user.id);
+        }
         subscribeNotifications(session.user.id);
       }
       if (event === 'SIGNED_OUT') {
-        window.currentUserId = null;
-        const showBtn = document.getElementById('showAuthBtn');
-        const wdBtns = document.getElementById('walletBtns');
-        const balWrap = document.getElementById('qnavBalanceWrap');
-        if (showBtn) showBtn.style.display = 'block';
-        if (wdBtns) wdBtns.style.display = 'none';
-        if (balWrap) balWrap.style.display = 'none';
-        // FIX: Clean up notification channel on logout
+        window.currentUserId  = null;
+        window.currentIsAdmin = false;
+        // Reset all UI to guest state
+        const showBtn  = document.getElementById('showAuthBtn');
+        const wdBtns   = document.getElementById('walletBtns');
+        const balWrap  = document.getElementById('qnavBalanceWrap');
+        const payLogos = document.getElementById('payLogos');
+        const adminBtn = document.getElementById('adminDashBtn');
+        if (showBtn)  showBtn.style.display  = 'block';
+        if (wdBtns)   wdBtns.style.display   = 'none';
+        if (balWrap)  balWrap.style.display   = 'none';
+        if (payLogos) payLogos.style.display  = 'none';
+        if (adminBtn) adminBtn.style.display  = 'none';
+        // Pre-fill form with last credentials
+        if (typeof prefillLoginForm === 'function') prefillLoginForm();
+        // Clean up notification channel
         unsubscribeNotifications();
+        showPage('home');
       }
     });
   }
