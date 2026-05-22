@@ -12,7 +12,19 @@ async function loadPartials() {
       const res = await fetch(src);
       if (!res.ok) throw new Error(`${src} — ${res.status}`);
       const el = document.getElementById(id);
-      if (el) el.innerHTML = await res.text();
+      if (el) {
+        el.innerHTML = await res.text();
+        // FIX: innerHTML does NOT execute <script> tags automatically.
+        // Manually re-create and append each script so the browser runs it.
+        el.querySelectorAll('script').forEach(oldScript => {
+          const newScript = document.createElement('script');
+          [...oldScript.attributes].forEach(attr =>
+            newScript.setAttribute(attr.name, attr.value));
+          newScript.textContent = oldScript.textContent;
+          document.head.appendChild(newScript);
+          oldScript.remove();
+        });
+      }
     } catch (e) {
       console.error('Partial load failed:', e);
     }
