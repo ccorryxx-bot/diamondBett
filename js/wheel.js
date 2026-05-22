@@ -145,37 +145,43 @@ function initWheel() {
 
     const { data, error } = await window.DB.rpc('spin_lucky_wheel', { p_user_id: window.currentUserId });
 
-    // FIX: validate RPC response before using slot_index
-    if (error || !data || data.slot_index == null) {
-      gToast('Spin မအောင်မြင်ပါ: ' + (error?.message || 'Server response error'), 'error');
+    // RPC returns array: [{winning_amount, slot_index, req_turnover}]
+    const result = Array.isArray(data) ? data[0] : data;
+    if (error || !result || result.slot_index == null) {
+      const msg = error?.message || 'Server response error';
+      gToast('Spin မအောင်မြင်ပါ: ' + msg, 'error');
       return;
     }
+
+    const winAmount   = Number(result.winning_amount ?? result.prize_amount ?? 0);
+    const slotIdx     = parseInt(result.slot_index) || 7;
+    const reqTurnover = Number(result.req_turnover  ?? result.required_turnover ?? 0);
 
     window.availableSpins--;
     setEl('availableSpins', window.availableSpins);
 
-    const slot = WHEEL_SLOTS[(Math.max(1, parseInt(data.slot_index) || 1) - 1) % 8];
-    spinToSlot(data.slot_index, () => {
+    spinToSlot(slotIdx, () => {
       const overlay = document.getElementById('spinResultOverlay');
       const content = document.getElementById('spinResultContent');
 
-      if (slot.amount === 0) {
+      if (winAmount === 0) {
         content.innerHTML = `
           <div class="spin-result-blank">ကံမကောင်းပါ — ဗလာ ထွက်ပါသည်</div>
           <div class="spin-result-unit" style="margin-bottom:16px;">ထပ်ကြိုးစားပါ</div>`;
       } else {
-        const to = slot.amount * TURNOVER_MULT[slot.amount];
+        const mult = TURNOVER_MULT[winAmount] || (reqTurnover > 0 ? Math.round(reqTurnover / winAmount) : 5);
+        const to   = reqTurnover > 0 ? reqTurnover : winAmount * mult;
         content.innerHTML = `
-          <div class="spin-result-amount">${slot.amount.toLocaleString()}</div>
+          <div class="spin-result-amount">${winAmount.toLocaleString()}</div>
           <div class="spin-result-unit">ကျပ် ရရှိသည်</div>
           <div class="spin-result-turnover">
             Turnover: <strong style="color:var(--gold2);">${to.toLocaleString()} ကျပ်</strong><br>
-            (${slot.amount.toLocaleString()} × ${TURNOVER_MULT[slot.amount]})
+            (${winAmount.toLocaleString()} × ${mult})
           </div>`;
       }
       overlay.classList.add('show');
 
-      // History
+      // History row
       const list = document.getElementById('spinHistoryList');
       const now  = new Date().toLocaleString('en-GB');
       const item = document.createElement('div');
@@ -183,7 +189,7 @@ function initWheel() {
       item.innerHTML = `
         <span class="history-date">${now}</span>
         <span class="history-desc">Lucky Wheel</span>
-        <span class="history-amount">${slot.amount > 0 ? '+' + slot.amount.toLocaleString() + ' ကျပ်' : 'ဗလာ'}</span>`;
+        <span class="history-amount">${winAmount > 0 ? '+' + winAmount.toLocaleString() + ' ကျပ်' : 'ဗလာ'}</span>`;
       if (list.querySelector('.history-empty')) list.innerHTML = '';
       list.prepend(item);
 
