@@ -199,10 +199,25 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   document.getElementById('agentLocked').style.display   = 'none';
   document.getElementById('agentUnlocked').style.display = 'flex';
 
-  window.availableSpins = 1;
-  setEl('availableSpins', 1);
-  if (document.getElementById('spinBtn'))
-    document.getElementById('spinBtn').disabled = false;
+  // ── Spin count: check DB for today's spin history ──────
+  window.availableSpins = 0;
+  setEl('availableSpins', 0);
+  if (document.getElementById('spinBtn')) document.getElementById('spinBtn').disabled = true;
+
+  if (userId && window.DB) {
+    const todayISO = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    window.DB.from('lucky_wheel_history')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('spun_at', todayISO + 'T00:00:00')
+      .then(({ count, error }) => {
+        const spunToday = !error && count > 0;
+        window.availableSpins = spunToday ? 0 : 1;
+        setEl('availableSpins', window.availableSpins);
+        const spinBtn = document.getElementById('spinBtn');
+        if (spinBtn) spinBtn.disabled = spunToday;
+      });
+  }
 
   if (window.currentUserId) {
     loadDashboardStats(window.currentUserId);
