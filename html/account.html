@@ -516,6 +516,8 @@ function closeLogoutConfirm() {
 async function logoutUser() {
   closeLogoutConfirm();
   if (!window.DB) return;
+  // Mark intentional logout — prevents auto-restore on page refresh
+  localStorage.setItem('_db_logout', '1');
   await window.DB.auth.signOut();
   window.currentUserId = null;
   sessionStorage.removeItem('_db_uid');
