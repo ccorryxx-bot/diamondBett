@@ -145,8 +145,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if (typeof loadBanners === 'function') await loadBanners();
-  if (typeof loadGamesFromDB === 'function') await loadGamesFromDB();
+  // Optimization: Load banners and games in parallel to speed up initial load
+  const loadTasks = [];
+  if (typeof loadBanners === 'function') loadTasks.push(loadBanners());
+  if (typeof loadGamesFromDB === 'function') loadTasks.push(loadGamesFromDB());
+  
+  if (loadTasks.length > 0) {
+    Promise.all(loadTasks).catch(err => console.error('Parallel loading failed:', err));
+  }
 
   document.querySelectorAll('.bnav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
