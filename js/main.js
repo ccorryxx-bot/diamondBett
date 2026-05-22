@@ -151,11 +151,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.bnav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const nav = btn.dataset.nav;
-      if (nav === 'account' && !window.currentUserId) {
-        if (typeof gToast === 'function')
-          gToast('Account page ကြည့်ရန် အကောင့် အရင်ဝင်ပါ');
-        return;
-      }
       showPage(nav);
     });
   });
