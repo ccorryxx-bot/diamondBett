@@ -2,7 +2,7 @@ async function loadPartials() {
   const partials = [
     { src: 'html/home.html',    id: 'homeContent'     },
     { src: 'html/tasks.html',   id: 'tasksPage'       },
-    { src: 'html/agent.html',   id: 'agentContent'    },
+    { src: 'html/agent.html',   id: 'agentPage'       },
     { src: 'html/modals.html',  id: 'modalsContainer' },
     { src: 'html/account.html', id: 'accountPage'     },
     { src: 'html/admin.html',   id: 'adminPage'       },
@@ -93,13 +93,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('loginBtn')?.addEventListener('click', loginUser);
   document.getElementById('registerBtn')?.addEventListener('click', registerUser);
-
-  // Sync TopArea to Agent Page for consistent scroll logic
-  const topArea = document.getElementById('topArea');
-  const topAreaAgent = document.getElementById('topAreaAgent');
-  if (topArea && topAreaAgent) {
-    topAreaAgent.innerHTML = topArea.innerHTML;
-  }
 
   initBanner();
   initBalRefresh();
