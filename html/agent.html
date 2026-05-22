@@ -1,12 +1,34 @@
 <!-- LOCKED STATE -->
 <div id="agentLocked" class="agent-locked">
-  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#3a3a6a" stroke-width="1.4">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    <circle cx="12" cy="16" r="1.5" fill="#3a3a6a"/>
-  </svg>
-  <p>Agent Panel ကို ဝင်ကြည့်ရန်<br>အကောင့်ဝင်ရန်လိုအပ်သည်။</p>
-  <button class="agent-login-btn" id="agentLoginBtn">အကောင့်ဝင်ရန်</button>
+  <canvas id="agentLockCanvas" class="lock-bg-canvas"></canvas>
+
+  <div class="lock-icon-wrap">
+    <div class="lock-ring lock-ring-1"></div>
+    <div class="lock-ring lock-ring-2"></div>
+    <div class="lock-ring lock-ring-3"></div>
+    <svg class="lock-svg" width="54" height="54" viewBox="0 0 24 24" fill="none">
+      <defs>
+        <linearGradient id="agLockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#00f5ff"/>
+          <stop offset="100%" stop-color="#c800ff"/>
+        </linearGradient>
+        <filter id="agLockGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect x="3" y="11" width="18" height="11" rx="2.5" stroke="url(#agLockGrad)" stroke-width="1.5" fill="rgba(0,220,255,.06)" filter="url(#agLockGlow)"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="url(#agLockGrad)" stroke-width="1.5" fill="none" filter="url(#agLockGlow)"/>
+      <circle cx="12" cy="16" r="1.6" fill="#00f5ff" opacity=".9"/>
+    </svg>
+  </div>
+
+  <p class="agent-locked-text">Agent Panel ကို ဝင်ကြည့်ရန်<br>အကောင့်ဝင်ရန်လိုအပ်သည်။</p>
+
+  <button class="agent-login-btn" id="agentLoginBtn" onclick="openAuthModal('login')">
+    <span class="btn-aura"></span>
+    <span class="btn-label">အကောင့်ဝင်ရန်</span>
+  </button>
 </div>
 
 <!-- UNLOCKED STATE -->
@@ -580,5 +602,56 @@
     }
   });
   _obs.observe(document.body,{subtree:true,attributes:true,attributeFilter:['style']});
+
+  /* ── Lock Canvas Particles ── */
+  function initLockCanvas(){
+    var c=document.getElementById('agentLockCanvas');
+    if(!c||c._inited) return;
+    c._inited=true;
+    var el=c.parentElement;
+    var W=el.offsetWidth||320, H=el.offsetHeight||400;
+    c.width=W*(window.devicePixelRatio||1);
+    c.height=H*(window.devicePixelRatio||1);
+    c.style.width=W+'px'; c.style.height=H+'px';
+    var x=c.getContext('2d');
+    x.scale(window.devicePixelRatio||1,window.devicePixelRatio||1);
+    var pts=[];
+    for(var i=0;i<22;i++) pts.push({
+      px:Math.random()*W, py:Math.random()*H,
+      vx:(Math.random()-.5)*.22, vy:(Math.random()-.5)*.22,
+      r:Math.random()*1.1+.3, a:Math.random()*.6+.2,
+      hue: Math.random()>0.5 ? '0,200,255' : '0,150,255'
+    });
+    var sy=-5;
+    (function tick(){
+      x.clearRect(0,0,W,H);
+      pts.forEach(function(p){
+        p.px+=p.vx; p.py+=p.vy;
+        if(p.px<0)p.px=W; if(p.px>W)p.px=0;
+        if(p.py<0)p.py=H; if(p.py>H)p.py=0;
+        x.beginPath(); x.arc(p.px,p.py,p.r,0,Math.PI*2);
+        x.fillStyle='rgba('+p.hue+','+p.a*0.4+')'; x.fill();
+      });
+      sy+=.5; if(sy>H+6)sy=-6;
+      var sg=x.createLinearGradient(0,sy-5,0,sy+5);
+      sg.addColorStop(0,'rgba(0,220,255,0)');
+      sg.addColorStop(.5,'rgba(0,220,255,.06)');
+      sg.addColorStop(1,'rgba(0,220,255,0)');
+      x.fillStyle=sg; x.fillRect(0,sy-5,W,10);
+      requestAnimationFrame(tick);
+    })();
+  }
+  /* init on page load if agentLocked is visible */
+  setTimeout(function(){
+    var el=document.getElementById('agentLocked');
+    if(el && el.style.display!=='none') initLockCanvas();
+  },400);
+  /* Also catch via mutation if shown later */
+  var _lockObs=new MutationObserver(function(){
+    var el=document.getElementById('agentLocked');
+    if(el && el.style.display!=='none') initLockCanvas();
+  });
+  _lockObs.observe(document.body,{subtree:true,attributes:true,attributeFilter:['style']});
+
 })();
 </script>
