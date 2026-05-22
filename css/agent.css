@@ -28,40 +28,144 @@
   z-index: 0;
 }
 
-/* ── Lock Icon + Rings ── */
-.lock-icon-wrap {
+/* ══════════════════════════════════════════════════
+   HOLOGRAM EMOJI LOCK SYSTEM — Sci-fi / HUD / Sad
+   ══════════════════════════════════════════════════ */
+.holo-lock-wrap {
   position: relative;
-  width: 94px;
-  height: 94px;
+  width: 140px;
+  height: 148px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
+  margin-bottom: 4px;
 }
-.lock-ring {
+
+/* ── Rotating pulse rings ── */
+.holo-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0,220,255,.35);
-  animation: lockRingExpand 2.6s ease-out infinite;
+  border: 1px solid rgba(0,220,255,.4);
+  animation: holoRingExpand 3s ease-out infinite;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%) scale(.8);
 }
-.lock-ring-1 { width: 74px;  height: 74px;  animation-delay: 0s; }
-.lock-ring-2 { width: 94px;  height: 94px;  animation-delay: .7s;  border-color: rgba(0,220,255,.2); }
-.lock-ring-3 { width: 116px; height: 116px; animation-delay: 1.4s; border-color: rgba(0,220,255,.1); }
-@keyframes lockRingExpand {
-  0%   { transform: scale(.8);  opacity: .8; }
-  70%  { transform: scale(1.08); opacity: .3; }
-  100% { transform: scale(1.22); opacity: 0;  }
+.hr-1 { width: 100px; height: 100px; animation-delay: 0s; }
+.hr-2 { width: 124px; height: 124px; animation-delay: .85s; border-color: rgba(0,210,255,.22); }
+.hr-3 { width: 150px; height: 150px; animation-delay: 1.7s; border-color: rgba(0,200,255,.1); }
+@keyframes holoRingExpand {
+  0%   { transform: translate(-50%,-50%) scale(.75); opacity: .8; }
+  60%  { transform: translate(-50%,-50%) scale(1.06); opacity: .3; }
+  100% { transform: translate(-50%,-50%) scale(1.25); opacity: 0; }
 }
-.lock-svg {
-  position: relative;
+
+/* ── CRT Scanlines overlay ── */
+.holo-scanlines {
+  position: absolute;
+  top: 8px; left: 28px;
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,255,255,.042) 3px,
+    rgba(0,255,255,.042) 4px
+  );
+  animation: holoScanSlide 2.5s linear infinite;
+  pointer-events: none;
+  z-index: 4;
+  mix-blend-mode: screen;
+}
+@keyframes holoScanSlide {
+  0%   { background-position: 0 0;   }
+  100% { background-position: 0 64px; }
+}
+
+/* ── Hologram projection base beam ── */
+.holo-base {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 18px;
+  background: radial-gradient(ellipse at center, rgba(0,220,255,.55) 0%, rgba(0,120,255,.2) 45%, transparent 72%);
+  animation: holoBasePulse 2.4s ease-in-out infinite;
+  pointer-events: none;
   z-index: 1;
-  filter: drop-shadow(0 0 7px rgba(0,220,255,.85)) drop-shadow(0 0 2px #c800ff);
-  animation: lockGlowBreath 2s ease-in-out infinite alternate;
 }
-@keyframes lockGlowBreath {
-  0%   { filter: drop-shadow(0 0 5px rgba(0,220,255,.7)) drop-shadow(0 0 1px #c800ff); }
-  100% { filter: drop-shadow(0 0 16px rgba(0,240,255,1)) drop-shadow(0 0 8px #c800ff) drop-shadow(0 0 24px rgba(0,200,255,.45)); }
+@keyframes holoBasePulse {
+  0%,100% { opacity: .65; transform: translateX(-50%) scaleX(1);   }
+  50%     { opacity: 1;   transform: translateX(-50%) scaleX(1.22); }
 }
+
+/* ── Main hologram SVG ── */
+.holo-lock-svg {
+  position: relative;
+  z-index: 3;
+  filter: drop-shadow(0 0 10px rgba(0,220,255,.9)) drop-shadow(0 0 4px #00f5ff) drop-shadow(0 0 1px #0068ff);
+  animation: holoFlicker 6s ease-in-out infinite;
+}
+/* Glitch copy 1 — magenta channel */
+.holo-glitch-1 {
+  position: absolute;
+  top: 8px; left: 28px;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  animation: holoGlitch1 6s ease-in-out infinite;
+}
+/* Glitch copy 2 — green channel */
+.holo-glitch-2 {
+  position: absolute;
+  top: 8px; left: 28px;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  animation: holoGlitch2 6s ease-in-out infinite;
+}
+
+@keyframes holoFlicker {
+  0%,85%,90%,95%,100% {
+    opacity: .9;
+    transform: none;
+    filter: drop-shadow(0 0 10px rgba(0,220,255,.9)) drop-shadow(0 0 4px #00f5ff);
+  }
+  86% {
+    opacity: .25;
+    transform: translateX(3px) skewX(4deg);
+    filter: drop-shadow(0 0 5px rgba(255,0,220,.8));
+  }
+  87% { opacity: .8; transform: translateX(-1px); }
+  88% {
+    opacity: .15;
+    transform: translateX(-3px) skewX(-3deg) scaleY(1.01);
+    filter: drop-shadow(0 0 5px rgba(0,255,180,.8));
+  }
+  89% { opacity: .75; transform: none; }
+  91% { opacity: .4; transform: translateX(2px); }
+  93% { opacity: .85; transform: none; }
+  96% {
+    opacity: .2;
+    transform: translateX(-2px) skewX(2deg);
+    filter: drop-shadow(0 0 4px rgba(255,0,200,.7));
+  }
+  97% { opacity: .88; transform: none; }
+}
+@keyframes holoGlitch1 {
+  0%,85%,90%,100% { opacity: 0; transform: none; }
+  86%,88% { opacity: .4; transform: translateX(-5px); }
+  87%     { opacity: .15; }
+}
+@keyframes holoGlitch2 {
+  0%,87%,93%,100% { opacity: 0; transform: none; }
+  88%,92% { opacity: .3; transform: translateX(5px) scaleY(1.02); }
+  90%     { opacity: .1; }
+}
+
 .agent-locked-text {
   color: rgba(140,200,255,.65);
   font-size: 13px;
