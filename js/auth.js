@@ -30,14 +30,27 @@ async function restoreSession(userId) {
   }
 }
 
-// ── Pre-fill login form from last credentials ──────────────────────────────
+// ── Pre-fill LOGIN form from last credentials ─────────────────────────────
 function prefillLoginForm() {
   const phone = localStorage.getItem('_db_phone') || '';
   const pass  = localStorage.getItem('_db_pass')  || '';
+  if (!phone && !pass) return;
+
+  // Always switch to LOGIN tab first (not register)
+  if (typeof switchTab === 'function') switchTab('login');
+
   const phoneEl = document.getElementById('loginPhone');
   const passEl  = document.getElementById('loginPassword');
   if (phoneEl && phone) phoneEl.value = phone;
   if (passEl  && pass)  passEl.value  = pass;
+
+  // Clear register form so browser autofill doesn't bleed over
+  const regName  = document.getElementById('regName');
+  const regPhone = document.getElementById('regPhone');
+  const regPass  = document.getElementById('regPassword');
+  if (regName)  regName.value  = '';
+  if (regPhone) regPhone.value = '';
+  if (regPass)  regPass.value  = '';
 }
 
 // ============================================================
