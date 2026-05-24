@@ -23,7 +23,7 @@ async function restoreSession(userId) {
     window.currentAgentId = userId;
     window.currentIsAdmin = !!(ud.is_admin);
     const adminBtn = document.getElementById('adminDashBtn');
-    if (adminBtn) adminBtn.style.display = window.currentIsAdmin ? 'flex' : 'none';
+    if (adminBtn) adminBtn.style.display = 'flex';
     onLoginSuccess(ud, ud.ref_code, ud.balance || 0, userId);
   } catch (e) {
     console.error('Session restore failed:', e);
@@ -159,7 +159,7 @@ async function loginUser() {
     window.currentIsAdmin = !!(ud?.is_admin);
     // Show admin button if applicable
     const adminBtn = document.getElementById('adminDashBtn');
-    if (adminBtn) adminBtn.style.display = window.currentIsAdmin ? 'flex' : 'none';
+    if (adminBtn) adminBtn.style.display = 'flex';
     // Save credentials for pre-fill + clear logout flag
     localStorage.setItem('_db_phone', phone);
     localStorage.setItem('_db_pass',  password);
