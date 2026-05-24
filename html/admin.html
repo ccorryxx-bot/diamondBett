@@ -5,40 +5,12 @@
     <button class="admin-back" onclick="showPage('account')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
     </button>
-    <span class="admin-hdr-title">Admin Dashboard</span>
+    <span class="admin-hdr-title">ငွေကြေး မှတ်တမ်း</span>
     <div class="admin-rt-dot" id="adminRtDot" title="Real-Time"></div>
   </div>
 
-  <!-- Stats Row -->
-  <div class="admin-stats">
-    <div class="admin-sc">
-      <span class="admin-sv" id="aStUsers">—</span>
-      <span class="admin-sl">Users</span>
-    </div>
-    <div class="admin-sc">
-      <span class="admin-sv cyan" id="aStPendDep">—</span>
-      <span class="admin-sl">Pending Dep</span>
-    </div>
-    <div class="admin-sc">
-      <span class="admin-sv purple" id="aStPendWd">—</span>
-      <span class="admin-sl">Pending Wd</span>
-    </div>
-    <div class="admin-sc">
-      <span class="admin-sv yellow" id="aStTotalDep">—</span>
-      <span class="admin-sl">Total Dep</span>
-    </div>
-  </div>
-
-  <!-- Tabs -->
-  <div class="admin-tabs">
-    <button class="admin-tab active" onclick="switchAdminTab(this,'tx')">မှတ်တမ်း</button>
-    <button class="admin-tab" onclick="switchAdminTab(this,'wd')">ငွေထုတ် စီမံ</button>
-    <button class="admin-tab" onclick="switchAdminTab(this,'users')">Users</button>
-    <button class="admin-tab" onclick="switchAdminTab(this,'vip')">VIP</button>
-  </div>
-
-  <!-- ── Tab: Transactions ── -->
-  <div class="admin-tab-pane" id="adminPane_tx">
+  <!-- Filter Row -->
+  <div class="admin-tab-pane" id="adminPane_tx" style="display:block">
     <div class="admin-filter-row">
       <select id="aFilterType" onchange="loadAdminTx()">
         <option value="">Type အားလုံး</option>
@@ -55,77 +27,47 @@
     <div class="admin-list" id="adminTxList"><div class="admin-spinner"></div></div>
   </div>
 
-  <!-- ── Tab: Withdrawal Management ── -->
-  <div class="admin-tab-pane" id="adminPane_wd" style="display:none">
-    <div class="admin-pane-hint">⚡ Pending ငွေထုတ်တောင်းဆိုမှုများ — အတည်ပြု / ငြင်းပယ်</div>
-    <div class="admin-list" id="adminWdList"><div class="admin-spinner"></div></div>
-  </div>
-
-  <!-- ── Tab: Users ── -->
-  <div class="admin-tab-pane" id="adminPane_users" style="display:none">
-    <div class="admin-search-row">
-      <input type="text" id="aUserSearch" placeholder="Phone / Name ဖြင့် ရှာပါ..." oninput="filterAdminUsers(this.value)" class="admin-search-input"/>
-    </div>
-    <div class="admin-list" id="adminUserList"><div class="admin-spinner"></div></div>
-  </div>
-
-  <!-- ── Tab: VIP Levels ── -->
-  <div class="admin-tab-pane" id="adminPane_vip" style="display:none">
-    <div class="admin-pane-hint">💎 VIP Level — Promo Amount & Rebate % ပြင်ဆင်ရန်</div>
-    <div class="admin-list" id="adminVipList"><div class="admin-spinner"></div></div>
-  </div>
-
 </div>
 
 <script>
-// ── Admin Dashboard ─────────────────────────────────────────
+// ── My Transaction History ──────────────────────────────────
 let _adminRtCh = null;
-let _adminTab  = 'tx';
-let _allAdminUsers = [];
 
 // Entry point — called when showPage('admin') fires
 function initAdminDashboard() {
-  if (!window.currentIsAdmin) {
-    if (typeof showPage === 'function') showPage('account');
-    if (typeof gToast   === 'function') gToast('Admin သာ ဝင်ခွင့်ရှိသည်', 'error');
+  if (!window.currentUserId) {
+    if (typeof showPage   === 'function') showPage('account');
+    if (typeof openAuthModal === 'function') openAuthModal('login');
     return;
   }
-  loadAdminStats();
   loadAdminTx();
   subscribeAdminRt();
 }
 
-// ── Stats ────────────────────────────────────────────────────
-async function loadAdminStats() {
-  if (!window.DB) return;
-  const [{ count: uc }, { data: pendTx }] = await Promise.all([
-    window.DB.from('users').select('*', { count: 'exact', head: true }),
-    window.DB.from('transactions').select('type,status').eq('status', 'pending')
-  ]);
-  const pendDep = pendTx?.filter(t => t.type === 'deposit').length   || 0;
-  const pendWd  = pendTx?.filter(t => t.type === 'withdrawal').length || 0;
-  const { data: depRows } = await window.DB.from('users').select('total_deposited');
-  const totalDep = depRows?.reduce((s, u) => s + parseFloat(u.total_deposited || 0), 0) || 0;
-  const fmtS = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n);
-  const set  = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-  set('aStUsers',    uc     || 0);
-  set('aStPendDep',  pendDep);
-  set('aStPendWd',   pendWd);
-  set('aStTotalDep', fmtS(totalDep));
-}
-
-// ── Transactions Tab ─────────────────────────────────────────
+// ── My Transactions ─────────────────────────────────────────
 async function loadAdminTx() {
   const list = document.getElementById('adminTxList');
-  if (!list || !window.DB) return;
+  if (!list || !window.DB || !window.currentUserId) return;
   list.innerHTML = '<div class="admin-spinner"></div>';
+
   const typeF   = document.getElementById('aFilterType')?.value   || '';
   const statusF = document.getElementById('aFilterStatus')?.value || '';
-  let q = window.DB.from('transactions').select('*').order('created_at', { ascending: false }).limit(60);
+
+  let q = window.DB
+    .from('transactions')
+    .select('*')
+    .eq('user_id', window.currentUserId)
+    .order('created_at', { ascending: false })
+    .limit(60);
+
   if (typeF)   q = q.eq('type',   typeF);
   if (statusF) q = q.eq('status', statusF);
+
   const { data, error } = await q;
-  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">မှတ်တမ်း မရှိပါ</div>'; return; }
+  if (error || !data?.length) {
+    list.innerHTML = '<div class="admin-empty">မှတ်တမ်း မရှိသေးပါ</div>';
+    return;
+  }
   list.innerHTML = data.map(t => renderAdminTxRow(t)).join('');
 }
 
@@ -134,12 +76,15 @@ function renderAdminTxRow(t) {
   const dt  = new Date(t.created_at);
   const dts = `${dt.getFullYear()}-${p2(dt.getMonth()+1)}-${p2(dt.getDate())} ${p2(dt.getHours())}:${p2(dt.getMinutes())}`;
   const amt = parseFloat(t.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-  const stM = { pending: { l: '⏳ Pending', c: 'as-pend' }, approved: { l: '✓ Approved', c: 'as-ok' }, rejected: { l: '✕ Rejected', c: 'as-rej' } };
+  const stM = {
+    pending  : { l: '⏳ Pending',   c: 'as-pend' },
+    approved : { l: '✓ Approved',   c: 'as-ok'   },
+    rejected : { l: '✕ Rejected',   c: 'as-rej'  }
+  };
   const st  = stM[t.status] || { l: t.status, c: '' };
   const cls = t.type === 'deposit' ? 'atx-dep' : 'atx-wd';
   const lbl = t.type === 'deposit' ? '⬇ ငွေသွင်း' : '⬆ ငွေထုတ်';
   const sig = t.type === 'deposit' ? '+' : '-';
-  const isPending = t.status === 'pending';
   return `<div class="admin-tx-row ${cls}" id="atr_${t.id}">
     <div class="atx-top">
       <span class="atx-type">${lbl}</span>
@@ -151,180 +96,27 @@ function renderAdminTxRow(t) {
     </div>
     <div class="atx-bot">
       <span class="admin-badge ${st.c}">${st.l}</span>
-      ${isPending ? `<div class="atx-actions">
-        <button class="atx-btn atx-ok" onclick="adminApproveTx('${t.id}','${t.type}','${t.user_id}',${parseFloat(t.amount||0)})">✓ အတည်ပြု</button>
-        <button class="atx-btn atx-no" onclick="adminRejectTx('${t.id}')">✕ ငြင်းပယ်</button>
-      </div>` : ''}
     </div>
   </div>`;
 }
 
-async function adminApproveTx(id, type, userId, amount) {
-  if (!confirm('Transaction ကို အတည်ပြုမည်လား?')) return;
-  const { error } = await window.DB.from('transactions').update({ status: 'approved' }).eq('id', id);
-  if (error) { gToast('Error: ' + error.message, 'error'); return; }
-  // Adjust user balance
-  const { data: u } = await window.DB.from('users').select('balance,total_deposited,total_withdrawn').eq('id', userId).single();
-  if (u) {
-    const upd = {};
-    if (type === 'deposit') {
-      upd.balance          = parseFloat(u.balance || 0) + amount;
-      upd.total_deposited  = parseFloat(u.total_deposited || 0) + amount;
-    } else {
-      upd.balance          = Math.max(0, parseFloat(u.balance || 0) - amount);
-      upd.total_withdrawn  = parseFloat(u.total_withdrawn || 0) + amount;
-    }
-    await window.DB.from('users').update(upd).eq('id', userId);
-  }
-  gToast('အတည်ပြုပြီး ✓', 'success');
-  loadAdminStats(); loadAdminTx(); loadAdminWd();
-}
-
-async function adminRejectTx(id) {
-  if (!confirm('Transaction ကို ငြင်းပယ်မည်လား?')) return;
-  const { error } = await window.DB.from('transactions').update({ status: 'rejected' }).eq('id', id);
-  if (error) { gToast('Error: ' + error.message, 'error'); return; }
-  gToast('ငြင်းပယ်ပြီး');
-  loadAdminStats(); loadAdminTx(); loadAdminWd();
-}
-
-// ── Withdrawals Management Tab ───────────────────────────────
-async function loadAdminWd() {
-  const list = document.getElementById('adminWdList');
-  if (!list || !window.DB) return;
-  list.innerHTML = '<div class="admin-spinner"></div>';
-  const { data, error } = await window.DB
-    .from('transactions')
-    .select('*')
-    .eq('type', 'withdrawal')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
-  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">Pending ငွေထုတ် မရှိပါ</div>'; return; }
-  list.innerHTML = data.map(t => renderAdminTxRow(t)).join('');
-}
-
-// ── Users Tab ───────────────────────────────────────────────
-async function loadAdminUsers() {
-  const list = document.getElementById('adminUserList');
-  if (!list || !window.DB) return;
-  list.innerHTML = '<div class="admin-spinner"></div>';
-  const { data, error } = await window.DB
-    .from('users')
-    .select('id,phone,fullname,balance,total_deposited,total_withdrawn,is_banned,is_admin,role,created_at')
-    .order('created_at', { ascending: false });
-  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">Users မရှိပါ</div>'; return; }
-  _allAdminUsers = data;
-  renderAdminUsers(data);
-}
-
-function filterAdminUsers(val) {
-  const q = val.trim().toLowerCase();
-  renderAdminUsers(q ? _allAdminUsers.filter(u =>
-    (u.phone || '').includes(q) || (u.fullname || '').toLowerCase().includes(q)
-  ) : _allAdminUsers);
-}
-
-function renderAdminUsers(data) {
-  const list = document.getElementById('adminUserList');
-  if (!list) return;
-  if (!data.length) { list.innerHTML = '<div class="admin-empty">မတွေ့ပါ</div>'; return; }
-  const fmt = n => parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-  list.innerHTML = data.map(u => `
-    <div class="admin-user-row ${u.is_banned ? 'au-banned' : ''}">
-      <div class="au-top">
-        <span class="au-name">${u.fullname || '—'}</span>
-        <span class="au-phone">${u.phone || '—'}</span>
-      </div>
-      <div class="au-mid">
-        <span>Balance: <strong>${fmt(u.balance)}</strong></span>
-        <span>Dep: <strong>${fmt(u.total_deposited)}</strong></span>
-        <span>Wd: <strong>${fmt(u.total_withdrawn)}</strong></span>
-      </div>
-      <div class="au-bot">
-        <span class="au-role-badge ${u.is_admin ? 'au-adm' : ''}">${u.is_admin ? '⚡ Admin' : u.role || 'user'}</span>
-        ${u.is_banned
-          ? `<button class="au-act au-unban" onclick="adminToggleBan('${u.id}',true)">🔓 Ban ဖြုတ်</button>`
-          : `<button class="au-act au-ban" onclick="adminToggleBan('${u.id}',false)">🚫 Ban</button>`
-        }
-      </div>
-    </div>`).join('');
-}
-
-async function adminToggleBan(userId, currentlyBanned) {
-  const { error } = await window.DB.from('users').update({ is_banned: !currentlyBanned }).eq('id', userId);
-  if (error) { gToast('Error: ' + error.message, 'error'); return; }
-  gToast(currentlyBanned ? '🔓 Ban ဖြုတ်ပြီး' : '🚫 Ban လုပ်ပြီး', 'success');
-  loadAdminUsers();
-}
-
-// ── VIP Levels Tab ──────────────────────────────────────────
-async function loadAdminVip() {
-  const list = document.getElementById('adminVipList');
-  if (!list || !window.DB) return;
-  list.innerHTML = '<div class="admin-spinner"></div>';
-  const { data, error } = await window.DB.from('vip_levels').select('*').order('level', { ascending: true });
-  if (error || !data?.length) {
-    list.innerHTML = '<div class="admin-empty">VIP Levels မရှိပါ<br><small>sql/vip_levels.sql ကို Supabase မှာ Run ပါ</small></div>';
-    return;
-  }
-  const fmtN = n => parseFloat(n || 0).toLocaleString('en-US');
-  list.innerHTML = data.map(v => `
-    <div class="admin-vip-row">
-      <div class="avip-badge">V${v.level}</div>
-      <div class="avip-body">
-        <div class="avip-lbl">${v.label || 'Level ' + v.level}</div>
-        <div class="avip-min">Min Deposit: ${fmtN(v.min_deposit)} ks</div>
-        <div class="avip-fields">
-          <div class="avip-field">
-            <span class="avip-field-lbl">Promo Amt</span>
-            <input type="number" class="avip-inp" id="avipP_${v.level}" value="${v.promo_amt || 0}"/>
-          </div>
-          <div class="avip-field">
-            <span class="avip-field-lbl">Rebate %</span>
-            <input type="number" class="avip-inp" id="avipR_${v.level}" value="${v.rebate_pct || 0}" step="0.1"/>
-          </div>
-          <button class="avip-save" onclick="adminSaveVip(${v.level})">Save</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-async function adminSaveVip(level) {
-  const promo  = parseFloat(document.getElementById('avipP_' + level)?.value || 0);
-  const rebate = parseFloat(document.getElementById('avipR_' + level)?.value || 0);
-  const { error } = await window.DB.from('vip_levels').update({ promo_amt: promo, rebate_pct: rebate }).eq('level', level);
-  if (error) { gToast('Error: ' + error.message, 'error'); return; }
-  gToast('VIP Level ' + level + ' Update ပြီး ✓', 'success');
-}
-
-// ── Tab switcher ────────────────────────────────────────────
-function switchAdminTab(btn, tab) {
-  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.admin-tab-pane').forEach(p => p.style.display = 'none');
-  const pane = document.getElementById('adminPane_' + tab);
-  if (pane) pane.style.display = 'block';
-  _adminTab = tab;
-  if (tab === 'tx')    loadAdminTx();
-  if (tab === 'wd')    loadAdminWd();
-  if (tab === 'users') loadAdminUsers();
-  if (tab === 'vip')   loadAdminVip();
-}
-
-// ── Realtime subscription ───────────────────────────────────
+// ── Realtime — user-specific ────────────────────────────────
 function subscribeAdminRt() {
-  if (!window.DB) return;
+  if (!window.DB || !window.currentUserId) return;
   if (_adminRtCh) { window.DB.removeChannel(_adminRtCh); _adminRtCh = null; }
-  _adminRtCh = window.DB.channel('admin-rt-ch')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-      loadAdminStats();
-      if (_adminTab === 'tx') loadAdminTx();
-      if (_adminTab === 'wd') loadAdminWd();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-      loadAdminStats();
-      if (_adminTab === 'users') loadAdminUsers();
-    })
+
+  _adminRtCh = window.DB
+    .channel('mytx-rt-' + window.currentUserId)
+    .on(
+      'postgres_changes',
+      {
+        event : '*',
+        schema: 'public',
+        table : 'transactions',
+        filter: `user_id=eq.${window.currentUserId}`
+      },
+      () => { loadAdminTx(); }
+    )
     .subscribe(() => {
       const dot = document.getElementById('adminRtDot');
       if (dot) dot.classList.add('active');
