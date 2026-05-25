@@ -2,7 +2,7 @@
 // Diamond-BETT Service Worker
 // Cache Version: bump CACHE_VERSION whenever you push new code
 // ============================================================
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `diamond-bett-${CACHE_VERSION}`;
 
 // Static assets to pre-cache on first visit
