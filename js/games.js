@@ -131,6 +131,10 @@ function filterGames(category) {
 
 // ============================================================
 // PLAY GAME  — calls B2B API via Replit backend
+//
+// FIX: Mobile browsers block window.open() called after await.
+// Solution: open the tab FIRST (while still in user-gesture
+// context), then navigate it to the URL once we have it.
 // ============================================================
 async function playGame(gameCode, gameName) {
   // Must be logged in
@@ -143,14 +147,17 @@ async function playGame(gameCode, gameName) {
   if (_launchingGame === gameCode) return;
   _launchingGame = gameCode;
 
-  // Show loading state on card
+  // ── Open blank tab NOW (user-gesture context) ──────────────
+  // Must happen before any await — mobile Chrome/Safari block
+  // window.open() called after async operations.
+  const gameWindow = window.open('about:blank', '_blank');
+
+  // Show loading state
   const card = document.getElementById('gc-' + gameCode);
   if (card) {
     card.style.opacity = '0.6';
     card.style.pointerEvents = 'none';
   }
-
-  // Show toast
   if (typeof showToast === 'function') showToast(`ဂိမ်း ဖွင့်နေသည်... / Loading ${gameName || ''}...`);
 
   try {
@@ -161,26 +168,39 @@ async function playGame(gameCode, gameName) {
       body:    JSON.stringify({
         user_id:  window.currentUserId,
         game_uid: gameCode,
-        platform: 2   // H5 mobile
+        platform: 2,
+        lang:     'my',
+        currency: 'MMK'
       }),
     });
+
+    if (!resp.ok) {
+      throw new Error(`Server error ${resp.status}`);
+    }
 
     const result = await resp.json();
 
     if (result.code !== 0 || !result.game_url) {
+      if (gameWindow) gameWindow.close();
       const msg = result.msg || 'ဂိမ်း မဖွင့်နိုင်ပါ';
       if (typeof showToast === 'function') showToast(msg, 'error');
       return;
     }
 
-    // Open game in new tab
-    window.open(result.game_url, '_blank', 'noopener,noreferrer');
+    // Navigate the pre-opened tab to the game
+    if (gameWindow && !gameWindow.closed) {
+      gameWindow.location.href = result.game_url;
+    } else {
+      // Popup was blocked — fallback: open again or redirect
+      const fallback = window.open(result.game_url, '_blank');
+      if (!fallback) window.location.href = result.game_url;
+    }
 
   } catch (err) {
     console.error('Game launch error:', err);
+    if (gameWindow && !gameWindow.closed) gameWindow.close();
     if (typeof showToast === 'function') showToast('Network error — ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
   } finally {
-    // Restore card
     if (card) {
       card.style.opacity = '';
       card.style.pointerEvents = '';
