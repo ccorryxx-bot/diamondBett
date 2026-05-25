@@ -81,44 +81,71 @@ async function registerUser() {
   btn.disabled = true; btn.textContent = 'မှတ်ပုံတင်နေသည်...';
 
   try {
-    const resp = await fetch(`${SUPA_URL}/functions/v1/register-user`, {
-      method : 'POST',
-      headers: {
-        'Content-Type' : 'application/json',
-        'apikey'       : SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY
-      },
-      body: JSON.stringify({ phone, password, fullname: name, referrer_code: refCode || null })
-    });
-    const result = await resp.json();
-    
-    if (resp.ok) {
-      // မှတ်ပုံတင်အောင်မြင်ရင် Auto Login တစ်ခါတည်းဝင်ပြီး uid ဆွဲထုတ်မယ်
-      const { data: signData, error: signError } = await window.DB.auth.signInWithPassword({
-        email: `${phone}@diamondbett.com`, password
-      });
-      
-      if (signError) {
-        gToast('မှတ်ပုံတင်အောင်မြင်သော်လည်း Login မဝင်နိုင်ပါ၊ ပြန်လည် Login ဝင်ပေးပါ', 'warning');
-        switchTab('login');
-        return;
-      }
+    // Generate unique ref code e.g. "D-A3B9K"
+    const refCodeNew = 'D-' + Math.random().toString(36).toUpperCase().slice(2, 7);
+    const email      = `${phone}@diamondbett.com`;
 
-      const uid = signData?.user?.id || null;
-      gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည်', 'success');
-      document.getElementById('authModal')?.classList.remove('active');
-      onLoginSuccess({ phone, fullname: name, ref_code: result.ref_code }, result.ref_code, 0, uid);
-    } else {
-      // Handle Supabase error message more gracefully
-      let errMsg = result.error || 'မသိရသောအမှား';
-      if (errMsg.includes('already been registered')) {
+    // Step 1: Create Supabase Auth user
+    const { data: signUpData, error: signUpErr } = await window.DB.auth.signUp({ email, password });
+
+    if (signUpErr) {
+      let errMsg = signUpErr.message || 'မသိရသောအမှား';
+      if (errMsg.includes('already registered') || errMsg.includes('already been registered')) {
         errMsg = 'ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်သည်';
       }
-      gToast('အမှားအယွင်း: ' + errMsg, 'error');
+      gToast(errMsg, 'error');
+      return;
     }
+
+    const uid = signUpData?.user?.id;
+    if (!uid) { gToast('အကောင့်ဖန်တီး မအောင်မြင်ပါ', 'error'); return; }
+
+    // Step 2: Find referrer if ref code provided
+    let referrerId = null;
+    if (refCode) {
+      const { data: refUser } = await window.DB
+        .from('users')
+        .select('id')
+        .eq('ref_code', refCode)
+        .single();
+      if (refUser) referrerId = refUser.id;
+    }
+
+    // Step 3: Insert into users table
+    const { error: insertErr } = await window.DB.from('users').insert([{
+      id          : uid,
+      phone,
+      fullname    : name,
+      balance     : 0,
+      role        : 'player',
+      ref_code    : refCodeNew,
+      referrer_id : referrerId,
+      is_admin    : false,
+    }]);
+
+    if (insertErr) {
+      // If duplicate (user already exists in users table), just continue
+      if (!insertErr.message?.includes('duplicate') && !insertErr.code?.includes('23505')) {
+        gToast('ပရိုဖိုင် ဖန်တီး မအောင်မြင်ပါ: ' + insertErr.message, 'error');
+        return;
+      }
+    }
+
+    // Step 4: Auto-login
+    const { data: signInData, error: signInErr } = await window.DB.auth.signInWithPassword({ email, password });
+    if (signInErr) {
+      gToast('မှတ်ပုံတင်အောင်မြင်သည် — ပြန်လည် Login ဝင်ပေးပါ', 'success');
+      if (typeof switchTab === 'function') switchTab('login');
+      return;
+    }
+
+    gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည် 🎉', 'success');
+    document.getElementById('authModal')?.classList.remove('active');
+    onLoginSuccess({ phone, fullname: name, ref_code: refCodeNew }, refCodeNew, 0, signInData?.user?.id || uid);
+
   } catch (err) {
-    console.error(err);
-    gToast('Edge Function ချိတ်ဆက်မရပါ', 'error');
+    console.error('registerUser error:', err);
+    gToast('မှတ်ပုံတင် မအောင်မြင်ပါ — ထပ်ကြိုးစားပါ', 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'မှတ်ပုံတင်မည်';
   }
