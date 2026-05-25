@@ -108,22 +108,18 @@ function renderGames() {
   grid.innerHTML = filtered.map((g, idx) => {
     const hue    = (idx * 37) % 360;
     const hasImg = g.image_url && !g.image_url.includes('placeholder');
-    return `<div class="game-card" onclick="playGame('${g.game_code}')">
+    return `<div class="game-card" style="background:linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue+20},55%,11%));" onclick="playGame('${g.game_code}')">
       ${hasImg
-        ? `<img src="${g.image_url}" class="gc-bg" loading="lazy" 
-             decoding="async"
-             onerror="this.style.display='none'">`
-        : `<div class="gc-bg" style="background:linear-gradient(145deg,
-             hsl(${hue},60%,30%),hsl(${hue + 20},70%,20%));"></div>
-           <div class="gc-char">
+        ? `<img src="${g.image_url}" class="gc-bg" loading="lazy" onerror="this.style.display='none'">`
+        : `<div class="gc-char">
              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".4">
                <polygon points="12,2 22,8 22,16 12,22 2,16 2,8"/>
              </svg>
            </div>`
       }
-      <div class="gc-info">
-        <div class="gc-name">${g.game_name}</div>
-        <div class="gc-cat">${g.category.toUpperCase()}</div>
+      <div class="gc-label">
+        <span>${g.game_name}</span>
+        <span>${g.category.toUpperCase()}</span>
       </div>
     </div>`;
   }).join('');
