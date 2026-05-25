@@ -166,10 +166,15 @@ async function playGame(gameCode, gameName) {
     if (typeof gToast === 'function') gToast(`ဂိမ်း ဖွင့်နေသည်... ${gameName || ''}`);
 
     // ── STEP 3: Call Edge Function to get game URL ──
-    const apiBase = (typeof GAME_API_BASE !== 'undefined') ? GAME_API_BASE : '';
+    const apiBase  = (typeof GAME_API_BASE !== 'undefined') ? GAME_API_BASE : '';
+    const supaKey  = (typeof SUPA_KEY      !== 'undefined') ? SUPA_KEY      : '';
     const resp = await fetch(`${apiBase}/api/games/launch`, {
       method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type' : 'application/json',
+        'apikey'       : supaKey,
+        'Authorization': `Bearer ${supaKey}`,
+      },
       body   : JSON.stringify({
         user_id : uid,
         game_uid: gameCode,
@@ -179,7 +184,10 @@ async function playGame(gameCode, gameName) {
       }),
     });
 
-    if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`Server error ${resp.status}: ${errText}`);
+    }
 
     const result = await resp.json();
 
