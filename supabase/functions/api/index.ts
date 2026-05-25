@@ -9,42 +9,35 @@ const PLAYER_PREFIX = 'he0cd4'
 const SERVER_URL    = 'https://jsgame.live'
 const HOME_URL      = 'https://diamond-bett.vercel.app'
 
-// ─── AES-256 ECB + PKCS7 ─────────────────────────────────────────────────────
+// ─── AES-256-ECB + PKCS7 ─────────────────────────────────────────────────────
 // Web Crypto has no native ECB.
-// Trick: AES-CBC with all-zero IV encrypts block[0] identically to ECB.
-// For subsequent blocks we need to XOR output of previous encrypt back out,
-// so we just encrypt each block separately with IV=0 (= ECB for every block).
+// Simulate: AES-CBC with all-zero IV per block → each block = AES(block XOR 0) = AES-ECB block
 async function aes256EcbEncryptBase64(plaintext: string, keyStr: string): Promise<string> {
   const enc       = new TextEncoder()
-  const keyBytes  = enc.encode(keyStr)          // raw UTF-8 → 32 bytes → AES-256
+  const keyBytes  = enc.encode(keyStr)     // raw UTF-8 → 32 bytes → AES-256 key
   const dataBytes = enc.encode(plaintext)
 
-  const BLOCK = 16
-  // PKCS7 pad to multiple of 16
+  const BLOCK  = 16
   const padLen = BLOCK - (dataBytes.length % BLOCK)
   const padded = new Uint8Array(dataBytes.length + padLen)
   padded.set(dataBytes)
-  padded.fill(padLen, dataBytes.length)
+  padded.fill(padLen, dataBytes.length)    // PKCS7
 
-  // Import key
   const cryptoKey = await crypto.subtle.importKey(
     'raw', keyBytes, { name: 'AES-CBC' }, false, ['encrypt']
   )
 
-  // Encrypt each 16-byte block with IV=0 → identical to AES-ECB
   const numBlocks = padded.length / BLOCK
   const result    = new Uint8Array(padded.length)
   const zeroIV    = new Uint8Array(BLOCK)
 
   for (let i = 0; i < numBlocks; i++) {
-    const block    = padded.slice(i * BLOCK, (i + 1) * BLOCK)
-    // AES-CBC(block, iv=0) returns 32 bytes (block + CBC's own padding block)
-    // First 16 bytes = AES(block XOR 0) = AES(block) = ECB result ✓
-    const enc32    = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: zeroIV }, cryptoKey, block)
+    const block = padded.slice(i * BLOCK, (i + 1) * BLOCK)
+    // AES-CBC(block, iv=0) first 16 bytes = AES(block XOR 0) = AES(block) = ECB ✓
+    const enc32 = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: zeroIV }, cryptoKey, block)
     result.set(new Uint8Array(enc32).slice(0, BLOCK), i * BLOCK)
   }
 
-  // Return standard Base64
   return btoa(String.fromCharCode(...result))
 }
 
@@ -55,7 +48,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
 }
 
-// Always HTTP 200 — frontend checks result.code, not HTTP status
 function json200(body: object) {
   return Response.json(body, { status: 200, headers: corsHeaders })
 }
@@ -67,7 +59,6 @@ Deno.serve(async (req: Request) => {
 
   const url = new URL(req.url)
 
-  // POST /api/games/launch
   if (req.method === 'POST' && url.pathname.endsWith('/games/launch')) {
     try {
       const body = await req.json()
@@ -76,7 +67,6 @@ Deno.serve(async (req: Request) => {
       if (!user_id || !game_uid)
         return json200({ code: 1, msg: 'Missing user_id or game_uid' })
 
-      // Fetch user balance from Supabase (service role bypasses RLS)
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -92,13 +82,10 @@ Deno.serve(async (req: Request) => {
       if (userErr || !user)
         return json200({ code: 1, msg: 'User not found' })
 
-      // Unique member account per user
       const memberAcct   = `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
-      // credit_amount: user's current balance (min 0)
       const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
       const timestamp    = Math.floor(Date.now() / 1000)   // UNIX seconds
 
-      // HUIDU inner payload (will be AES-256 ECB encrypted)
       const innerPayload = {
         timestamp,
         agency_uid    : AGENCY_UID,
@@ -116,33 +103,34 @@ Deno.serve(async (req: Request) => {
         AES_KEY_STR
       )
 
-      // HUIDU outer request body
-      const huiduBody = {
-        agency_uid: AGENCY_UID,
-        timestamp,
-        payload   : encryptedPayload,
-      }
-
-      console.log('HUIDU request body:', JSON.stringify({ ...huiduBody, payload: encryptedPayload.slice(0, 30) + '...' }))
-
       const huiduResp = await fetch(`${SERVER_URL}/game/v1`, {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify(huiduBody),
+        body   : JSON.stringify({ agency_uid: AGENCY_UID, timestamp, payload: encryptedPayload }),
       })
 
-      const huiduData = await huiduResp.json()
-
-      console.log('HUIDU response:', JSON.stringify(huiduData))
+      const huiduData = await huiduResp.json() as {
+        code    : number
+        msg?    : string
+        message?: string
+        payload?: { game_launch_url?: string; url?: string; game_url?: string }
+        game_url?       : string
+        url?            : string
+        game_launch_url?: string
+      }
 
       if (huiduData.code !== 0)
         return json200({ code: huiduData.code ?? 1, msg: huiduData.msg || huiduData.message || 'Game API error' })
 
-      // Accommodate different game_url field names in response
-      const gameUrl = huiduData.game_url
-        ?? huiduData.data?.game_url
-        ?? huiduData.data?.url
+      // HUIDU response shape: { code:0, msg:"Success", payload:{ game_launch_url:"..." } }
+      const gameUrl = (
+        huiduData.payload?.game_launch_url
+        ?? huiduData.payload?.url
+        ?? huiduData.payload?.game_url
+        ?? huiduData.game_url
         ?? huiduData.url
+        ?? huiduData.game_launch_url
+      )
 
       if (!gameUrl)
         return json200({ code: 1, msg: 'No game URL in response' })
@@ -150,7 +138,6 @@ Deno.serve(async (req: Request) => {
       return json200({ code: 0, game_url: gameUrl })
 
     } catch (err) {
-      console.error('Edge function error:', err)
       return json200({ code: 1, msg: `Server error: ${String(err)}` })
     }
   }
