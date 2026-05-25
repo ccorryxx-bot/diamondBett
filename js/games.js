@@ -132,13 +132,19 @@ function filterGames(category) {
 // ============================================================
 // PLAY GAME  — calls B2B API via Replit backend
 //
-// FIX: Mobile browsers block window.open() called after await.
-// Solution: open the tab FIRST (while still in user-gesture
-// context), then navigate it to the URL once we have it.
+// FIXES:
+//  1. gToast (not showToast) — matches utils.js definition
+//  2. getAuthUid() — survives page refresh via Supabase session
+//  3. window.open BEFORE await — bypasses mobile popup blocker
 // ============================================================
 async function playGame(gameCode, gameName) {
-  // Must be logged in
-  if (!window.currentUserId) {
+  // FIX #2: getAuthUid() checks memory → sessionStorage → Supabase session.
+  // This means the user stays "logged in" across page refreshes.
+  const uid = window.currentUserId || (
+    typeof getAuthUid === 'function' ? await getAuthUid() : null
+  );
+
+  if (!uid) {
     if (typeof openAuthModal === 'function') openAuthModal('login');
     return;
   }
@@ -147,18 +153,19 @@ async function playGame(gameCode, gameName) {
   if (_launchingGame === gameCode) return;
   _launchingGame = gameCode;
 
-  // ── Open blank tab NOW (user-gesture context) ──────────────
-  // Must happen before any await — mobile Chrome/Safari block
-  // window.open() called after async operations.
+  // FIX #3: Open the tab NOW (synchronous, in user-gesture context).
+  // Mobile Chrome/Safari block window.open() called after any await.
   const gameWindow = window.open('about:blank', '_blank');
 
-  // Show loading state
+  // Show loading state on card
   const card = document.getElementById('gc-' + gameCode);
   if (card) {
-    card.style.opacity = '0.6';
+    card.style.opacity       = '0.6';
     card.style.pointerEvents = 'none';
   }
-  if (typeof showToast === 'function') showToast(`ဂိမ်း ဖွင့်နေသည်... / Loading ${gameName || ''}...`);
+
+  // FIX #1: gToast is the real function (defined in utils.js)
+  if (typeof gToast === 'function') gToast(`ဂိမ်း ဖွင့်နေသည်... / Loading ${gameName || ''}...`);
 
   try {
     const apiBase = (typeof GAME_API_BASE !== 'undefined') ? GAME_API_BASE : '';
@@ -166,7 +173,7 @@ async function playGame(gameCode, gameName) {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
-        user_id:  window.currentUserId,
+        user_id:  uid,
         game_uid: gameCode,
         platform: 2,
         lang:     'my',
@@ -174,35 +181,33 @@ async function playGame(gameCode, gameName) {
       }),
     });
 
-    if (!resp.ok) {
-      throw new Error(`Server error ${resp.status}`);
-    }
+    if (!resp.ok) throw new Error(`Server error ${resp.status}`);
 
     const result = await resp.json();
 
     if (result.code !== 0 || !result.game_url) {
-      if (gameWindow) gameWindow.close();
-      const msg = result.msg || 'ဂိမ်း မဖွင့်နိုင်ပါ';
-      if (typeof showToast === 'function') showToast(msg, 'error');
+      if (gameWindow && !gameWindow.closed) gameWindow.close();
+      if (typeof gToast === 'function') gToast(result.msg || 'ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
       return;
     }
 
-    // Navigate the pre-opened tab to the game
+    // Navigate the pre-opened tab to the game URL
     if (gameWindow && !gameWindow.closed) {
       gameWindow.location.href = result.game_url;
     } else {
-      // Popup was blocked — fallback: open again or redirect
+      // Popup blocked — try again or warn
       const fallback = window.open(result.game_url, '_blank');
-      if (!fallback) window.location.href = result.game_url;
+      if (!fallback && typeof gToast === 'function')
+        gToast('Pop-up ပိတ်ထားပါသည် — Browser setting စစ်ပါ', 'error');
     }
 
   } catch (err) {
     console.error('Game launch error:', err);
     if (gameWindow && !gameWindow.closed) gameWindow.close();
-    if (typeof showToast === 'function') showToast('Network error — ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
+    if (typeof gToast === 'function') gToast('Network error — ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
   } finally {
     if (card) {
-      card.style.opacity = '';
+      card.style.opacity       = '';
       card.style.pointerEvents = '';
     }
     _launchingGame = null;
