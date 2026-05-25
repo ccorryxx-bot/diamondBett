@@ -130,31 +130,17 @@ function filterGames(category) {
 }
 
 // ============================================================
-// PLAY GAME  — calls B2B API via Replit backend
-//
-// FIXES:
-//  1. gToast (not showToast) — matches utils.js definition
-//  2. getAuthUid() — survives page refresh via Supabase session
-//  3. window.open BEFORE await — bypasses mobile popup blocker
+// PLAY GAME
+// window.open() MUST be the very first call — before any await.
+// Mobile Chrome/Safari kill the popup if ANY async gap precedes it.
 // ============================================================
 async function playGame(gameCode, gameName) {
-  // FIX #2: getAuthUid() checks memory → sessionStorage → Supabase session.
-  // This means the user stays "logged in" across page refreshes.
-  const uid = window.currentUserId || (
-    typeof getAuthUid === 'function' ? await getAuthUid() : null
-  );
-
-  if (!uid) {
-    if (typeof openAuthModal === 'function') openAuthModal('login');
-    return;
-  }
-
-  // Prevent double-launch
+  // Prevent double-launch (sync check — no await yet)
   if (_launchingGame === gameCode) return;
   _launchingGame = gameCode;
 
-  // FIX #3: Open the tab NOW (synchronous, in user-gesture context).
-  // Mobile Chrome/Safari block window.open() called after any await.
+  // ── STEP 1: Open blank tab NOW, inside synchronous user-gesture ──
+  // This MUST come before any await or the browser popup-blocker fires.
   const gameWindow = window.open('about:blank', '_blank');
 
   // Show loading state on card
@@ -164,20 +150,32 @@ async function playGame(gameCode, gameName) {
     card.style.pointerEvents = 'none';
   }
 
-  // FIX #1: gToast is the real function (defined in utils.js)
-  if (typeof gToast === 'function') gToast(`ဂိမ်း ဖွင့်နေသည်... / Loading ${gameName || ''}...`);
-
   try {
+    // ── STEP 2: Resolve user ID (async is OK — tab already open) ──
+    const uid = window.currentUserId || (
+      typeof getAuthUid === 'function' ? await getAuthUid() : null
+    );
+
+    if (!uid) {
+      // Not logged in — close blank tab, show login modal
+      if (gameWindow && !gameWindow.closed) gameWindow.close();
+      if (typeof openAuthModal === 'function') openAuthModal('login');
+      return;
+    }
+
+    if (typeof gToast === 'function') gToast(`ဂိမ်း ဖွင့်နေသည်... ${gameName || ''}`);
+
+    // ── STEP 3: Call Edge Function to get game URL ──
     const apiBase = (typeof GAME_API_BASE !== 'undefined') ? GAME_API_BASE : '';
     const resp = await fetch(`${apiBase}/api/games/launch`, {
-      method:  'POST',
+      method : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        user_id:  uid,
+      body   : JSON.stringify({
+        user_id : uid,
         game_uid: gameCode,
         platform: 2,
-        lang:     'my',
-        currency: 'MMK'
+        lang    : 'my',
+        currency: 'MMK',
       }),
     });
 
@@ -191,11 +189,11 @@ async function playGame(gameCode, gameName) {
       return;
     }
 
-    // Navigate the pre-opened tab to the game URL
+    // ── STEP 4: Navigate pre-opened tab to the game ──
     if (gameWindow && !gameWindow.closed) {
       gameWindow.location.href = result.game_url;
     } else {
-      // Popup blocked — try again or warn
+      // Blank tab was blocked (very rare) — direct open as fallback
       const fallback = window.open(result.game_url, '_blank');
       if (!fallback && typeof gToast === 'function')
         gToast('Pop-up ပိတ်ထားပါသည် — Browser setting စစ်ပါ', 'error');
@@ -204,7 +202,7 @@ async function playGame(gameCode, gameName) {
   } catch (err) {
     console.error('Game launch error:', err);
     if (gameWindow && !gameWindow.closed) gameWindow.close();
-    if (typeof gToast === 'function') gToast('Network error — ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
+    if (typeof gToast === 'function') gToast('ဂိမ်း မဖွင့်နိုင်ပါ — ထပ်ကြိုးစားပါ', 'error');
   } finally {
     if (card) {
       card.style.opacity       = '';
