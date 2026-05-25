@@ -83,7 +83,7 @@ async function registerUser() {
   try {
     // Generate unique ref code e.g. "D-A3B9K"
     const refCodeNew = 'D-' + Math.random().toString(36).toUpperCase().slice(2, 7);
-    const email      = `${phone}@diamondbett.com`;
+    const email      = `p_${phone.replace(/\D/g,'')}@diamondbett.com`;
 
     // Step 1: Create Supabase Auth user
     const { data: signUpData, error: signUpErr } = await window.DB.auth.signUp({ email, password });
@@ -170,7 +170,7 @@ async function loginUser() {
 
   try {
     const { data, error } = await window.DB.auth.signInWithPassword({
-      email: `${phone}@diamondbett.com`, password
+      email: `p_${phone.replace(/\D/g,'')}@diamondbett.com`, password
     });
     if (error) { gToast('Login မအောင်မြင်ပါ: ' + error.message, 'error'); return; }
 
