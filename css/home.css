@@ -196,6 +196,11 @@
 .gc-char{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
 .gc-label{position:relative;z-index:2;width:100%;background:linear-gradient(transparent,rgba(0,0,0,.88) 60%);padding:18px 4px 5px;text-align:center;}
 .gc-label span{font-size:8px;font-weight:800;color:#fff;display:block;}
+/* Game card image: fade in smoothly to prevent flash */
+.gc-bg{animation:gcFadeIn .35s ease-in;}
+@keyframes gcFadeIn{from{opacity:0;}to{opacity:1;}}
+/* Category label (2nd span) slightly dimmer */
+.gc-label span:last-child{color:rgba(255,255,255,.65);font-size:7px;margin-top:1px;}
 
 /* ================================================
    FOOTER
