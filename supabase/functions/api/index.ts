@@ -92,7 +92,7 @@ Deno.serve(async (req: Request) => {
         member_account: memberAcct,
         game_uid,
         credit_amount : creditAmount,
-        currency_code : 'INR',
+        currency_code : 'MMK',
         language      : 'zh',
         home_url      : HOME_URL,
         platform,
