@@ -1,83 +1,82 @@
 // HUIDU Gaming API — Game Launch Edge Function
-// AES-256 ECB + PKCS7 Padding (as required by HUIDU spec)
+// AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const AGENCY_UID    = '2c38947f4e36d6c7685583fa20e3acbf'
-const AES_KEY       = '479060999a47a3a311ba5ad48032a5e0'
+const AES_KEY_STR   = '479060999a47a3a311ba5ad48032a5e0'   // 32 ASCII chars = 32 bytes = AES-256
 const PLAYER_PREFIX = 'he0cd4'
 const SERVER_URL    = 'https://jsgame.live'
 const HOME_URL      = 'https://diamond-bett.vercel.app'
 
-// ─── AES-256 ECB + PKCS7 using Web Crypto (Deno compatible) ──────────────────
-// ECB = encrypt each 16-byte block independently (simulate via CBC with zero IV per block)
-async function encryptAES256ECB(plaintext: string, keyHex: string): Promise<string> {
-  const enc      = new TextEncoder()
-  const data     = enc.encode(plaintext)
-  const blockSize = 16
+// ─── AES-256 ECB + PKCS7 ─────────────────────────────────────────────────────
+// Web Crypto has no native ECB.
+// Trick: AES-CBC with all-zero IV encrypts block[0] identically to ECB.
+// For subsequent blocks we need to XOR output of previous encrypt back out,
+// so we just encrypt each block separately with IV=0 (= ECB for every block).
+async function aes256EcbEncryptBase64(plaintext: string, keyStr: string): Promise<string> {
+  const enc       = new TextEncoder()
+  const keyBytes  = enc.encode(keyStr)          // raw UTF-8 → 32 bytes → AES-256
+  const dataBytes = enc.encode(plaintext)
 
-  // PKCS7 padding
-  const padLen = blockSize - (data.length % blockSize)
-  const padded = new Uint8Array(data.length + padLen)
-  padded.set(data)
-  padded.fill(padLen, data.length)
+  const BLOCK = 16
+  // PKCS7 pad to multiple of 16
+  const padLen = BLOCK - (dataBytes.length % BLOCK)
+  const padded = new Uint8Array(dataBytes.length + padLen)
+  padded.set(dataBytes)
+  padded.fill(padLen, dataBytes.length)
 
-  // Import AES-256 key
-  const keyBytes = hexToBytes(keyHex)
+  // Import key
   const cryptoKey = await crypto.subtle.importKey(
     'raw', keyBytes, { name: 'AES-CBC' }, false, ['encrypt']
   )
 
-  // Encrypt each 16-byte block with zero IV → ECB behavior
-  const blocks = padded.length / blockSize
-  const result = new Uint8Array(padded.length)
-  for (let i = 0; i < blocks; i++) {
-    const block  = padded.slice(i * blockSize, (i + 1) * blockSize)
-    const zeroIV = new Uint8Array(16)
-    const enc16  = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: zeroIV }, cryptoKey, block)
-    result.set(new Uint8Array(enc16).slice(0, 16), i * blockSize)
+  // Encrypt each 16-byte block with IV=0 → identical to AES-ECB
+  const numBlocks = padded.length / BLOCK
+  const result    = new Uint8Array(padded.length)
+  const zeroIV    = new Uint8Array(BLOCK)
+
+  for (let i = 0; i < numBlocks; i++) {
+    const block    = padded.slice(i * BLOCK, (i + 1) * BLOCK)
+    // AES-CBC(block, iv=0) returns 32 bytes (block + CBC's own padding block)
+    // First 16 bytes = AES(block XOR 0) = AES(block) = ECB result ✓
+    const enc32    = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: zeroIV }, cryptoKey, block)
+    result.set(new Uint8Array(enc32).slice(0, BLOCK), i * BLOCK)
   }
 
+  // Return standard Base64
   return btoa(String.fromCharCode(...result))
 }
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2)
-  for (let i = 0; i < hex.length; i += 2)
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16)
-  return bytes
-}
-
-// ─── CORS Headers ─────────────────────────────────────────────────────────────
+// ─── CORS ─────────────────────────────────────────────────────────────────────
 const corsHeaders = {
   'Access-Control-Allow-Origin' : '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
 }
 
-// Always HTTP 200 — games.js checks resp.ok first, then result.code
-function ok(body: object) {
+// Always HTTP 200 — frontend checks result.code, not HTTP status
+function json200(body: object) {
   return Response.json(body, { status: 200, headers: corsHeaders })
 }
 
-// ─── Main Handler ─────────────────────────────────────────────────────────────
+// ─── Handler ──────────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
-  // Preflight
   if (req.method === 'OPTIONS')
     return new Response(null, { status: 204, headers: corsHeaders })
 
   const url = new URL(req.url)
 
-  // ── POST /api/games/launch ──────────────────────────────────────────────────
+  // POST /api/games/launch
   if (req.method === 'POST' && url.pathname.endsWith('/games/launch')) {
     try {
       const body = await req.json()
       const { user_id, game_uid, platform = 2 } = body
 
       if (!user_id || !game_uid)
-        return ok({ code: 1, msg: 'Missing user_id or game_uid' })
+        return json200({ code: 1, msg: 'Missing user_id or game_uid' })
 
-      // Get user info from DB using service role
+      // Fetch user balance from Supabase (service role bypasses RLS)
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -91,15 +90,16 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (userErr || !user)
-        return ok({ code: 1, msg: 'User not found' })
+        return json200({ code: 1, msg: 'User not found' })
 
-      // member_account: prefix + first 10 chars of UUID (no dashes) — unique per user
+      // Unique member account per user
       const memberAcct   = `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
-      const creditAmount = Math.max(parseFloat(user.balance || '0'), 0)
-      const timestamp    = Date.now()
+      // credit_amount: user's current balance (min 0)
+      const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
+      const timestamp    = Math.floor(Date.now() / 1000)   // UNIX seconds
 
-      // Build HUIDU payload
-      const payloadObj = {
+      // HUIDU inner payload (will be AES-256 ECB encrypted)
+      const innerPayload = {
         timestamp,
         agency_uid    : AGENCY_UID,
         member_account: memberAcct,
@@ -108,41 +108,52 @@ Deno.serve(async (req: Request) => {
         currency_code : 'MMK',
         language      : 'zh',
         home_url      : HOME_URL,
-        platform,          // 2 = H5/Mobile
+        platform,
       }
 
-      // AES-256 ECB encrypt payload
-      const encPayload = await encryptAES256ECB(JSON.stringify(payloadObj), AES_KEY)
+      const encryptedPayload = await aes256EcbEncryptBase64(
+        JSON.stringify(innerPayload),
+        AES_KEY_STR
+      )
 
-      // Call HUIDU Gaming API
+      // HUIDU outer request body
+      const huiduBody = {
+        agency_uid: AGENCY_UID,
+        timestamp,
+        payload   : encryptedPayload,
+      }
+
+      console.log('HUIDU request body:', JSON.stringify({ ...huiduBody, payload: encryptedPayload.slice(0, 30) + '...' }))
+
       const huiduResp = await fetch(`${SERVER_URL}/game/v1`, {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({
-          agency_uid: AGENCY_UID,
-          timestamp,
-          payload   : encPayload,
-        }),
+        body   : JSON.stringify(huiduBody),
       })
 
       const huiduData = await huiduResp.json()
 
-      // HUIDU error
+      console.log('HUIDU response:', JSON.stringify(huiduData))
+
       if (huiduData.code !== 0)
-        return ok({ code: huiduData.code ?? 1, msg: huiduData.msg || huiduData.message || 'HUIDU API error' })
+        return json200({ code: huiduData.code ?? 1, msg: huiduData.msg || huiduData.message || 'Game API error' })
 
-      // Extract game URL (handle different response shapes)
+      // Accommodate different game_url field names in response
       const gameUrl = huiduData.game_url
-        || huiduData.data?.game_url
-        || huiduData.data?.url
-        || huiduData.url
+        ?? huiduData.data?.game_url
+        ?? huiduData.data?.url
+        ?? huiduData.url
 
-      return ok({ code: 0, game_url: gameUrl })
+      if (!gameUrl)
+        return json200({ code: 1, msg: 'No game URL in response' })
+
+      return json200({ code: 0, game_url: gameUrl })
 
     } catch (err) {
-      return ok({ code: 1, msg: `Server error: ${err}` })
+      console.error('Edge function error:', err)
+      return json200({ code: 1, msg: `Server error: ${String(err)}` })
     }
   }
 
-  return ok({ code: 1, msg: 'Not found' })
+  return json200({ code: 1, msg: 'Not found' })
 })
