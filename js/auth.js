@@ -79,6 +79,7 @@ async function registerUser() {
 
   const btn = document.getElementById('registerBtn');
   btn.disabled = true; btn.textContent = 'မှတ်ပုံတင်နေသည်...';
+  window._authFlowActive = true;
 
   try {
     // Generate unique ref code e.g. "D-A3B9K"
@@ -140,23 +141,30 @@ async function registerUser() {
       }
     }
 
-    // Step 4: Auto-login
-    const { data: signInData, error: signInErr } = await window.DB.auth.signInWithPassword({ email, password });
-    if (signInErr) {
-      gToast('မှတ်ပုံတင်အောင်မြင်သည် — ပြန်လည် Login ဝင်ပေးပါ', 'success');
+    // Step 4: Use session from signUp directly (mailer_autoconfirm=true means session is returned immediately).
+    // DO NOT call signInWithPassword here — doing so fires SIGNED_OUT on the signUp session,
+    // which triggers the onAuthStateChange handler to re-open the auth modal (the bug).
+    const autoSession = signUpData?.session;
+    if (!autoSession) {
+      // Fallback: autoconfirm may be off — ask user to log in manually
+      gToast('မှတ်ပုံတင်အောင်မြင်သည် — Login ဝင်ပေးပါ', 'success');
       if (typeof switchTab === 'function') switchTab('login');
       return;
     }
 
     gToast('မှတ်ပုံတင်ခြင်း အောင်မြင်သည် 🎉', 'success');
     document.getElementById('authModal')?.classList.remove('active');
-    onLoginSuccess({ phone, fullname: name, ref_code: refCodeNew }, refCodeNew, 0, signInData?.user?.id || uid);
+    localStorage.setItem('_db_phone', phone);
+    localStorage.setItem('_db_pass',  password);
+    localStorage.removeItem('_db_logout');
+    onLoginSuccess({ phone, fullname: name, ref_code: refCodeNew }, refCodeNew, 0, uid);
 
   } catch (err) {
     console.error('registerUser error:', err);
     gToast('မှတ်ပုံတင် မအောင်မြင်ပါ — ထပ်ကြိုးစားပါ', 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'မှတ်ပုံတင်မည်';
+    window._authFlowActive = false;
   }
 }
 
@@ -176,6 +184,7 @@ async function loginUser() {
 
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = 'ဝင်နေသည်...';
+  window._authFlowActive = true;
 
   try {
     const { data, error } = await window.DB.auth.signInWithPassword({
@@ -219,6 +228,7 @@ async function loginUser() {
     onLoginSuccess(ud || { phone }, ud?.ref_code, ud?.balance, data.user.id);
   } finally {
     btn.disabled = false; btn.textContent = 'ဝင်ရောက်မည်';
+    window._authFlowActive = false;
   }
 }
 
