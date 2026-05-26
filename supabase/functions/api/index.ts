@@ -86,9 +86,9 @@ Deno.serve(async (req: Request) => {
       const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
       const timestamp    = Math.floor(Date.now() / 1000)   // UNIX seconds
 
-      // NOTE: Change currency_code to 'MMK' once HUIDU enables it on your account.
-      // Current value 'USD' is used because MMK is disabled on the test account.
-      const currency_code = body.currency || 'USD'
+      // NOTE: Change currency_code to 'MMK' once HUIDU enables MMK on your production account.
+      // Test environment only accepts 'INR'. Production may support 'MMK'.
+      const currency_code = body.currency || 'INR'
 
       const innerPayload = {
         timestamp,
