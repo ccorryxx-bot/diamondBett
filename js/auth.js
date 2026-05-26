@@ -89,9 +89,18 @@ async function registerUser() {
     const { data: signUpData, error: signUpErr } = await window.DB.auth.signUp({ email, password });
 
     if (signUpErr) {
-      let errMsg = signUpErr.message || 'မသိရသောအမှား';
-      if (errMsg.includes('already registered') || errMsg.includes('already been registered')) {
-        errMsg = 'ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်သည်';
+      const raw = signUpErr.message || '';
+      let errMsg;
+      if (raw.includes('already registered') || raw.includes('already been registered') || raw.includes('User already registered')) {
+        errMsg = 'ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်သည် — Login ဝင်ပါ';
+      } else if (raw.includes('rate') || raw.includes('Rate') || raw.includes('429') || raw.includes('exceeded')) {
+        errMsg = 'ကြိုးစားမှု အများကြီး ရှိနေသည် — ခဏနေ ထပ်ကြိုးစားပါ';
+      } else if (raw.includes('fetch') || raw.includes('network') || raw.includes('Network')) {
+        errMsg = 'ကွန်နက်ရှင် မကောင်းပါ — internet စစ်ပြီး ထပ်ကြိုးစားပါ';
+      } else if (raw.includes('invalid') || raw.includes('Invalid')) {
+        errMsg = 'ဖောင် အချက်အလက် မှားယွင်းနေသည် — ထပ်စစ်ဆေးပါ';
+      } else {
+        errMsg = 'မှတ်ပုံတင် မအောင်မြင်ပါ — ထပ်ကြိုးစားပါ';
       }
       gToast(errMsg, 'error');
       return;
@@ -172,7 +181,23 @@ async function loginUser() {
     const { data, error } = await window.DB.auth.signInWithPassword({
       email: `p_${phone.replace(/\D/g,'')}@diamondbett.com`, password
     });
-    if (error) { gToast('Login မအောင်မြင်ပါ: ' + error.message, 'error'); return; }
+    if (error) {
+      const raw = error.message || '';
+      let errMsg;
+      if (raw.includes('Invalid login') || raw.includes('invalid credentials') || raw.includes('Invalid credentials')) {
+        errMsg = 'ဖုန်းနံပါတ် သို့မဟုတ် စကားဝှက် မှားနေသည်';
+      } else if (raw.includes('Email not confirmed') || raw.includes('email not confirmed')) {
+        errMsg = 'အကောင့် မှတ်ပုံတင်မပြီးသေးပါ — CS ကို ဆက်သွယ်ပါ';
+      } else if (raw.includes('rate') || raw.includes('Rate') || raw.includes('429') || raw.includes('exceeded')) {
+        errMsg = 'ကြိုးစားမှု အများကြီး ရှိနေသည် — မိနစ်အနည်းငယ် နေပြီး ထပ်ကြိုးစားပါ';
+      } else if (raw.includes('fetch') || raw.includes('network') || raw.includes('Network') || raw.includes('Failed')) {
+        errMsg = 'ကွန်နက်ရှင် မကောင်းပါ — internet စစ်ပြီး ထပ်ကြိုးစားပါ';
+      } else {
+        errMsg = 'Login မအောင်မြင်ပါ — ထပ်ကြိုးစားပါ';
+      }
+      gToast(errMsg, 'error');
+      return;
+    }
 
     const { data: ud } = await window.DB
       .from('users')
