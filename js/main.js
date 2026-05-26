@@ -156,8 +156,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (adminBtn) adminBtn.style.display  = 'none';
         unsubscribeNotifications();
         showPage('home');
-        // FIX: Only show login modal if init is done (not a token-refresh flicker)
-        if (_initDone) {
+        // Only show login modal if:
+        // 1. Init is done (not a token-refresh flicker)
+        // 2. No register/login flow is actively in progress (prevents modal re-open
+        //    caused by SIGNED_OUT firing between signUp session and signInWithPassword)
+        if (_initDone && !window._authFlowActive) {
           if (typeof prefillLoginForm === 'function') prefillLoginForm();
           if (typeof openAuthModal === 'function') openAuthModal('login');
         }
