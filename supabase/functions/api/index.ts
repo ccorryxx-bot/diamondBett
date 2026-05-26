@@ -1,7 +1,7 @@
 // HUIDU Gaming API — Game Launch Edge Function
 // AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const AGENCY_UID    = '2c38947f4e36d6c7685583fa20e3acbf'
 const AES_KEY_STR   = '479060999a47a3a311ba5ad48032a5e0'   // 32 ASCII chars = 32 bytes = AES-256
