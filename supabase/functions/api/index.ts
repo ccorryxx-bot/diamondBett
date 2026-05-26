@@ -86,13 +86,17 @@ Deno.serve(async (req: Request) => {
       const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
       const timestamp    = Math.floor(Date.now() / 1000)   // UNIX seconds
 
+      // NOTE: Change currency_code to 'MMK' once HUIDU enables it on your account.
+      // Current value 'USD' is used because MMK is disabled on the test account.
+      const currency_code = body.currency || 'USD'
+
       const innerPayload = {
         timestamp,
         agency_uid    : AGENCY_UID,
         member_account: memberAcct,
         game_uid,
         credit_amount : creditAmount,
-        currency_code : 'MMK',
+        currency_code,
         language      : 'zh',
         home_url      : HOME_URL,
         platform,
