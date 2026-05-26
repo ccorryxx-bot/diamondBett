@@ -180,7 +180,7 @@ async function playGame(gameCode, gameName) {
         game_uid: gameCode,
         platform: 2,
         lang    : 'my',
-        currency: 'USD',   // TODO: change to 'MMK' once HUIDU enables it on your account
+        currency: 'INR',   // TODO: change to 'MMK' once HUIDU enables MMK on your account
       }),
     });
 
