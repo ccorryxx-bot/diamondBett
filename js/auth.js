@@ -242,6 +242,14 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
     sessionStorage.setItem('_db_uid', userId);
   }
 
+  // Compute shortId early so it can be used anywhere in this function
+  const shortId = (() => {
+    const uid = userId || window.currentUserId;
+    if (!uid) return '000000000';
+    const hex = uid.replace(/-/g, '').slice(0, 10);
+    return String(Math.abs(parseInt(hex, 16)) % 1000000000).padStart(9, '0');
+  })();
+
   const phone        = user.phone || user.name || '—';
   const agentRefCode = refCode || user.ref_code || '—';
   const shareLink    = agentRefCode !== '—'
@@ -267,7 +275,7 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   // ──────────────────────────────────────────────────────────
 
   setEl('agentUserPhone',    phone);
-  setEl('agentPhoneDisplay', phone);
+  setEl('agentPhoneDisplay', shortId);
   setEl('agentJoinDate',     new Date().toLocaleDateString('en-GB'));
   setEl('statBalance',       fmt(balance));
   setEl('userLevelNum',      '1');
@@ -326,11 +334,7 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   }
 
   // ── Populate Account Page ──────────────────────────────
-  const shortId = (() => {
-    if (!userId) return '000000000';
-    const hex = userId.replace(/-/g, '').slice(0, 10);
-    return String(Math.abs(parseInt(hex, 16)) % 1000000000).padStart(9, '0');
-  })();
+  // (shortId already computed above)
   const acctGuest = document.getElementById('acctGuest');
   const acctBody  = document.getElementById('acctBody');
   if (acctGuest) acctGuest.style.display = 'none';
