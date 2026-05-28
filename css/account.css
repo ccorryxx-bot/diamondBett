@@ -247,6 +247,15 @@
   background: rgba(34,197,94,.08);
   border-color: rgba(34,197,94,.18);
 }
+.pay-act-img {
+  width: 36px; height: 36px;
+  object-fit: cover; border-radius: 8px;
+  display: none;
+}
+.pay-act-svg {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+}
 
 /* ── VIP Banner — Cyberpunk Neon ───────────────────── */
 .acct-vip-wrap { padding: 8px 16px 12px; }
