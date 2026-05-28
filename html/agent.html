@@ -275,10 +275,12 @@ async function loadAgentIcons() {
     if (error || !data || !data.length) return;
     data.forEach(function(row) {
       var img = document.getElementById('agentIcon_' + row.key);
-      if (!img) return;
+      var inv = document.getElementById('invIcon_' + row.key);
+      if (!img && !inv) return;
       // Set image URL — onload/onerror handlers will show/hide img vs fallback
       if (row.image_url) {
-        img.src = row.image_url;
+        if (img) img.src = row.image_url;
+        if (inv) inv.src = row.image_url;
       }
       // Set click link on parent button
       if (row.link_url) {
@@ -338,11 +340,46 @@ async function loadAgentIcons() {
           </button>
         </div>
         <div class="share-btns">
-          <button class="share-btn" id="shareNative2"><div class="share-btn-ico sico-share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></div><span>မျှဝေ</span></button>
-          <button class="share-btn" onclick="shareVia('telegram')"><div class="share-btn-ico sico-telegram"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg></div><span>Telegram</span></button>
-          <button class="share-btn" onclick="shareVia('viber')"><div class="share-btn-ico sico-viber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><span>Viber</span></button>
-          <button class="share-btn" onclick="shareVia('facebook')"><div class="share-btn-ico sico-facebook"><svg width="17" height="17" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></div><span>Facebook</span></button>
-          <button class="share-btn" onclick="shareVia('whatsapp')"><div class="share-btn-ico sico-wa"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><span>WhatsApp</span></button>
+          <button class="share-btn" id="shareNative2">
+            <div class="share-img-frame sif-share">
+              <svg class="sif-hex" viewBox="0 0 56 56" fill="none"><polygon points="28,3 51,15 51,41 28,53 5,41 5,15" fill="rgba(79,131,255,0.13)" stroke="rgba(100,160,255,0.60)" stroke-width="1.5"/><polygon points="28,9 46,19 46,37 28,47 10,37 10,19" fill="rgba(79,131,255,0.07)"/></svg>
+              <img class="sif-img" id="invIcon_share" src="" alt="မျှဝေ" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="sif-fallback sico-share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></div>
+            </div>
+            <span>မျှဝေ</span>
+          </button>
+          <button class="share-btn" onclick="shareVia('telegram')">
+            <div class="share-img-frame sif-telegram">
+              <svg class="sif-hex" viewBox="0 0 56 56" fill="none"><polygon points="28,3 51,15 51,41 28,53 5,41 5,15" fill="rgba(0,136,204,0.13)" stroke="rgba(51,181,247,0.60)" stroke-width="1.5"/><polygon points="28,9 46,19 46,37 28,47 10,37 10,19" fill="rgba(0,136,204,0.07)"/></svg>
+              <img class="sif-img" id="invIcon_telegram" src="" alt="Telegram" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="sif-fallback sico-telegram"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg></div>
+            </div>
+            <span>Telegram</span>
+          </button>
+          <button class="share-btn" onclick="shareVia('viber')">
+            <div class="share-img-frame sif-viber">
+              <svg class="sif-hex" viewBox="0 0 56 56" fill="none"><polygon points="28,3 51,15 51,41 28,53 5,41 5,15" fill="rgba(102,92,172,0.13)" stroke="rgba(142,132,209,0.60)" stroke-width="1.5"/><polygon points="28,9 46,19 46,37 28,47 10,37 10,19" fill="rgba(102,92,172,0.07)"/></svg>
+              <img class="sif-img" id="invIcon_viber" src="" alt="Viber" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="sif-fallback sico-viber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            </div>
+            <span>Viber</span>
+          </button>
+          <button class="share-btn" onclick="shareVia('facebook')">
+            <div class="share-img-frame sif-facebook">
+              <svg class="sif-hex" viewBox="0 0 56 56" fill="none"><polygon points="28,3 51,15 51,41 28,53 5,41 5,15" fill="rgba(24,119,242,0.13)" stroke="rgba(76,154,255,0.60)" stroke-width="1.5"/><polygon points="28,9 46,19 46,37 28,47 10,37 10,19" fill="rgba(24,119,242,0.07)"/></svg>
+              <img class="sif-img" id="invIcon_facebook" src="" alt="Facebook" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="sif-fallback sico-facebook"><svg width="17" height="17" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></div>
+            </div>
+            <span>Facebook</span>
+          </button>
+          <button class="share-btn" onclick="shareVia('whatsapp')">
+            <div class="share-img-frame sif-wa">
+              <svg class="sif-hex" viewBox="0 0 56 56" fill="none"><polygon points="28,3 51,15 51,41 28,53 5,41 5,15" fill="rgba(37,211,102,0.13)" stroke="rgba(80,230,130,0.60)" stroke-width="1.5"/><polygon points="28,9 46,19 46,37 28,47 10,37 10,19" fill="rgba(37,211,102,0.07)"/></svg>
+              <img class="sif-img" id="invIcon_whatsapp" src="" alt="WhatsApp" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="sif-fallback sico-wa"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+            </div>
+            <span>WhatsApp</span>
+          </button>
         </div>
       </div>
 
