@@ -39,7 +39,7 @@ function renderLinked() {
   if (!window._linked) return;
   document.getElementById('wdNoAcct').style.display  = 'none';
   document.getElementById('wdHasAcct').style.display = 'block';
-  document.getElementById('wdLinkedLogo').innerHTML  = getProvSvg(window._linked.provider, 40);
+  document.getElementById('wdLinkedLogo').innerHTML  = getProvLogo(window._linked.provider, 40);
   setEl('wdLinkedName', (window._linked.provider === 'kbz' ? 'KBZ Pay' : 'Wave Money')
     + ' · ' + window._linked.name);
   setEl('wdLinkedNum', maskNum(window._linked.number));
@@ -80,7 +80,7 @@ function openSheet(prov) {
   document.getElementById('acctSheet')?.classList.add('open');
   setEl('sheetTitle', (prov === 'kbz' ? 'KBZ Pay' : 'Wave Money') + ' ချိတ်ဆောင်ရန်');
   const icon = document.getElementById('sheetProvIcon');
-  if (icon) icon.innerHTML = getProvSvg(prov, 24);
+  if (icon) icon.innerHTML = getProvLogo(prov, 24);
   document.getElementById('lnkName').value = '';
   document.getElementById('lnkNum').value  = '';
 }
