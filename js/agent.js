@@ -265,8 +265,8 @@ function initAgentTabs() {
     pill.classList.add('active');
     loadMyData(window.currentAgentId, pill.dataset.period);
   });
-}
   initCopyBtns();
+}
 
 function initCopyBtns() {
   // Copy ကုဒ်နံပါတ် button
