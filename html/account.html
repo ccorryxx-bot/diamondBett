@@ -87,23 +87,33 @@
   <!-- Deposit / Withdraw Action Row -->
   <div class="acct-action-row">
     <button class="acct-act-btn" onclick="if(typeof openWithdrawModal==='function')openWithdrawModal()">
-      <div class="acct-act-ico wd-ico">
-        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-          <rect x="4" y="10" width="40" height="28" rx="6" fill="rgba(245,197,24,.15)" stroke="rgba(245,197,24,.4)" stroke-width="1.5"/>
-          <rect x="4" y="18" width="40" height="8" fill="rgba(245,197,24,.1)"/>
-          <rect x="10" y="24" width="12" height="4" rx="2" fill="#f5c518" opacity=".7"/>
-        </svg>
+      <div class="acct-act-ico wd-ico" id="wdActIco">
+        <img id="payImg_kpay" src="" alt="KPay" class="pay-act-img" style="display:none"
+          onload="this.style.display='block';document.getElementById('wdActIco').querySelector('.pay-act-svg').style.display='none'"
+          onerror="this.style.display='none';document.getElementById('wdActIco').querySelector('.pay-act-svg').style.display='flex'">
+        <div class="pay-act-svg">
+          <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+            <rect x="4" y="10" width="40" height="28" rx="6" fill="rgba(245,197,24,.15)" stroke="rgba(245,197,24,.4)" stroke-width="1.5"/>
+            <rect x="4" y="18" width="40" height="8" fill="rgba(245,197,24,.1)"/>
+            <rect x="10" y="24" width="12" height="4" rx="2" fill="#f5c518" opacity=".7"/>
+          </svg>
+        </div>
       </div>
       <span>ငွေထုတ်ရန်</span>
     </button>
     <button class="acct-act-btn acct-act-dep" onclick="if(typeof openDepositModal==='function')openDepositModal()">
-      <div class="acct-act-ico dep-ico">
-        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-          <path d="M6 28c1.5-10 28-10 36 0" stroke="rgba(34,197,94,.5)" stroke-width="2" stroke-linecap="round"/>
-          <rect x="8" y="14" width="32" height="22" rx="5" fill="rgba(34,197,94,.15)" stroke="rgba(34,197,94,.4)" stroke-width="1.5"/>
-          <circle cx="24" cy="25" r="6" fill="rgba(34,197,94,.3)" stroke="rgba(34,197,94,.6)" stroke-width="1.5"/>
-          <path d="M21 25h6M24 22v6" stroke="rgba(34,197,94,.9)" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+      <div class="acct-act-ico dep-ico" id="depActIco">
+        <img id="payImg_wave" src="" alt="Wave" class="pay-act-img" style="display:none"
+          onload="this.style.display='block';document.getElementById('depActIco').querySelector('.pay-act-svg').style.display='none'"
+          onerror="this.style.display='none';document.getElementById('depActIco').querySelector('.pay-act-svg').style.display='flex'">
+        <div class="pay-act-svg">
+          <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+            <path d="M6 28c1.5-10 28-10 36 0" stroke="rgba(34,197,94,.5)" stroke-width="2" stroke-linecap="round"/>
+            <rect x="8" y="14" width="32" height="22" rx="5" fill="rgba(34,197,94,.15)" stroke="rgba(34,197,94,.4)" stroke-width="1.5"/>
+            <circle cx="24" cy="25" r="6" fill="rgba(34,197,94,.3)" stroke="rgba(34,197,94,.6)" stroke-width="1.5"/>
+            <path d="M21 25h6M24 22v6" stroke="rgba(34,197,94,.9)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
       </div>
       <span>ငွေသွင်းရန်</span>
     </button>
@@ -542,6 +552,26 @@ function closeLogoutConfirm() {
   const ov = document.getElementById('logoutConfirmOverlay');
   if (ov) { ov.style.display = 'none'; }
 }
+
+// ── Payment Action Icons (KPay / Wave) from agent_icons ───
+async function loadPaymentActIcons() {
+  if (!window.DB) return;
+  try {
+    const { data } = await window.DB
+      .from('agent_icons')
+      .select('key,image_url')
+      .in('key', ['kpay', 'wave']);
+    (data || []).forEach(r => {
+      const img = document.getElementById('payImg_' + r.key);
+      if (img && r.image_url) img.src = r.image_url;
+    });
+  } catch(e) {}
+}
+// Called from app bootstrap when user is logged in
+window._loadPaymentActIcons = loadPaymentActIcons;
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.DB) loadPaymentActIcons();
+});
 
 // ── Logout ────────────────────────────────────────────────
 async function logoutUser() {
