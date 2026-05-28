@@ -266,6 +266,43 @@ function initAgentTabs() {
     loadMyData(window.currentAgentId, pill.dataset.period);
   });
 }
+  initCopyBtns();
+
+function initCopyBtns() {
+  // Copy ကုဒ်နံပါတ် button
+  document.getElementById('copyPhoneBtn')?.addEventListener('click', function() {
+    const val = document.getElementById('agentPhoneDisplay')?.textContent?.trim();
+    if (!val || val === '—') return;
+    navigator.clipboard.writeText(val).then(() => {
+      if (typeof gToast === 'function') gToast('ကူးယူပြီးပါပြီ!', 'success');
+    }).catch(() => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = val; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (typeof gToast === 'function') gToast('ကူးယူပြီးပါပြီ!', 'success');
+      } catch(e) { if (typeof gToast === 'function') gToast('ကူးယူမရပါ', 'error'); }
+    });
+  });
+
+  // Copy share link button
+  document.getElementById('agentCopyLinkBtn')?.addEventListener('click', function() {
+    const val = document.getElementById('agentShareLinkInput')?.value?.trim();
+    if (!val || val === 'Link loading...') return;
+    navigator.clipboard.writeText(val).then(() => {
+      if (typeof gToast === 'function') gToast('ကူးယူပြီးပါပြီ!', 'success');
+    }).catch(() => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = val; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (typeof gToast === 'function') gToast('ကူးယူပြီးပါပြီ!', 'success');
+      } catch(e) { if (typeof gToast === 'function') gToast('ကူးယူမရပါ', 'error'); }
+    });
+  });
+}
 
 function startCommissionCountdown() {
   const el = document.getElementById('commissionCountdown');
