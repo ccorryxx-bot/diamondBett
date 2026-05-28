@@ -594,8 +594,8 @@
 .invite-link-wrap{display:flex;background:rgba(0,0,0,.4);border:1px solid rgba(0,255,255,.12);border-radius:10px;overflow:hidden;}
 .invite-link-input{flex:1;background:none;border:none;color:rgba(190,220,250,.65);font-size:11px;padding:10px 12px;font-family:inherit;}
 .invite-link-copy{background:rgba(0,255,255,.07);border:none;border-left:1px solid rgba(0,255,255,.12);padding:0 12px;color:rgba(0,220,255,.65);display:flex;align-items:center;}
-.share-btns{display:flex;gap:6px;flex-wrap:wrap;}
-.share-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;font-size:8.5px;color:rgba(160,190,220,.55);font-family:inherit;}
+.share-btns{display:flex;gap:4px;flex-wrap:nowrap;justify-content:space-between;}
+.share-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;font-size:8px;color:rgba(160,190,220,.55);font-family:inherit;flex:1;min-width:0;}
 .share-btn-ico{
   width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
   position:relative;
