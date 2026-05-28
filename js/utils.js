@@ -90,6 +90,19 @@ function getProvSvg(provName, sz = 40) {
   return provName?.toLowerCase().includes('kbz') ? kbzSvg(sz) : waveSvg(sz);
 }
 
+function getProvLogo(provName, sz) {
+  sz = sz || 40;
+  var isKbz = (provName || '').toLowerCase().indexOf('kbz') !== -1;
+  var key   = isKbz ? 'kpay' : 'wave';
+  var url   = window._depProvIcons && window._depProvIcons[key];
+  var svg   = getProvSvg(provName, sz);
+  if (!url) return svg;
+  return '<img src="' + url + '" alt="' + (provName||'') + '" width="' + sz + '" height="' + sz + '"'
+       + ' style="border-radius:10px;object-fit:cover;display:block;flex-shrink:0"'
+       + ' onerror="this.style.display=\'none\';this.nextElementSibling.removeAttribute(\'style\')">' 
+       + '<span style="display:none">' + svg + '</span>';
+}
+
 // ============================================================
 // SHARE
 // ============================================================
