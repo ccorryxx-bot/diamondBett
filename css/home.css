@@ -211,3 +211,130 @@
 .footer-links{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;}
 .footer-links a{color:var(--muted);font-size:11px;text-decoration:none;}
 .footer-copy{font-size:10px;color:#4a4470;}
+
+/* ═══════════════════════════════════════════════════════════
+   HOME PAGE EXTRAS — Social Icons + License Logos + Nav Grid
+   ═══════════════════════════════════════════════════════════ */
+
+.hp-extras {
+  margin-top: 6px;
+  padding: 0 0 4px;
+  background: #09061a;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+/* ── 3-Column Nav Links ───────────────────────────────────── */
+.hp-nav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  padding: 16px 12px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.hp-nav-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 4px;
+}
+.hp-nav-col:not(:last-child) {
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+.hp-nav-item {
+  font-size: 10px;
+  color: rgba(255,255,255,.48);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color .15s;
+}
+.hp-nav-item:hover { color: rgba(255,255,255,.75); }
+
+/* ── Divider ──────────────────────────────────────────────── */
+.hp-divider {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin: 0 12px;
+}
+
+/* ── Social Icons Row ─────────────────────────────────────── */
+.hp-social-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  flex-wrap: wrap;
+}
+.hp-social-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  flex-shrink: 0;
+  background: rgba(255,255,255,.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hp-social-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.hp-social-icon:active { transform: scale(.9); }
+.hp-icon-skel {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #1a1535 25%, #251e42 50%, #1a1535 75%);
+  background-size: 200% 100%;
+  animation: hpShimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── License Logos ────────────────────────────────────────── */
+.hp-license-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 14px 12px;
+}
+.hp-license-icon {
+  height: 28px;
+  max-width: 72px;
+  object-fit: contain;
+  opacity: .75;
+  cursor: pointer;
+  transition: opacity .15s, transform .15s;
+  filter: grayscale(20%);
+}
+.hp-license-icon:hover { opacity: 1; transform: scale(1.05); }
+.hp-lic-skel {
+  height: 24px;
+  width: 56px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #1a1535 25%, #251e42 50%, #1a1535 75%);
+  background-size: 200% 100%;
+  animation: hpShimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Disclaimer Text ──────────────────────────────────────── */
+.hp-disclaimer {
+  padding: 14px 16px 18px;
+  font-size: 10.5px;
+  color: rgba(255,255,255,.35);
+  line-height: 1.65;
+  text-align: left;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+
+/* ── Skeleton shimmer animation ──────────────────────────── */
+@keyframes hpShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

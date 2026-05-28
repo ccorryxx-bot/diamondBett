@@ -1,0 +1,577 @@
+<div class="admin-pg" id="adminPage2">
+
+  <!-- Header -->
+  <div class="admin-hdr">
+    <button class="admin-back" onclick="showPage('home')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="admin-hdr-title">Admin Dashboard</div>
+    <div class="admin-rt-dot" id="adminRtDot"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="admin-stats" id="adminStats">
+    <div class="admin-sc">
+      <div class="admin-sv cyan" id="aStatPending">—</div>
+      <div class="admin-sl">Pending<br>Txns</div>
+    </div>
+    <div class="admin-sc">
+      <div class="admin-sv purple" id="aStatUsers">—</div>
+      <div class="admin-sl">Total<br>Users</div>
+    </div>
+    <div class="admin-sc">
+      <div class="admin-sv yellow" id="aStatDep">—</div>
+      <div class="admin-sl">Today<br>Deposits</div>
+    </div>
+    <div class="admin-sc">
+      <div class="admin-sv" id="aStatWd" style="color:#f87171;">—</div>
+      <div class="admin-sl">Today<br>Withdraw</div>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="admin-tabs" id="adminTabBar">
+    <button class="admin-tab active" data-atab="transactions">Transactions</button>
+    <button class="admin-tab" data-atab="users">Users</button>
+    <button class="admin-tab" data-atab="games">Games</button>
+    <button class="admin-tab" data-atab="banners">Banners</button>
+    <button class="admin-tab" data-atab="content">Content Mgmt</button>
+  </div>
+
+  <!-- ── Tab: Transactions ───────────────────────────────── -->
+  <div class="admin-tab-content active" id="atab-transactions">
+    <div class="admin-filter-row">
+      <button class="admin-filter-btn active" data-status="pending" onclick="adminFilterTx(this,'pending')">Pending</button>
+      <button class="admin-filter-btn" data-status="approved" onclick="adminFilterTx(this,'approved')">Approved</button>
+      <button class="admin-filter-btn" data-status="rejected" onclick="adminFilterTx(this,'rejected')">Rejected</button>
+    </div>
+    <div class="admin-tx-list" id="adminTxList">
+      <div class="admin-loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Users ─────────────────────────────────────── -->
+  <div class="admin-tab-content" id="atab-users">
+    <div class="admin-search-row">
+      <input class="admin-search-input" id="adminUserSearch" type="text" placeholder="Phone / Name ရှာပါ...">
+      <button class="admin-search-btn" onclick="adminSearchUsers()">ရှာ</button>
+    </div>
+    <div class="admin-user-list" id="adminUserList">
+      <div class="admin-loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Games ─────────────────────────────────────── -->
+  <div class="admin-tab-content" id="atab-games">
+    <div class="admin-section-hdr">
+      <span>Game Cards</span>
+      <button class="admin-add-btn" onclick="adminOpenGameForm()">+ ထည့်မည်</button>
+    </div>
+    <div class="admin-games-list" id="adminGamesList">
+      <div class="admin-loading">Loading...</div>
+    </div>
+    <!-- Game Form -->
+    <div class="admin-form-sheet" id="adminGameForm" style="display:none;">
+      <div class="admin-form-title">Game ထည့်/ပြင်</div>
+      <input class="admin-inp" id="gfCode" type="text" placeholder="Game Code">
+      <input class="admin-inp" id="gfName" type="text" placeholder="Game Name">
+      <input class="admin-inp" id="gfImg"  type="text" placeholder="Image URL (ImageKit.io)">
+      <select class="admin-inp" id="gfCat">
+        <option value="slot">slot</option>
+        <option value="live">live</option>
+        <option value="arcade">arcade</option>
+        <option value="fish">fish</option>
+        <option value="sport">sport</option>
+        <option value="show">show</option>
+      </select>
+      <div class="admin-form-btns">
+        <button class="admin-btn-cancel" onclick="adminCloseGameForm()">မလုပ်တော့</button>
+        <button class="admin-btn-save" onclick="adminSaveGame()">သိမ်းမည်</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Banners ───────────────────────────────────── -->
+  <div class="admin-tab-content" id="atab-banners">
+    <div class="admin-section-hdr">
+      <span>Banners</span>
+      <button class="admin-add-btn" onclick="adminOpenBannerForm()">+ ထည့်မည်</button>
+    </div>
+    <div class="admin-banners-list" id="adminBannersList">
+      <div class="admin-loading">Loading...</div>
+    </div>
+    <!-- Banner Form -->
+    <div class="admin-form-sheet" id="adminBannerForm" style="display:none;">
+      <div class="admin-form-title">Banner ထည့်/ပြင်</div>
+      <input class="admin-inp" id="bfTitle" type="text" placeholder="Banner Title">
+      <input class="admin-inp" id="bfImg"   type="text" placeholder="Image URL (ImageKit.io)">
+      <div class="admin-form-btns">
+        <button class="admin-btn-cancel" onclick="adminCloseBannerForm()">မလုပ်တော့</button>
+        <button class="admin-btn-save" onclick="adminSaveBanner()">သိမ်းမည်</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Content Management ────────────────────────── -->
+  <div class="admin-tab-content" id="atab-content">
+
+    <!-- ─ Home Page Icons & License Logo ─────────────────── -->
+    <div class="admin-content-section">
+      <div class="admin-section-hdr">
+        <div>
+          <div class="admin-section-title">Home Page icons &amp; license logo</div>
+          <div class="admin-section-sub">Icons 7 ခု · License logos 9 ခု (ImageKit.io URL)</div>
+        </div>
+        <button class="admin-add-btn" onclick="adminOpenAssetForm()">+ ထည့်မည်</button>
+      </div>
+
+      <!-- Sub-tabs: Icons / Licenses -->
+      <div class="admin-sub-tabs">
+        <button class="admin-sub-tab active" onclick="adminAssetSubTab(this,'icon')">
+          Social Icons (7)
+        </button>
+        <button class="admin-sub-tab" onclick="adminAssetSubTab(this,'license')">
+          License Logos (9)
+        </button>
+      </div>
+
+      <div class="admin-assets-list" id="adminAssetsList">
+        <div class="admin-loading">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Asset Form Sheet -->
+    <div class="admin-form-sheet" id="adminAssetForm" style="display:none;">
+      <div class="admin-form-title" id="adminAssetFormTitle">Icon ထည့်မည်</div>
+      <input type="hidden" id="afId">
+      <div class="admin-form-row">
+        <span class="admin-form-label">Type</span>
+        <select class="admin-inp" id="afType" onchange="adminAssetTypeChange()">
+          <option value="icon">Social Icon (icon)</option>
+          <option value="license">License Logo (license)</option>
+        </select>
+      </div>
+      <div class="admin-form-row">
+        <span class="admin-form-label">Name</span>
+        <input class="admin-inp" id="afName" type="text" placeholder="ဥပမာ: Twitter, PAGCOR ...">
+      </div>
+      <div class="admin-form-row">
+        <span class="admin-form-label">Image URL</span>
+        <input class="admin-inp" id="afImg" type="url" placeholder="https://ik.imagekit.io/...">
+      </div>
+      <div class="admin-form-row">
+        <span class="admin-form-label">Link URL <span style="color:rgba(255,255,255,.3)">(optional)</span></span>
+        <input class="admin-inp" id="afLink" type="url" placeholder="https://...">
+      </div>
+      <div class="admin-form-row">
+        <span class="admin-form-label">Sort Order</span>
+        <input class="admin-inp" id="afSort" type="number" value="0" min="0" max="99">
+      </div>
+      <!-- Preview -->
+      <div class="admin-asset-preview" id="afPreviewWrap" style="display:none;">
+        <img id="afPreviewImg" src="" alt="preview" class="admin-asset-preview-img">
+      </div>
+      <div class="admin-form-btns">
+        <button class="admin-btn-cancel" onclick="adminCloseAssetForm()">မလုပ်တော့</button>
+        <button class="admin-btn-save" onclick="adminSaveAsset()">သိမ်းမည်</button>
+      </div>
+    </div>
+
+  </div>
+  <!-- ── END Content Management tab ───────────────────────── -->
+
+</div>
+
+<script>
+// ============================================================
+// ADMIN — Init & Tab Logic
+// ============================================================
+(function initAdmin() {
+  document.getElementById('adminTabBar')?.addEventListener('click', e => {
+    const btn = e.target.closest('.admin-tab');
+    if (!btn) return;
+    document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const ct = document.getElementById('atab-' + btn.dataset.atab);
+    if (ct) ct.classList.add('active');
+
+    // Load data for each tab
+    if (btn.dataset.atab === 'transactions') adminLoadTx('pending');
+    if (btn.dataset.atab === 'users')        adminLoadUsers();
+    if (btn.dataset.atab === 'games')        adminLoadGames();
+    if (btn.dataset.atab === 'banners')      adminLoadBanners();
+    if (btn.dataset.atab === 'content')      adminLoadAssets('icon');
+  });
+})();
+
+// Auto-load stats + first tab when admin page becomes visible
+function onAdminPageShow() {
+  adminLoadStats();
+  adminLoadTx('pending');
+  const dot = document.getElementById('adminRtDot');
+  if (dot) dot.classList.add('active');
+}
+
+// ── Stats ────────────────────────────────────────────────────
+async function adminLoadStats() {
+  if (!window.DB || !window.currentIsAdmin) return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const [pend, users, todayTx] = await Promise.all([
+      window.DB.from('transactions').select('id', {count:'exact',head:true}).eq('status','pending'),
+      window.DB.from('users').select('id', {count:'exact',head:true}),
+      window.DB.from('transactions').select('type,amount').gte('created_at', today+'T00:00:00'),
+    ]);
+    const setA = (id,v) => { const el=document.getElementById(id); if(el)el.textContent=v; };
+    setA('aStatPending', pend.count ?? 0);
+    setA('aStatUsers',   users.count ?? 0);
+    const deps = (todayTx.data||[]).filter(t=>t.type==='deposit').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+    const wds  = (todayTx.data||[]).filter(t=>t.type==='withdrawal').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+    setA('aStatDep', deps.toLocaleString());
+    setA('aStatWd',  wds.toLocaleString());
+  } catch(e) { console.warn('adminLoadStats:', e); }
+}
+
+// ── Transactions ─────────────────────────────────────────────
+let _adminTxStatus = 'pending';
+function adminFilterTx(el, status) {
+  document.querySelectorAll('.admin-filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  adminLoadTx(status);
+}
+async function adminLoadTx(status) {
+  _adminTxStatus = status;
+  const list = document.getElementById('adminTxList');
+  if (!list || !window.DB) return;
+  list.innerHTML = '<div class="admin-loading">Loading...</div>';
+  const { data, error } = await window.DB
+    .from('transactions')
+    .select('id,type,amount,payment_method,payment_details,bonus_opted,status,reference,created_at,user_id')
+    .eq('status', status)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">ဒေတာ မရှိပါ</div>'; return; }
+  list.innerHTML = data.map(tx => {
+    const isDep = tx.type === 'deposit';
+    const date  = new Date(tx.created_at).toLocaleString('en-GB');
+    const col   = isDep ? '#22c55e' : '#ef4444';
+    const sc    = tx.status === 'pending' ? '' : (tx.status === 'approved' ? 'approved' : 'rejected');
+    return `<div class="admin-tx-card">
+      <div class="admin-tx-top">
+        <span style="color:${col};font-weight:800;font-size:12px;">${isDep?'DEPOSIT':'WITHDRAW'}</span>
+        <span style="color:${col};font-weight:900;">${parseFloat(tx.amount).toLocaleString()} ks</span>
+      </div>
+      <div class="admin-tx-meta">
+        <span>${tx.payment_method||'—'}</span>
+        <span style="color:#888;">${date}</span>
+      </div>
+      <div class="admin-tx-meta">
+        <span style="color:#aaa;">Slip: ${tx.payment_details||'—'}</span>
+        <span style="color:#aaa;">Ref: ${tx.reference||'—'}</span>
+      </div>
+      ${status==='pending' ? `<div class="admin-tx-actions">
+        <button class="admin-btn-approve" onclick="adminActTx('${tx.id}','approved','${tx.user_id}',${tx.amount},'${tx.type}',${!!tx.bonus_opted})">✓ Approve</button>
+        <button class="admin-btn-reject"  onclick="adminActTx('${tx.id}','rejected','${tx.user_id}',${tx.amount},'${tx.type}',false)">✗ Reject</button>
+      </div>` : `<div class="admin-tx-badge ${sc}">${tx.status}</div>`}
+    </div>`;
+  }).join('');
+}
+async function adminActTx(txId, action, userId, amount, type, bonusOpted) {
+  if (!window.DB) return;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const upd = await window.DB.from('transactions').update({status: action}).eq('id', txId);
+    if (upd.error) throw upd.error;
+    if (action === 'approved' && type === 'deposit') {
+      const bonus = bonusOpted ? parseFloat(amount) : 0;
+      const total = parseFloat(amount) + bonus;
+      const { data: u } = await window.DB.from('users').select('balance').eq('id', userId).single();
+      const newBal = parseFloat(u?.balance || 0) + total;
+      await window.DB.from('users').update({balance: newBal}).eq('id', userId);
+      // Insert notification
+      await window.DB.from('notifications').insert([{user_id: userId, message:`ငွေသွင်း ${parseFloat(amount).toLocaleString()} ks အတည်ပြုပြီး`, type:'success'}]);
+    }
+    if (action === 'approved' && type === 'withdrawal') {
+      const { data: u } = await window.DB.from('users').select('balance').eq('id', userId).single();
+      const newBal = Math.max(0, parseFloat(u?.balance || 0) - parseFloat(amount));
+      await window.DB.from('users').update({balance: newBal}).eq('id', userId);
+      await window.DB.from('notifications').insert([{user_id: userId, message:`ငွေထုတ် ${parseFloat(amount).toLocaleString()} ks ခွင့်ပြုပြီး`, type:'success'}]);
+    }
+    if (action === 'rejected') {
+      const msg = type==='deposit' ? `ငွေသွင်း ${parseFloat(amount).toLocaleString()} ks ငြင်းပယ်ခံရသည်` : `ငွေထုတ် ${parseFloat(amount).toLocaleString()} ks ငြင်းပယ်ခံရသည်`;
+      await window.DB.from('notifications').insert([{user_id: userId, message: msg, type:'error'}]);
+    }
+    if (typeof gToast === 'function') gToast(action === 'approved' ? 'Approved ✓' : 'Rejected ✗', action === 'approved' ? 'success' : 'error');
+    adminLoadTx(_adminTxStatus);
+    adminLoadStats();
+  } catch(e) { if(typeof gToast==='function') gToast('Error: ' + e.message, 'error'); btn.disabled=false; btn.textContent=action==='approved'?'✓ Approve':'✗ Reject'; }
+}
+
+// ── Users ────────────────────────────────────────────────────
+async function adminLoadUsers(search='') {
+  const list = document.getElementById('adminUserList');
+  if (!list || !window.DB) return;
+  list.innerHTML = '<div class="admin-loading">Loading...</div>';
+  let q = window.DB.from('users').select('id,phone,fullname,balance,is_admin,role,total_deposited,created_at').order('created_at',{ascending:false}).limit(40);
+  if (search) q = q.or(`phone.ilike.%${search}%,fullname.ilike.%${search}%`);
+  const { data, error } = await q;
+  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">ဒေတာ မရှိပါ</div>'; return; }
+  list.innerHTML = data.map(u => `<div class="admin-user-card">
+    <div class="admin-user-top">
+      <span class="admin-user-name">${u.fullname||'—'}</span>
+      <span style="color:#22c55e;font-weight:800;">${parseFloat(u.balance||0).toLocaleString()} ks</span>
+    </div>
+    <div class="admin-tx-meta"><span>${u.phone||'—'}</span><span style="color:#aaa;">${u.role||'player'}</span></div>
+    <div class="admin-user-actions">
+      <button class="admin-btn-sm" onclick="adminAdjBalance('${u.id}',${u.balance})">Balance ပြင်</button>
+      <button class="admin-btn-sm" onclick="adminToggleAdmin('${u.id}',${!!u.is_admin})">${u.is_admin?'Remove Admin':'Make Admin'}</button>
+    </div>
+  </div>`).join('');
+}
+function adminSearchUsers() { adminLoadUsers(document.getElementById('adminUserSearch').value.trim()); }
+async function adminAdjBalance(uid, curBal) {
+  const val = prompt(`Current: ${parseFloat(curBal).toLocaleString()} ks\nNew Balance:`);
+  if (!val) return;
+  const nb = parseFloat(val);
+  if (isNaN(nb)) { if(typeof gToast==='function')gToast('မှားသောဂဏန်း','error'); return; }
+  await window.DB.from('users').update({balance: nb}).eq('id', uid);
+  if(typeof gToast==='function')gToast('Balance ပြင်ပြီး','success');
+  adminLoadUsers();
+}
+async function adminToggleAdmin(uid, cur) {
+  await window.DB.from('users').update({is_admin: !cur}).eq('id', uid);
+  if(typeof gToast==='function')gToast(!cur?'Admin ထည့်ပြီး':'Admin ဖြုတ်ပြီး','success');
+  adminLoadUsers();
+}
+
+// ── Games ─────────────────────────────────────────────────────
+let _adminEditGame = null;
+async function adminLoadGames() {
+  const list = document.getElementById('adminGamesList');
+  if (!list || !window.DB) return;
+  list.innerHTML = '<div class="admin-loading">Loading...</div>';
+  const { data, error } = await window.DB.from('game_cards').select('*').order('created_at',{ascending:false});
+  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">Game မရှိပါ</div>'; return; }
+  list.innerHTML = data.map(g => `<div class="admin-game-card">
+    ${g.image_url?`<img src="${g.image_url}" class="admin-game-thumb" alt="${g.game_name}" onerror="this.style.display='none'">`:'<div class="admin-game-thumb-empty"></div>'}
+    <div class="admin-game-info">
+      <div style="font-size:12px;font-weight:800;color:#fff;">${g.game_name}</div>
+      <div style="font-size:10px;color:#888;">${g.game_code} · ${g.category}</div>
+    </div>
+    <div class="admin-game-acts">
+      <button class="admin-btn-sm" onclick='adminEditGame(${JSON.stringify(g)})'>ပြင်</button>
+      <button class="admin-btn-sm red" onclick="adminDelGame('${g.id}')">ဖျက်</button>
+    </div>
+  </div>`).join('');
+}
+function adminOpenGameForm(g=null) {
+  _adminEditGame = g;
+  document.getElementById('gfCode').value = g?.game_code||'';
+  document.getElementById('gfName').value = g?.game_name||'';
+  document.getElementById('gfImg').value  = g?.image_url||'';
+  document.getElementById('gfCat').value  = g?.category||'slot';
+  document.getElementById('adminGameForm').style.display = 'block';
+}
+function adminEditGame(g) { adminOpenGameForm(g); }
+function adminCloseGameForm() { document.getElementById('adminGameForm').style.display='none'; _adminEditGame=null; }
+async function adminSaveGame() {
+  const code=document.getElementById('gfCode').value.trim();
+  const name=document.getElementById('gfName').value.trim();
+  const img =document.getElementById('gfImg').value.trim();
+  const cat =document.getElementById('gfCat').value;
+  if (!code||!name) { if(typeof gToast==='function')gToast('Code နှင့် Name ဖြည့်ပါ','error'); return; }
+  const row = {game_code:code, game_name:name, image_url:img||null, category:cat};
+  if (_adminEditGame) {
+    await window.DB.from('game_cards').update(row).eq('id',_adminEditGame.id);
+  } else {
+    await window.DB.from('game_cards').insert([row]);
+  }
+  if(typeof gToast==='function')gToast('သိမ်းပြီး','success');
+  adminCloseGameForm(); adminLoadGames();
+}
+async function adminDelGame(id) {
+  if (!confirm('ဖျက်မှာ သေချာသလား?')) return;
+  await window.DB.from('game_cards').delete().eq('id',id);
+  if(typeof gToast==='function')gToast('ဖျက်ပြီး','success');
+  adminLoadGames();
+}
+
+// ── Banners ───────────────────────────────────────────────────
+let _adminEditBanner = null;
+async function adminLoadBanners() {
+  const list = document.getElementById('adminBannersList');
+  if (!list || !window.DB) return;
+  list.innerHTML = '<div class="admin-loading">Loading...</div>';
+  const { data, error } = await window.DB.from('banners').select('*').order('created_at',{ascending:false});
+  if (error || !data?.length) { list.innerHTML = '<div class="admin-empty">Banner မရှိပါ</div>'; return; }
+  list.innerHTML = data.map(b => `<div class="admin-game-card">
+    ${b.image_url?`<img src="${b.image_url}" class="admin-game-thumb" alt="${b.title}" onerror="this.style.display='none'">`:'<div class="admin-game-thumb-empty"></div>'}
+    <div class="admin-game-info"><div style="font-size:12px;font-weight:800;color:#fff;">${b.title||'(no title)'}</div></div>
+    <div class="admin-game-acts">
+      <button class="admin-btn-sm" onclick='adminEditBanner(${JSON.stringify(b)})'>ပြင်</button>
+      <button class="admin-btn-sm red" onclick="adminDelBanner('${b.id}')">ဖျက်</button>
+    </div>
+  </div>`).join('');
+}
+function adminOpenBannerForm(b=null){ _adminEditBanner=b; document.getElementById('bfTitle').value=b?.title||''; document.getElementById('bfImg').value=b?.image_url||''; document.getElementById('adminBannerForm').style.display='block'; }
+function adminEditBanner(b){ adminOpenBannerForm(b); }
+function adminCloseBannerForm(){ document.getElementById('adminBannerForm').style.display='none'; _adminEditBanner=null; }
+async function adminSaveBanner(){
+  const title=document.getElementById('bfTitle').value.trim();
+  const img=document.getElementById('bfImg').value.trim();
+  if (!img){ if(typeof gToast==='function')gToast('Image URL ဖြည့်ပါ','error'); return; }
+  const row={title:title||null, image_url:img};
+  if(_adminEditBanner){ await window.DB.from('banners').update(row).eq('id',_adminEditBanner.id); }
+  else { await window.DB.from('banners').insert([row]); }
+  if(typeof gToast==='function')gToast('သိမ်းပြီး','success');
+  adminCloseBannerForm(); adminLoadBanners();
+}
+async function adminDelBanner(id){
+  if(!confirm('ဖျက်မှာ သေချာသလား?')) return;
+  await window.DB.from('banners').delete().eq('id',id);
+  if(typeof gToast==='function')gToast('ဖျက်ပြီး','success'); adminLoadBanners();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONTENT MANAGEMENT — Home Page Icons & License Logos
+// ══════════════════════════════════════════════════════════════
+let _adminAssetType = 'icon';
+let _adminEditAsset = null;
+
+function adminAssetSubTab(el, type) {
+  document.querySelectorAll('.admin-sub-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  _adminAssetType = type;
+  adminLoadAssets(type);
+}
+
+async function adminLoadAssets(type) {
+  _adminAssetType = type || _adminAssetType;
+  const list = document.getElementById('adminAssetsList');
+  if (!list || !window.DB) return;
+  list.innerHTML = '<div class="admin-loading">Loading...</div>';
+
+  const { data, error } = await window.DB
+    .from('home_page_assets')
+    .select('*')
+    .eq('type', _adminAssetType)
+    .order('sort_order', { ascending: true });
+
+  if (error) { list.innerHTML = `<div class="admin-empty">Error: ${error.message}</div>`; return; }
+  if (!data?.length) {
+    const typeLabel = _adminAssetType === 'icon' ? 'Social Icon' : 'License Logo';
+    list.innerHTML = `<div class="admin-empty">${typeLabel} မရှိသေးပါ — + ထည့်မည် ကိုနှိပ်ပါ</div>`;
+    return;
+  }
+
+  const isIcon = _adminAssetType === 'icon';
+  list.innerHTML = data.map(a => `
+    <div class="admin-asset-card">
+      <img src="${a.image_url}" class="${isIcon ? 'admin-asset-icon' : 'admin-asset-logo'}" alt="${a.name}" onerror="this.style.opacity='.3'">
+      <div class="admin-asset-info">
+        <div class="admin-asset-name">${a.name}</div>
+        <div class="admin-asset-url">${a.image_url.length>40 ? a.image_url.slice(0,38)+'…' : a.image_url}</div>
+        <div class="admin-asset-meta">Sort: ${a.sort_order} · ${a.is_active ? '<span style="color:#22c55e">Active</span>' : '<span style="color:#ef4444">Hidden</span>'}</div>
+      </div>
+      <div class="admin-asset-acts">
+        <button class="admin-btn-sm" onclick='adminEditAsset(${JSON.stringify(a).replace(/'/g,"&#39;")})'>ပြင်</button>
+        <button class="admin-btn-sm" onclick="adminToggleAsset('${a.id}',${a.is_active})">${a.is_active?'Hide':'Show'}</button>
+        <button class="admin-btn-sm red" onclick="adminDelAsset('${a.id}')">ဖျက်</button>
+      </div>
+    </div>`).join('');
+}
+
+function adminOpenAssetForm() {
+  _adminEditAsset = null;
+  document.getElementById('afId').value   = '';
+  document.getElementById('afType').value = _adminAssetType;
+  document.getElementById('afName').value = '';
+  document.getElementById('afImg').value  = '';
+  document.getElementById('afLink').value = '';
+  document.getElementById('afSort').value = '0';
+  document.getElementById('afPreviewWrap').style.display = 'none';
+  document.getElementById('adminAssetFormTitle').textContent = _adminAssetType === 'icon' ? 'Social Icon ထည့်မည်' : 'License Logo ထည့်မည်';
+  document.getElementById('adminAssetForm').style.display = 'block';
+  document.getElementById('adminAssetForm').scrollIntoView({behavior:'smooth'});
+}
+function adminEditAsset(a) {
+  _adminEditAsset = a;
+  document.getElementById('afId').value   = a.id;
+  document.getElementById('afType').value = a.type;
+  document.getElementById('afName').value = a.name;
+  document.getElementById('afImg').value  = a.image_url;
+  document.getElementById('afLink').value = a.link_url || '';
+  document.getElementById('afSort').value = a.sort_order;
+  const prev = document.getElementById('afPreviewWrap');
+  const img  = document.getElementById('afPreviewImg');
+  img.src = a.image_url; prev.style.display = 'flex';
+  document.getElementById('adminAssetFormTitle').textContent = a.type === 'icon' ? 'Social Icon ပြင်မည်' : 'License Logo ပြင်မည်';
+  document.getElementById('adminAssetForm').style.display = 'block';
+  document.getElementById('adminAssetForm').scrollIntoView({behavior:'smooth'});
+}
+function adminCloseAssetForm() {
+  document.getElementById('adminAssetForm').style.display = 'none';
+  _adminEditAsset = null;
+}
+function adminAssetTypeChange() {
+  const t = document.getElementById('afType').value;
+  document.getElementById('adminAssetFormTitle').textContent = t === 'icon' ? 'Social Icon' : 'License Logo';
+}
+
+// Preview image on URL input
+document.getElementById('afImg')?.addEventListener('input', function() {
+  const url = this.value.trim();
+  const prev = document.getElementById('afPreviewWrap');
+  const img  = document.getElementById('afPreviewImg');
+  if (url) { img.src = url; prev.style.display = 'flex'; }
+  else { prev.style.display = 'none'; }
+});
+
+async function adminSaveAsset() {
+  const name = document.getElementById('afName').value.trim();
+  const img  = document.getElementById('afImg').value.trim();
+  const link = document.getElementById('afLink').value.trim();
+  const type = document.getElementById('afType').value;
+  const sort = parseInt(document.getElementById('afSort').value) || 0;
+
+  if (!name) { if(typeof gToast==='function')gToast('Name ဖြည့်ပါ','error'); return; }
+  if (!img)  { if(typeof gToast==='function')gToast('Image URL ဖြည့်ပါ','error'); return; }
+
+  const row = { type, name, image_url: img, link_url: link||null, sort_order: sort };
+  const editId = document.getElementById('afId').value;
+
+  if (editId) {
+    const { error } = await window.DB.from('home_page_assets').update(row).eq('id', editId);
+    if (error) { if(typeof gToast==='function')gToast('Error: ' + error.message,'error'); return; }
+  } else {
+    const { error } = await window.DB.from('home_page_assets').insert([{ ...row, is_active: true }]);
+    if (error) { if(typeof gToast==='function')gToast('Error: ' + error.message,'error'); return; }
+  }
+
+  if(typeof gToast==='function') gToast('သိမ်းပြီး ✓','success');
+  adminCloseAssetForm();
+  adminLoadAssets(_adminAssetType);
+  // Reload on home page too
+  if(typeof loadHomePageAssets==='function') loadHomePageAssets();
+}
+
+async function adminToggleAsset(id, cur) {
+  await window.DB.from('home_page_assets').update({is_active: !cur}).eq('id', id);
+  if(typeof gToast==='function')gToast(!cur?'Active ဖြစ်ပြီး':'Hidden ဖြစ်ပြီး','success');
+  adminLoadAssets(_adminAssetType);
+  if(typeof loadHomePageAssets==='function') loadHomePageAssets();
+}
+
+// Alias for showPage hook in ui.js
+window.initAdminDashboard = onAdminPageShow;
+
+async function adminDelAsset(id) {
+  if(!confirm('ဖျက်မှာ သေချာသလား?')) return;
+  await window.DB.from('home_page_assets').delete().eq('id', id);
+  if(typeof gToast==='function')gToast('ဖျက်ပြီး','success');
+  adminLoadAssets(_adminAssetType);
+  if(typeof loadHomePageAssets==='function') loadHomePageAssets();
+}
+</script>

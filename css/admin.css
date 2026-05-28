@@ -344,3 +344,87 @@
   align-self: flex-end;
 }
 .avip-save:active { background: rgba(0,245,255,.25); }
+
+/* ── Tab Content ─────────────────────────────────────────── */
+.admin-tab { background:none;border:none;color:rgba(255,255,255,.45);font-size:12px;font-weight:700;padding:10px 14px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s; }
+.admin-tab.active { color:#00f5ff;border-bottom-color:#00f5ff; }
+.admin-tab-content { display:none;padding:8px 0 80px; }
+.admin-tab-content.active { display:block; }
+
+/* ── Filter / Search ─────────────────────────────────────── */
+.admin-filter-row { display:flex;gap:8px;padding:8px 12px; }
+.admin-filter-btn { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:20px;color:rgba(255,255,255,.5);font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;transition:all .2s; }
+.admin-filter-btn.active { background:rgba(0,245,255,.15);border-color:#00f5ff;color:#00f5ff; }
+.admin-search-row { display:flex;gap:8px;padding:8px 12px; }
+.admin-search-input { flex:1;background:#0d0328;border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:12px;padding:8px 12px;outline:none; }
+.admin-search-btn { background:rgba(0,245,255,.15);border:1px solid rgba(0,245,255,.3);border-radius:10px;color:#00f5ff;font-size:12px;font-weight:800;padding:8px 16px;cursor:pointer; }
+
+/* ── Section Header ──────────────────────────────────────── */
+.admin-section-hdr { display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px; }
+.admin-section-title { font-size:13px;font-weight:900;color:#fff; }
+.admin-section-sub { font-size:10px;color:rgba(255,255,255,.4);margin-top:2px; }
+.admin-add-btn { background:linear-gradient(135deg,rgba(0,245,255,.2),rgba(200,0,255,.2));border:1px solid rgba(0,245,255,.4);border-radius:10px;color:#00f5ff;font-size:11px;font-weight:800;padding:7px 14px;cursor:pointer;white-space:nowrap; }
+
+/* ── Transaction Cards ───────────────────────────────────── */
+.admin-tx-list,.admin-user-list,.admin-games-list,.admin-banners-list,.admin-assets-list { padding:0 12px;display:flex;flex-direction:column;gap:8px; }
+.admin-tx-card { background:#0d0328;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px; }
+.admin-tx-top { display:flex;justify-content:space-between;align-items:center;margin-bottom:4px; }
+.admin-tx-meta { display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:3px; }
+.admin-tx-actions { display:flex;gap:8px;margin-top:8px; }
+.admin-btn-approve { flex:1;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);border-radius:8px;color:#22c55e;font-size:11px;font-weight:800;padding:7px;cursor:pointer; }
+.admin-btn-reject  { flex:1;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:8px;color:#ef4444;font-size:11px;font-weight:800;padding:7px;cursor:pointer; }
+.admin-tx-badge { display:inline-block;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:800;margin-top:6px; }
+.admin-tx-badge.approved { background:rgba(34,197,94,.15);color:#22c55e; }
+.admin-tx-badge.rejected { background:rgba(239,68,68,.15);color:#ef4444; }
+
+/* ── User Cards ──────────────────────────────────────────── */
+.admin-user-card { background:#0d0328;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px; }
+.admin-user-top { display:flex;justify-content:space-between;align-items:center;margin-bottom:4px; }
+.admin-user-name { font-size:13px;font-weight:800;color:#fff; }
+.admin-user-actions { display:flex;gap:6px;margin-top:8px;flex-wrap:wrap; }
+
+/* ── Game / Banner Cards ─────────────────────────────────── */
+.admin-game-card { display:flex;align-items:center;gap:10px;background:#0d0328;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px; }
+.admin-game-thumb { width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0; }
+.admin-game-thumb-empty { width:40px;height:40px;border-radius:8px;background:#1a1535;flex-shrink:0; }
+.admin-game-info { flex:1;min-width:0; }
+.admin-game-acts { display:flex;flex-direction:column;gap:4px;flex-shrink:0; }
+
+/* ── Generic small buttons ───────────────────────────────── */
+.admin-btn-sm { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;color:rgba(255,255,255,.7);font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer;white-space:nowrap; }
+.admin-btn-sm.red { background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#ef4444; }
+
+/* ── Form Sheet ──────────────────────────────────────────── */
+.admin-form-sheet { background:#0d0328;border:1px solid rgba(0,245,255,.2);border-radius:14px;padding:16px;margin:10px 12px;display:flex;flex-direction:column;gap:10px; }
+.admin-form-title { font-size:14px;font-weight:900;color:#00f5ff; }
+.admin-form-row { display:flex;flex-direction:column;gap:4px; }
+.admin-form-label { font-size:10px;color:rgba(255,255,255,.45);font-weight:700; }
+.admin-inp { background:#06020f;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font-size:12px;padding:9px 12px;outline:none;width:100%;box-sizing:border-box; }
+.admin-inp:focus { border-color:rgba(0,245,255,.4); }
+.admin-form-btns { display:flex;gap:8px;margin-top:4px; }
+.admin-btn-cancel { flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.5);font-size:12px;font-weight:700;padding:10px;cursor:pointer; }
+.admin-btn-save { flex:2;background:linear-gradient(135deg,rgba(0,245,255,.25),rgba(200,0,255,.25));border:1px solid rgba(0,245,255,.4);border-radius:10px;color:#00f5ff;font-size:12px;font-weight:900;padding:10px;cursor:pointer; }
+
+/* ── Content Mgmt Section ────────────────────────────────── */
+.admin-content-section { padding-bottom:8px; }
+.admin-sub-tabs { display:flex;gap:0;padding:0 12px 8px;border-bottom:1px solid rgba(255,255,255,.06); }
+.admin-sub-tab { background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.4);font-size:11px;font-weight:700;padding:8px 16px;cursor:pointer;transition:all .2s; }
+.admin-sub-tab.active { color:#c800ff;border-bottom-color:#c800ff; }
+
+/* ── Asset Cards ─────────────────────────────────────────── */
+.admin-asset-card { display:flex;align-items:center;gap:10px;background:#0d0328;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px; }
+.admin-asset-icon { width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,.05); }
+.admin-asset-logo { height:28px;max-width:70px;object-fit:contain;flex-shrink:0; }
+.admin-asset-info { flex:1;min-width:0; }
+.admin-asset-name { font-size:12px;font-weight:800;color:#fff; }
+.admin-asset-url { font-size:9px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:2px; }
+.admin-asset-meta { font-size:9px;color:#666;margin-top:2px; }
+.admin-asset-acts { display:flex;flex-direction:column;gap:4px;flex-shrink:0; }
+
+/* ── Asset Preview ───────────────────────────────────────── */
+.admin-asset-preview { display:flex;justify-content:center;align-items:center;padding:10px;background:#06020f;border-radius:10px;border:1px solid rgba(255,255,255,.07); }
+.admin-asset-preview-img { max-height:60px;max-width:120px;object-fit:contain; }
+
+/* ── Empty / Loading ─────────────────────────────────────── */
+.admin-loading { text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:12px; }
+.admin-empty { text-align:center;padding:24px;color:rgba(255,255,255,.25);font-size:12px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;margin:8px 0; }

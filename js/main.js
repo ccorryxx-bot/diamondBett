@@ -173,7 +173,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load banners and games in parallel
   const loadTasks = [];
   if (typeof loadBanners     === 'function') loadTasks.push(loadBanners());
-  if (typeof loadGamesFromDB === 'function') loadTasks.push(loadGamesFromDB());
+  if (typeof loadGamesFromDB     === 'function') loadTasks.push(loadGamesFromDB());
+  if (typeof loadHomePageAssets === 'function') loadTasks.push(loadHomePageAssets());
   if (loadTasks.length) Promise.all(loadTasks).catch(err => console.error('Parallel loading failed:', err));
 
   document.querySelectorAll('.bnav-btn').forEach(btn => {
