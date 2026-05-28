@@ -38,18 +38,6 @@ async function openDepositModal() {
 // ============================================================
 // FETCH PAYMENT METHODS
 // ============================================================
-// ── ImageKit logo with SVG fallback ────────────────────
-function getProvLogo(provName, sz) {
-  var isKbz = (provName || '').toLowerCase().indexOf('kbz') !== -1;
-  var key   = isKbz ? 'kpay' : 'wave';
-  var url   = window._depProvIcons && window._depProvIcons[key];
-  var svg   = getProvSvg(provName, sz);
-  if (!url) return svg;
-  return '<img src="' + url + '" alt="' + (provName||'') + '" width="' + sz + '" height="' + sz + '"'
-       + ' style="border-radius:10px;object-fit:cover;display:block;flex-shrink:0"'
-       + ' onerror="this.style.display=\'none\';this.nextElementSibling.removeAttribute(\'style\')">'
-       + '<span style="display:none">' + svg + '</span>';
-}
 async function fetchDepMethods() {
   const grid = document.getElementById('depMethodGrid');
   if (!grid) return;
@@ -128,7 +116,7 @@ function goStep2() {
   document.getElementById('depStep1').style.display = 'none';
   document.getElementById('depStep2').style.display = 'block';
 
-  document.getElementById('dep2Logo').innerHTML = getProvSvg(_dMethod.provider_name, 40);
+  document.getElementById('dep2Logo').innerHTML = getProvLogo(_dMethod.provider_name, 40);
   setEl('dep2Name',  _dMethod.provider_name);
   setEl('dep2Phone', _dMethod.account_number);
   setEl('dep2Amt',   _dAmt.toLocaleString() + ' ကျပ်');
