@@ -70,6 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   await loadPartials();
+  // Load payment button icons (KPay/Wave) from agent_icons table — no auth needed
+  if (typeof loadPaymentActIcons === 'function') loadPaymentActIcons();
   if (typeof prefillLoginForm === 'function') prefillLoginForm();
 
   // Bind Auth Events
