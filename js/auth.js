@@ -51,6 +51,15 @@ function prefillLoginForm() {
   if (regName)  regName.value  = '';
   if (regPhone) regPhone.value = '';
   if (regPass)  regPass.value  = '';
+
+  // Auto-fill referral code from URL ?ref= param
+  try {
+    const urlRef = new URLSearchParams(window.location.search).get('ref');
+    if (urlRef) {
+      const refInput = document.getElementById('referrer_code_input');
+      if (refInput) refInput.value = urlRef.trim();
+    }
+  } catch(e) {}
 }
 
 // ============================================================
