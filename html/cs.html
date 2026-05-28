@@ -42,6 +42,11 @@
   padding: 10px 18px; border-radius: 50px; border: none;
   cursor: pointer; text-decoration: none; box-shadow: 0 4px 16px rgba(245,197,24,.35);
 }
+
+/* CS Banner Image */
+.cs-banner-wrap { margin-bottom: 16px; }
+.cs-banner-img-link { display: block; border-radius: 16px; overflow: hidden; }
+.cs-banner-img-link img { width: 100%; height: auto; display: block; border-radius: 16px; object-fit: cover; }
 .cs-247-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center;
@@ -143,19 +148,21 @@
 
   <!-- ── Service Tab ─────────────────────────── -->
   <div class="cs-tab-pane active" id="csTab-service">
-    <!-- 24/7 Card -->
-    <div class="cs-247-card">
-      <div class="cs-247-title">24/7 အွန်လိုင်းအကူအညီ</div>
-      <div class="cs-247-desc">သင့်ပြဿနာများကို ဖြေရှင်းရန် ပစ်မှတ်ကျင်နယ်မှ ဝန်ဆောင်မှုပေးသည့် ဆက်သွယ်မှုပေးသွားပါမည်။</div>
-      <a href="" target="_blank" rel="noopener" id="cs247Btn" class="cs-247-btn">
-        <div class="cs-247-avatar">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="11" fill="rgba(255,255,255,.15)"/>
-            <path d="M11 5a6 6 0 1 1 0 12A6 6 0 0 1 11 5zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 1.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" fill="#f5c518"/>
-          </svg>
-        </div>
-        24/7 ဝန်ဆောင်မှု
-      </a>
+    <!-- CS Banner (dynamic from site_settings) -->
+    <div id="csBannerWrap" class="cs-banner-wrap">
+      <div class="cs-247-card" id="cs247Fallback">
+        <div class="cs-247-title">24/7 အွန်လိုင်းအကူအညီ</div>
+        <div class="cs-247-desc">သင့်ပြဿနာများကို ဖြေရှင်းရန် ပစ်မှတ်ကျင်နယ်မှ ဝန်ဆောင်မှုပေးသည့် ဆက်သွယ်မှုပေးသွားပါမည်။</div>
+        <a href="" target="_blank" rel="noopener" id="cs247Btn" class="cs-247-btn">
+          <div class="cs-247-avatar">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="11" fill="rgba(255,255,255,.15)"/>
+              <path d="M11 5a6 6 0 1 1 0 12A6 6 0 0 1 11 5zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 1.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" fill="#f5c518"/>
+            </svg>
+          </div>
+          24/7 ဝန်ဆောင်မှု
+        </a>
+      </div>
     </div>
 
     <!-- Sub Tabs -->
@@ -374,6 +381,26 @@ async function csLoadMarquee() {
   }
 }
 
+
+// ── CS Banner loader ────────────────────────────────────────
+async function csLoadBanner() {
+  try {
+    if (!window.DB) return;
+    const { data } = await window.DB
+      .from('site_settings')
+      .select('cs_banner_url,cs_banner_link')
+      .single();
+    const url  = data?.cs_banner_url?.trim();
+    const link = data?.cs_banner_link?.trim() || '#';
+    const wrap = document.getElementById('csBannerWrap');
+    if (url && wrap) {
+      wrap.innerHTML = `<a href="${link}" target="_blank" rel="noopener" class="cs-banner-img-link">
+        <img src="${url}" alt="CS Banner" loading="lazy" onerror="this.closest('.cs-banner-wrap').innerHTML=''">
+      </a>`;
+    }
+  } catch(e) { /* keep fallback static card */ }
+}
+
 // ── CS Contacts dynamic load ────────────────────────────────
 const _CS_LOGO = {
   viber:    'https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png',
@@ -384,6 +411,11 @@ function _csSvgIcon(platform, size) {
   const url = (_CS_LOGO[platform] || _CS_LOGO.viber) + '?tr=w-' + (size*2) + ',h-' + (size*2) + ',f-auto&v=2';
   const radius = platform === 'viber' ? 'border-radius:50%;' : '';
   return '<img src="' + url + '" width="' + size + '" height="' + size + '" style="' + radius + 'flex-shrink:0;display:block;object-fit:cover" loading="lazy" onerror="this.style.opacity=0">';
+}
+
+async function csInitPage() {
+  await csLoadBanner();
+  await csLoadContacts();
 }
 
 async function csLoadContacts() {
@@ -433,7 +465,7 @@ function _csRenderContacts(platform, contacts) {
 // ── Init (called when page shows) ─────────────────────────
 function initCsPage() {
   // Load CS contacts from DB
-  csLoadContacts();
+  csInitPage();
   // Pre-load notification badges
   if (window.DB && window.currentUserId) {
     window.DB.from('notifications')
