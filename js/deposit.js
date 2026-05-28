@@ -59,7 +59,16 @@ async function fetchDepMethods() {
   grid.innerHTML = data.map((m, i) => `
     <div class="pm-card" onclick="pickMethod(this,${i})">
       ${m.is_recommended ? '<div class="pm-badge">ဦးစားပေး</div>' : ''}
-      <div class="pm-logo">${getProvSvg(m.provider_name, 40)}</div>
+      <div class="pm-logo">(function(){
+        const isKbz = (m.provider_name||'').toLowerCase().includes('kbz');
+        const key   = isKbz ? 'kpay' : 'wave';
+        const url   = window._depProvIcons && window._depProvIcons[key];
+        const svg   = getProvSvg(m.provider_name, 40);
+        if (url) return `<img src="${url}" alt="${m.provider_name}" width="40" height="40"
+          style="border-radius:10px;object-fit:cover;display:block;flex-shrink:0"
+          onerror="this.style.display='none';this.insertAdjacentHTML('afterend',\`${svg.replace(/`/g,'\\u0060')}\`)">`;
+        return svg;
+      })()</div>
       <div class="pm-info">
         <div class="pm-name">${m.provider_name}</div>
         <div class="pm-num">${maskNum(m.account_number)}</div>
