@@ -106,7 +106,7 @@
             <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             <span class="task-reward-text">+3 Spins</span>
           </div>
-          <button class="task-action-btn">ဖိတ်ကြားရန်</button>
+          <button class="task-action-btn" onclick="showPage('agent');setTimeout(()=>{const el=document.getElementById('atab-main');if(el){const inv=el.querySelector('.agent-invite');if(inv)inv.scrollIntoView({behavior:'smooth',block:'center'});}},300)">ဖိတ်ကြားရန်</button>
         </div>
       </div>
 
@@ -125,7 +125,7 @@
             <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             <span class="task-reward-text">+2 Spins</span>
           </div>
-          <button class="task-action-btn">ငွေသွင်းရန်</button>
+          <button class="task-action-btn" onclick="if(typeof openDepositModal==='function')openDepositModal()">ငွေသွင်းရန်</button>
         </div>
       </div>
 
