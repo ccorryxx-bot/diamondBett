@@ -561,9 +561,11 @@ async function loadPaymentActIcons() {
       .from('agent_icons')
       .select('key,image_url')
       .in('key', ['kpay', 'wave']);
+    window._depProvIcons = window._depProvIcons || {};
     (data || []).forEach(r => {
       const img = document.getElementById('payImg_' + r.key);
       if (img && r.image_url) img.src = r.image_url;
+      if (r.image_url) window._depProvIcons[r.key] = r.image_url;
     });
   } catch(e) {}
 }
