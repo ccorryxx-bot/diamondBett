@@ -53,46 +53,7 @@ function initScrollObserver() {
   console.log('SPA Mode: ScrollObserver disabled');
 }
 
-// ============================================================
-// BANNER — dynamic count
-// ============================================================
-function initBanner() {
-  // Select all instances of banners (Home & Agent)
-  const tracks = document.querySelectorAll('.banner-track');
-  const wraps  = document.querySelectorAll('.banner-wrap');
-  if (!tracks.length) return;
-
-  let cur = 0, tmr = null;
-  const count   = () => tracks[0].querySelectorAll('.banner-slide').length;
-  const update  = () => {
-    const n = count(); if (!n) return;
-    tracks.forEach(track => track.style.transform = `translateX(-${cur * 100}%)`);
-    document.querySelectorAll('.banner-dots').forEach(dotWrap => {
-      dotWrap.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
-    });
-  };
-  const go      = n => { const c = count(); if (!c) return; cur = ((n % c) + c) % c; update(); };
-  const start   = () => { clearInterval(tmr); tmr = setInterval(() => go(cur + 1), 4000); };
-  const restart = () => { cur = 0; update(); start(); };
-
-  document.addEventListener('click', e => {
-    const dot = e.target.closest('.dot');
-    if (dot) { go(+dot.dataset.i); start(); }
-  });
-
-  wraps.forEach(wrap => {
-    let sx = 0;
-    wrap.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-    wrap.addEventListener('touchend',   e => {
-      const diff = sx - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 40) go(diff > 0 ? cur + 1 : cur - 1);
-      start();
-    }, { passive: true });
-  });
-
-  update(); start();
-  window._restartBanner = restart;
-}
+// initBanner() — moved to js/swiper.js (DiamondSwiper)
 
 function initLangBtn() {
   document.getElementById('langBtn')?.addEventListener('click', () => {
