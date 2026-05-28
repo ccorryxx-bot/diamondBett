@@ -161,88 +161,27 @@
     <!-- Sub Tabs -->
     <div class="cs-sub-tabs">
       <button class="cs-stab active" onclick="csSwitchSub(this,'viber')" id="csStab-viber">
-        <img src="https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png?tr=w-18,h-18,f-auto" loading="lazy" width="18" height="18" alt="Viber" style="border-radius:50%;display:block">
+        <svg width="18" height="18" viewBox="0 0 36 36" style="display:block;overflow:hidden;border-radius:50%;flex-shrink:0">
+          <image href="https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png?tr=w-36,h-36,f-auto" x="0" y="0" width="36" height="36"/>
+        </svg>
         ဆောက်ပုံ
       </button>
       <button class="cs-stab" onclick="csSwitchSub(this,'telegram')" id="csStab-telegram">
-        <img src="https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png?tr=w-18,h-18,f-auto" loading="lazy" width="18" height="18" alt="Telegram" style="display:block">
+        <svg width="18" height="18" viewBox="0 0 36 36" style="display:block;overflow:hidden;flex-shrink:0">
+          <image href="https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png?tr=w-36,h-36,f-auto" x="0" y="0" width="36" height="36"/>
+        </svg>
         Telegram ဝန်ဆောင်မှု
       </button>
     </div>
 
-    <!-- Viber Contacts -->
+    <!-- Viber Contacts — loaded dynamically from DB -->
     <div id="csCont-viber">
-      <!-- Card 1 -->
-      <div class="cs-contact-card">
-        <div class="cs-cc-logo">
-          <img src="https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png?tr=w-54,h-54,f-auto" loading="lazy" width="54" height="54" alt="Viber" style="border-radius:50%;display:block">
-        </div>
-        <div class="cs-cc-info">
-          <div class="cs-cc-name">အမည်ပြောင်း: <span>Viber ဝန်ဆောင်မှု</span></div>
-          <div class="cs-cc-link-row">
-            <span class="cs-cc-link" id="vbLink1">viber://chat?number=+959752952571</span>
-            <button class="cs-cc-copy" onclick="csCopy('vbLink1')" title="Copy">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            </button>
-          </div>
-          <div class="cs-cc-hours">အွန်လိုင်းအချိန်: 00:00 - 23:59</div>
-        </div>
-        <a href="viber://chat?number=+959752952571" class="cs-go-btn">အခုပဲ<br>သွားပါ</a>
-      </div>
-      <!-- Card 2 -->
-      <div class="cs-contact-card">
-        <div class="cs-cc-logo">
-          <img src="https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png?tr=w-54,h-54,f-auto" loading="lazy" width="54" height="54" alt="Viber" style="border-radius:50%;display:block">
-        </div>
-        <div class="cs-cc-info">
-          <div class="cs-cc-name">အမည်ပြောင်း: <span>Viber ဝန်ဆောင်မှု</span></div>
-          <div class="cs-cc-link-row">
-            <span class="cs-cc-link" id="vbLink2">viber://chat?number=+959797127825</span>
-            <button class="cs-cc-copy" onclick="csCopy('vbLink2')" title="Copy">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            </button>
-          </div>
-          <div class="cs-cc-hours">အွန်လိုင်းအချိန်: 00:00 - 23:59</div>
-        </div>
-        <a href="viber://chat?number=+959797127825" class="cs-go-btn">အခုပဲ<br>သွားပါ</a>
-      </div>
+      <div class="cs-spinner"><div class="cs-spin"></div></div>
     </div>
 
-    <!-- Telegram Contacts -->
+    <!-- Telegram Contacts — loaded dynamically from DB -->
     <div id="csCont-telegram" style="display:none;">
-      <div class="cs-contact-card">
-        <div class="cs-cc-logo">
-          <img src="https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png?tr=w-54,h-54,f-auto" loading="lazy" width="54" height="54" alt="Telegram" style="display:block">
-        </div>
-        <div class="cs-cc-info">
-          <div class="cs-cc-name">အမည်ပြောင်း: <span>Telegram ဝန်ဆောင်မှု</span></div>
-          <div class="cs-cc-link-row">
-            <span class="cs-cc-link" id="tgLink1">@DiamondBett_CS</span>
-            <button class="cs-cc-copy" onclick="csCopy('tgLink1')" title="Copy">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            </button>
-          </div>
-          <div class="cs-cc-hours">အွန်လိုင်းအချိန်: 00:00 - 23:59</div>
-        </div>
-        <a href="https://t.me/DiamondBett_CS" target="_blank" rel="noopener" class="cs-go-btn">အခုပဲ<br>သွားပါ</a>
-      </div>
-      <!-- Card 2 -->
-      <div class="cs-contact-card">
-        <div class="cs-cc-logo">
-          <img src="https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png?tr=w-54,h-54,f-auto" loading="lazy" width="54" height="54" alt="Telegram" style="display:block">
-        </div>
-        <div class="cs-cc-info">
-          <div class="cs-cc-name">အမည်ပြောင်း: <span>Telegram ဝန်ဆောင်မှု</span></div>
-          <div class="cs-cc-link-row">
-            <span class="cs-cc-link" id="tgLink2">@DB_Support2</span>
-            <button class="cs-cc-copy" onclick="csCopy('tgLink2')" title="Copy">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            </button>
-          </div>
-          <div class="cs-cc-hours">အွန်လိုင်းအချိန်: 00:00 - 23:59</div>
-        </div>
-        <a href="https://t.me/DB_Support2" target="_blank" rel="noopener" class="cs-go-btn">အခုပဲ<br>သွားပါ</a>
-      </div>
+      <div class="cs-spinner"><div class="cs-spin"></div></div>
     </div>
   </div>
 
@@ -439,8 +378,67 @@ async function csLoadMarquee() {
   }
 }
 
+// ── CS Contacts dynamic load ────────────────────────────────
+const _CS_LOGO = {
+  viber:    'https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png',
+  telegram: 'https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png'
+};
+
+function _csSvgIcon(platform, size) {
+  const s2 = size * 2;
+  const url = _CS_LOGO[platform] + `?tr=w-${s2},h-${s2},f-auto`;
+  const radius = platform === 'viber' ? `;border-radius:50%` : '';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${s2} ${s2}" style="display:block;overflow:hidden;flex-shrink:0${radius}"><image href="${url}" x="0" y="0" width="${s2}" height="${s2}"/></svg>`;
+}
+
+async function csLoadContacts() {
+  if (!window.DB) return;
+  try {
+    const { data } = await window.DB
+      .from('cs_contacts')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    const viber    = (data||[]).filter(c => c.platform === 'viber');
+    const telegram = (data||[]).filter(c => c.platform === 'telegram');
+    _csRenderContacts('viber',    viber);
+    _csRenderContacts('telegram', telegram);
+  } catch(e) {
+    console.error('csLoadContacts:', e);
+  }
+}
+
+function _csRenderContacts(platform, contacts) {
+  const container = document.getElementById('csCont-' + platform);
+  if (!container) return;
+  if (!contacts.length) {
+    container.innerHTML = '<div class="cs-empty"><div class="cs-empty-txt">Contact မရှိသေးပါ</div></div>';
+    return;
+  }
+  const isTg = platform === 'telegram';
+  container.innerHTML = contacts.map((c, i) => {
+    const lid = `${platform}Link${i}`;
+    return `<div class="cs-contact-card">
+      <div class="cs-cc-logo">${_csSvgIcon(platform, 54)}</div>
+      <div class="cs-cc-info">
+        <div class="cs-cc-name">${c.name}</div>
+        <div class="cs-cc-link-row">
+          <span class="cs-cc-link" id="${lid}">${c.display_label}</span>
+          <button class="cs-cc-copy" onclick="csCopy('${lid}')" title="Copy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+        <div class="cs-cc-hours">အွန်လိုင်းအချိန်: ${c.hours||'00:00 - 23:59'}</div>
+      </div>
+      <a href="${c.contact_url}" ${isTg ? 'target="_blank" rel="noopener"' : ''} class="cs-go-btn">အခုပဲ<br>သွားပါ</a>
+    </div>`;
+  }).join('');
+}
+
 // ── Init (called when page shows) ─────────────────────────
 function initCsPage() {
+  // Load CS contacts from DB
+  csLoadContacts();
   // Pre-load notification badges
   if (window.DB && window.currentUserId) {
     window.DB.from('notifications')
