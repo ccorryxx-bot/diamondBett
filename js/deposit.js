@@ -38,18 +38,17 @@ async function openDepositModal() {
 // ============================================================
 // FETCH PAYMENT METHODS
 // ============================================================
-// ── ImageKit logo with SVG fallback ─────────────────────
+// ── ImageKit logo with SVG fallback ────────────────────
 function getProvLogo(provName, sz) {
-  const isKbz = (provName || '').toLowerCase().includes('kbz');
-  const key   = isKbz ? 'kpay' : 'wave';
-  const url   = window._depProvIcons && window._depProvIcons[key];
-  const svg   = getProvSvg(provName, sz);
-  if (url) {
-    return '<img src="' + url + '" alt="' + provName + '" width="' + sz + '" height="' + sz + '"'
-         + ' style="border-radius:10px;object-fit:cover;display:block;flex-shrink:0"'
-         + ' onerror="this.style.display='none';this.nextElementSibling.style.display=''"><span style="display:none">' + svg + '</span>';
-  }
-  return svg;
+  var isKbz = (provName || '').toLowerCase().indexOf('kbz') !== -1;
+  var key   = isKbz ? 'kpay' : 'wave';
+  var url   = window._depProvIcons && window._depProvIcons[key];
+  var svg   = getProvSvg(provName, sz);
+  if (!url) return svg;
+  return '<img src="' + url + '" alt="' + (provName||'') + '" width="' + sz + '" height="' + sz + '"'
+       + ' style="border-radius:10px;object-fit:cover;display:block;flex-shrink:0"'
+       + ' onerror="this.style.display=\'none\';this.nextElementSibling.removeAttribute(\'style\')">'
+       + '<span style="display:none">' + svg + '</span>';
 }
 async function fetchDepMethods() {
   const grid = document.getElementById('depMethodGrid');
