@@ -275,7 +275,7 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   // ──────────────────────────────────────────────────────────
 
   setEl('agentUserPhone',    phone);
-  setEl('agentPhoneDisplay', shortId);
+  setEl('agentPhoneDisplay', agentRefCode);
   setEl('agentJoinDate',     new Date().toLocaleDateString('en-GB'));
   setEl('statBalance',       fmt(balance));
   setEl('userLevelNum',      '1');
