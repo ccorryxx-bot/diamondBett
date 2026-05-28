@@ -1,59 +1,64 @@
 // ============================================================
-// HOME PAGE ASSETS — Social Icons + License Logos
-// Loads from Supabase table: home_page_assets
-// type: 'icon'    → social media icons (7)
-// type: 'license' → license / provider logos (9)
+// HOME PAGE ASSETS — Social Icons (7) + License Logos (9)
+// Table: home_page_assets  |  key TEXT PRIMARY KEY, image_url TEXT
+// Keys: ic_1..ic_7 (icons), lc_1..lc_9 (licenses)
 // ============================================================
+
+const _HP_ICON_KEYS    = ['ic_1','ic_2','ic_3','ic_4','ic_5','ic_6','ic_7'];
+const _HP_LICENSE_KEYS = ['lc_1','lc_2','lc_3','lc_4','lc_5','lc_6','lc_7','lc_8','lc_9'];
 
 async function loadHomePageAssets() {
   if (!window.DB) return;
 
   try {
+    const allKeys = [..._HP_ICON_KEYS, ..._HP_LICENSE_KEYS];
     const { data, error } = await window.DB
       .from('home_page_assets')
-      .select('id, type, name, image_url, link_url, sort_order')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
+      .select('key, image_url')
+      .in('key', allKeys);
 
-    if (error || !data?.length) return;
+    if (error) { console.warn('home_assets error:', error.message); return; }
 
-    const icons    = data.filter(d => d.type === 'icon');
-    const licenses = data.filter(d => d.type === 'license');
+    const map = {};
+    (data || []).forEach(r => { map[r.key] = r.image_url || ''; });
 
-    _renderSocialIcons(icons);
-    _renderLicenseLogos(licenses);
+    _renderSocialIcons(map);
+    _renderLicenseLogos(map);
   } catch (e) {
     console.warn('loadHomePageAssets error:', e);
   }
 }
 
-function _renderSocialIcons(icons) {
+function _renderSocialIcons(map) {
   const row = document.getElementById('hpSocialRow');
   if (!row) return;
-  if (!icons.length) { row.innerHTML = ''; return; }
 
-  row.innerHTML = icons.map(ic => {
-    const href = ic.link_url ? `onclick="if('${ic.link_url}'!=='null')window.open('${ic.link_url}','_blank')"` : '';
-    return `<div class="hp-social-icon" title="${ic.name}" ${href}>
-      <img src="${ic.image_url}" alt="${ic.name}" loading="lazy" onerror="this.style.display='none'">
-    </div>`;
-  }).join('');
+  const items = _HP_ICON_KEYS
+    .map(k => map[k] || '')
+    .filter(url => url.trim() !== '');
+
+  if (!items.length) { row.innerHTML = ''; return; }
+
+  row.innerHTML = items.map(url =>
+    `<div class="hp-social-icon">
+      <img src="${url}" alt="" loading="lazy"
+           onerror="this.parentElement.style.display='none'">
+    </div>`
+  ).join('');
 }
 
-function _renderLicenseLogos(licenses) {
+function _renderLicenseLogos(map) {
   const wrap = document.getElementById('hpLicenseRow');
   if (!wrap) return;
-  if (!licenses.length) { wrap.innerHTML = ''; return; }
 
-  wrap.innerHTML = licenses.map(lic => {
-    const href = lic.link_url ? `onclick="window.open('${lic.link_url}','_blank')"` : '';
-    return `<img
-      class="hp-license-icon"
-      src="${lic.image_url}"
-      alt="${lic.name}"
-      title="${lic.name}"
-      loading="lazy"
-      onerror="this.style.display='none'"
-      ${href}>`;
-  }).join('');
+  const items = _HP_LICENSE_KEYS
+    .map(k => map[k] || '')
+    .filter(url => url.trim() !== '');
+
+  if (!items.length) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = items.map(url =>
+    `<img class="hp-license-icon" src="${url}" alt=""
+          loading="lazy" onerror="this.style.display='none'">`
+  ).join('');
 }
