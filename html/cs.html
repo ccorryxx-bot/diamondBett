@@ -161,15 +161,11 @@
     <!-- Sub Tabs -->
     <div class="cs-sub-tabs">
       <button class="cs-stab active" onclick="csSwitchSub(this,'viber')" id="csStab-viber">
-        <svg width="18" height="18" viewBox="0 0 36 36" style="display:block;overflow:hidden;border-radius:50%;flex-shrink:0">
-          <image href="https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png?tr=w-36,h-36,f-auto" x="0" y="0" width="36" height="36"/>
-        </svg>
-        ဆောက်ပုံ
+        <img src="https://ik.imagekit.io/tdpebgueq/icons/viber_logo_wG8S5sFl5P.png?tr=w-36,h-36,f-auto&v=2" width="18" height="18" style="border-radius:50%;flex-shrink:0;display:block" loading="lazy">
+        VIBER_SERVICE
       </button>
       <button class="cs-stab" onclick="csSwitchSub(this,'telegram')" id="csStab-telegram">
-        <svg width="18" height="18" viewBox="0 0 36 36" style="display:block;overflow:hidden;flex-shrink:0">
-          <image href="https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png?tr=w-36,h-36,f-auto" x="0" y="0" width="36" height="36"/>
-        </svg>
+        <img src="https://ik.imagekit.io/tdpebgueq/icons/telegram_logo_QeWRW9-okP.png?tr=w-36,h-36,f-auto&v=2" width="18" height="18" style="flex-shrink:0;display:block" loading="lazy">
         Telegram ဝန်ဆောင်မှု
       </button>
     </div>
@@ -385,10 +381,9 @@ const _CS_LOGO = {
 };
 
 function _csSvgIcon(platform, size) {
-  const s2 = size * 2;
-  const url = _CS_LOGO[platform] + `?tr=w-${s2},h-${s2},f-auto`;
-  const radius = platform === 'viber' ? `;border-radius:50%` : '';
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${s2} ${s2}" style="display:block;overflow:hidden;flex-shrink:0${radius}"><image href="${url}" x="0" y="0" width="${s2}" height="${s2}"/></svg>`;
+  const url = (_CS_LOGO[platform] || _CS_LOGO.viber) + '?tr=w-' + (size*2) + ',h-' + (size*2) + ',f-auto&v=2';
+  const radius = platform === 'viber' ? 'border-radius:50%;' : '';
+  return '<img src="' + url + '" width="' + size + '" height="' + size + '" style="' + radius + 'flex-shrink:0;display:block;object-fit:cover" loading="lazy" onerror="this.style.opacity=0">';
 }
 
 async function csLoadContacts() {
