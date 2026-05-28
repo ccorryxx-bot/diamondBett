@@ -578,9 +578,10 @@
 .invite-code-val{font-size:14px;font-weight:700;color:#fff;text-shadow:0 0 5px rgba(0,255,255,.25);}
 .copy-icon-btn{
   display:flex;align-items:center;gap:4px;
-  background:rgba(0,255,255,.06);border:1px solid rgba(0,255,255,.18);
+  background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.28);
   border-radius:8px;padding:5px 10px;
-  color:rgba(0,220,255,.75);font-size:11px;font-weight:700;font-family:inherit;
+  color:rgba(245,197,24,.90);font-size:11px;font-weight:700;font-family:inherit;
+  cursor:pointer;transition:background .2s;
 }
 .invite-qr-row{display:flex;gap:12px;align-items:flex-start;}
 .qr-container{
@@ -592,8 +593,8 @@
 .qr-container canvas,.qr-container img{width:100%!important;height:100%!important;}
 .invite-link-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}
 .invite-link-wrap{display:flex;background:rgba(0,0,0,.4);border:1px solid rgba(0,255,255,.12);border-radius:10px;overflow:hidden;}
-.invite-link-input{flex:1;background:none;border:none;color:#22ff88;font-size:11px;padding:10px 12px;font-family:inherit;}
-.invite-link-copy{background:rgba(0,255,255,.07);border:none;border-left:1px solid rgba(0,255,255,.12);padding:0 12px;color:rgba(0,220,255,.65);display:flex;align-items:center;}
+.invite-link-input{flex:1;background:none;border:none;color:#c8b68a;font-size:11px;padding:10px 12px;font-family:inherit;}
+.invite-link-copy{background:rgba(245,197,24,.09);border:none;border-left:1px solid rgba(245,197,24,.18);padding:0 12px;color:rgba(245,197,24,.80);display:flex;align-items:center;cursor:pointer;transition:background .2s;}
 .share-btns{display:flex;gap:4px;flex-wrap:nowrap;justify-content:space-between;}
 .share-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;font-size:8px;color:rgba(160,190,220,.55);font-family:inherit;flex:1;min-width:0;}
 .share-btn-ico{
