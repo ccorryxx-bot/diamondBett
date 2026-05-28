@@ -567,11 +567,7 @@ async function loadPaymentActIcons() {
     });
   } catch(e) {}
 }
-// Called from app bootstrap when user is logged in
-window._loadPaymentActIcons = loadPaymentActIcons;
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.DB) loadPaymentActIcons();
-});
+// Called from main.js after loadPartials() when window.DB is ready
 
 // ── Logout ────────────────────────────────────────────────
 async function logoutUser() {
