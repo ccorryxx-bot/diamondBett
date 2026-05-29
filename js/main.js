@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await restoreSession(session.user.id);
           }
           subscribeNotifications(session.user.id);
+          if (typeof setupUserRealtime === 'function') setupUserRealtime(session.user.id);
         }
       }
     } catch (e) {
@@ -139,6 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           _sessionRestored = true;
           if (typeof restoreSession === 'function') restoreSession(session.user.id);
           subscribeNotifications(session.user.id);
+          if (typeof setupUserRealtime === 'function') setupUserRealtime(session.user.id);
         }
       }
       if (event === 'SIGNED_OUT') {
@@ -157,6 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (payLogos) payLogos.style.display  = 'none';
         if (adminBtn) adminBtn.style.display  = 'none';
         unsubscribeNotifications();
+        if (typeof teardownUserRealtime === 'function') teardownUserRealtime();
         showPage('home');
         // Only show login modal if:
         // 1. Init is done (not a token-refresh flicker)
