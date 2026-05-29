@@ -877,7 +877,7 @@
   display: flex;
   align-items: stretch;
   width: 100%;
-  min-height: 160px;
+  min-height: 110px;
 }
 
 /* Globe side: exactly 50% width — canvas stretches to fill frame */
@@ -906,7 +906,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 4px 8px;
+  padding: 4px 3px 4px;
   box-sizing: border-box;
   background: rgba(0,0,0,0);
   overflow: hidden;
@@ -926,7 +926,7 @@
 .nts-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 3px;
   width: 100%;
   position: relative;
   z-index: 2;
@@ -936,67 +936,68 @@
 /* ── A Card ── */
 .nts-card-a {
   position: relative;
-  width: 58px; height: 58px;
-  border-radius: 14px;
+  width: 34px; height: 34px;
+  border-radius: 8px;
   background: linear-gradient(145deg, rgba(115,65,205,0.82), rgba(55,25,130,0.92));
   border: 1.5px solid rgba(185,140,255,0.50);
-  box-shadow: 0 0 28px rgba(120,70,220,0.40), inset 0 0 14px rgba(75,30,175,0.25);
+  box-shadow: 0 0 14px rgba(120,70,220,0.40), inset 0 0 8px rgba(75,30,175,0.25);
   display: flex; align-items: center; justify-content: center;
 }
 .nts-av-a {
-  width: 36px; height: 36px;
+  width: 20px; height: 20px;
   border-radius: 50%;
   background: rgba(80,40,160,0.45);
   display: flex; align-items: center; justify-content: center;
 }
+.nts-av-a svg, .nts-av-b svg, .nts-av-c svg { width: 100%; height: 100%; }
 .nts-label-a {
-  margin-top: 5px;
-  font-size: 9px;
+  margin-top: 1px;
+  font-size: 6px;
   color: rgba(195,175,255,0.82);
-  letter-spacing: .25px;
+  letter-spacing: .2px;
 }
 
 /* ── B Cards ── */
 .nts-card-b {
   position: relative;
-  width: 48px;
-  min-height: 58px;
-  border-radius: 11px;
+  width: 32px;
+  min-height: 36px;
+  border-radius: 7px;
   background: rgba(8,14,38,0.92);
   border: 1.5px solid rgba(72,185,220,0.38);
-  box-shadow: 0 0 16px rgba(40,150,205,0.14), inset 0 0 10px rgba(0,0,0,0.35);
+  box-shadow: 0 0 10px rgba(40,150,205,0.14), inset 0 0 6px rgba(0,0,0,0.35);
   display: flex; flex-direction: column; align-items: center;
-  padding: 7px 4px 10px;
+  padding: 4px 2px 6px;
   box-sizing: border-box;
 }
 .nts-av-b {
-  width: 26px; height: 26px;
+  width: 16px; height: 16px;
   border-radius: 50%;
   background: rgba(6,22,50,0.75);
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 3px;
+  margin-bottom: 1px;
   border: 1px solid rgba(72,185,220,0.22);
 }
 
 /* ── C Cards ── */
 .nts-card-c {
   position: relative;
-  width: 36px;
-  min-height: 50px;
-  border-radius: 9px;
+  width: 24px;
+  min-height: 28px;
+  border-radius: 5px;
   background: rgba(6,12,32,0.92);
   border: 1.5px solid rgba(55,170,140,0.34);
-  box-shadow: 0 0 12px rgba(38,148,120,0.10), inset 0 0 8px rgba(0,0,0,0.35);
+  box-shadow: 0 0 8px rgba(38,148,120,0.10), inset 0 0 5px rgba(0,0,0,0.35);
   display: flex; flex-direction: column; align-items: center;
-  padding: 5px 3px 8px;
+  padding: 3px 2px 4px;
   box-sizing: border-box;
 }
 .nts-av-c {
-  width: 20px; height: 20px;
+  width: 12px; height: 12px;
   border-radius: 50%;
   background: rgba(5,18,38,0.78);
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   border: 1px solid rgba(55,170,140,0.22);
 }
 
@@ -1010,36 +1011,36 @@
   z-index: 3;
 }
 .nts-badge-a {
-  width: 20px; height: 20px;
-  font-size: 9px;
+  width: 14px; height: 14px;
+  font-size: 6px;
   background: #7c3aed;
-  box-shadow: 0 0 10px rgba(124,58,237,0.75);
-  bottom: -7px; right: -7px;
+  box-shadow: 0 0 6px rgba(124,58,237,0.75);
+  bottom: -4px; right: -4px;
 }
 .nts-badge-b {
-  width: 15px; height: 15px;
-  font-size: 7px;
+  width: 10px; height: 10px;
+  font-size: 5px;
   background: #0891b2;
-  box-shadow: 0 0 8px rgba(8,145,178,0.65);
-  bottom: -5px; right: -5px;
+  box-shadow: 0 0 5px rgba(8,145,178,0.65);
+  bottom: -3px; right: -3px;
 }
 .nts-badge-c {
-  width: 13px; height: 13px;
-  font-size: 6px;
+  width: 9px; height: 9px;
+  font-size: 4.5px;
   background: #059669;
-  box-shadow: 0 0 6px rgba(5,150,105,0.55);
-  bottom: -4px; right: -4px;
+  box-shadow: 0 0 4px rgba(5,150,105,0.55);
+  bottom: -3px; right: -3px;
 }
 
 /* ── Commission formula text ── */
 .nts-cm {
-  font-size: 8px;
+  font-size: 5px;
   color: rgba(92,210,235,0.85);
   text-align: center;
   margin-top: auto;
 }
 .nts-cm-c {
-  font-size: 7px;
+  font-size: 5px;
   color: rgba(72,200,160,0.85);
   margin-top: auto;
 }
@@ -1048,27 +1049,27 @@
 .nts-n-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 7px;
+  gap: 3px;
+  padding: 3px 4px;
   background: rgba(8,16,44,0.70);
   border: 1px solid rgba(45,168,112,0.28);
-  border-radius: 10px;
+  border-radius: 6px;
   width: 100%;
   box-sizing: border-box;
 }
 .nts-n-circle {
-  width: 24px; height: 24px;
+  width: 14px; height: 14px;
   border-radius: 50%;
   background: rgba(20,155,92,0.90);
   color: #fff;
-  font-size: 10px;
+  font-size: 6px;
   font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(28,195,108,0.42);
+  box-shadow: 0 0 6px rgba(28,195,108,0.42);
 }
 .nts-n-text {
-  font-size: 8px;
-  line-height: 1.55;
+  font-size: 6px;
+  line-height: 1.4;
   color: rgba(140,200,168,0.88);
 }

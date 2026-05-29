@@ -647,7 +647,7 @@ async function loadAgentIcons() {
           var maxW=splitWrap ? Math.floor(splitWrap.clientWidth/2) : 0;
           NW=realW||(maxW||180);
           if(maxW && NW>maxW) NW=maxW;
-          GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
+          GR=Math.min(Math.floor((NW-20)/2),38);   /* 38px globe radius — compact */
           GCX=GR+14;                               /* globe left-aligned */
           GCY=GR+28;                               /* globe-only, no avatar above */
           /* tall enough: full globe height + tree C-level padding */
