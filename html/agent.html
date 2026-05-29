@@ -318,7 +318,7 @@ async function loadAgentIcons() {
       </div>
 
       <!-- ═══════════════════════════════════════════════════
-           GLOBE DOWNLINE NETWORK VISUALIZATION
+           DOWNLINE NETWORK — CARD TREE VISUALIZATION
            ═══════════════════════════════════════════════════ -->
       <div class="nn-wrap" id="nnNetworkWrap">
 
@@ -329,403 +329,241 @@ async function loadAgentIcons() {
           <span class="nn-count" id="nnMemberCount">0 members</span>
         </div>
 
-        <!-- Canvas — avatar at top + 3D globe below -->
-        <div class="nn-canvas-wrap" id="nnCanvasWrap">
-          <canvas id="nnCanvas"></canvas>
-          <div class="nn-drag-hint">← ဆွဲပြီး လှည့်ကြည့်ပါ →</div>
-        </div>
-      </div>
+        <!-- Full-width Card Tree -->
+        <div class="agt-tree-outer" id="agtTreeOuter">
+          <!-- Star/particle background canvas -->
+          <canvas class="agt-star-bg" id="agtStarBg"></canvas>
+          <!-- SVG layer for animated connection lines -->
+          <svg class="agt-line-svg" id="agtLineSvg" xmlns="http://www.w3.org/2000/svg"></svg>
 
-      <!-- ── Globe Engine ─────────────────────────────────── -->
+          <div class="agt-tree-body">
+
+            <!-- ── Row A: Agent (top) ── -->
+            <div class="agt-row agt-row-a">
+              <div class="agt-col-a">
+                <div class="agt-card-a" id="agtA">
+                  <div class="agt-av agt-av-a">
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="8.5" r="4.5" fill="rgba(215,195,255,0.92)"/>
+                      <path d="M3.5 21c0-4.5 3.8-7.5 8.5-7.5s8.5 3 8.5 7.5" stroke="rgba(215,195,255,0.92)" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div class="agt-badge agt-badge-a">A</div>
+                </div>
+                <div class="agt-a-label">You (Agent A)</div>
+              </div>
+            </div>
+
+            <!-- ── Row B: B1 + B2 ── -->
+            <div class="agt-row agt-row-b">
+              <div class="agt-card-b" id="agtB1">
+                <div class="agt-av agt-av-b">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8.5" r="4" fill="rgba(100,222,242,0.88)"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(100,222,242,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="agt-node-amt">500</div>
+                <div class="agt-node-cm">×10%=50</div>
+                <div class="agt-badge agt-badge-b">B1</div>
+              </div>
+              <div class="agt-card-b" id="agtB2">
+                <div class="agt-av agt-av-b">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8.5" r="4" fill="rgba(100,222,242,0.88)"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(100,222,242,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="agt-node-amt">3000</div>
+                <div class="agt-node-cm">×10%=300</div>
+                <div class="agt-badge agt-badge-b">B2</div>
+              </div>
+            </div>
+
+            <!-- ── Row C: C1 + C2 + C3 ── -->
+            <div class="agt-row agt-row-c">
+              <div class="agt-card-c" id="agtC1">
+                <div class="agt-av agt-av-c">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8.5" r="4" fill="rgba(82,208,162,0.88)"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(82,208,162,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="agt-node-amt">1000</div>
+                <div class="agt-node-cm2">×10%×30%<br>=30</div>
+                <div class="agt-badge agt-badge-c">C1</div>
+              </div>
+              <div class="agt-card-c" id="agtC2">
+                <div class="agt-av agt-av-c">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8.5" r="4" fill="rgba(82,208,162,0.88)"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(82,208,162,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="agt-node-amt">2000</div>
+                <div class="agt-node-cm2">×10%×30%<br>=60</div>
+                <div class="agt-badge agt-badge-c">C2</div>
+              </div>
+              <div class="agt-card-c" id="agtC3">
+                <div class="agt-av agt-av-c">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8.5" r="4" fill="rgba(82,208,162,0.88)"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(82,208,162,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="agt-node-amt">20000</div>
+                <div class="agt-node-cm2">×10%×30%<br>=600</div>
+                <div class="agt-badge agt-badge-c">C3</div>
+              </div>
+            </div>
+
+            <!-- ── N Note ── -->
+            <div class="agt-note-row">
+              <div class="agt-n-circle">N</div>
+              <p class="agt-n-text">
+                (မရေတွက်နိုင်သော လက်အောက်ငယ်သားများ)<br>
+                အဆင်တိုင်းသည် A အတွက် ကော်မရှင် ထပ်ပေးမည်။<br>
+                Downline အဆင် အကန့်အသတ်မရှိဘဲ ပိုကောင်းလေပါ။
+              </p>
+            </div>
+
+          </div><!-- .agt-tree-body -->
+        </div><!-- .agt-tree-outer -->
+      </div><!-- .nn-wrap -->
+
+      <!-- ── Tree Engine ─────────────────────────────────── -->
       <script>
       (function(){
-        /* ── State ────────────────────────────────────────── */
-        var C, X, NW, NH, dpr;
-        var _tick = 0, _raf = null, _inited = false, _rtCh = null;
-        var _rotY = 0, _rotVel = 0.003;
-        var _dragging = false, _dragX0 = 0, _rotY0 = 0, _prevX = 0;
-        var _aLetter = 'A';
+        var _raf=null, _paths=[], _rtCh=null;
 
-        /* ── Layout (set in nnInit) ───────────────────────── */
-        var GR = 130, GCX, GCY;
-        /* ── Agent node anchor (globe center top) ─────────── */
-        var ACX = 0, ACY = 0, ACR = 14;
-
-        /* ── Flowing-particle state for right-side tree ───── */
-        /* ei = edge index 0-4, t = progress 0→1, speed */
-        var _tparts = [
-          {ei:0,t:0.00,sp:0.0070},{ei:0,t:0.55,sp:0.0065},
-          {ei:1,t:0.20,sp:0.0068},{ei:1,t:0.75,sp:0.0072},
-          {ei:2,t:0.10,sp:0.0060},{ei:2,t:0.62,sp:0.0075},
-          {ei:3,t:0.35,sp:0.0065},{ei:3,t:0.82,sp:0.0070},
-          {ei:4,t:0.45,sp:0.0068},{ei:4,t:0.90,sp:0.0062},
-        ];
-        var TILT = Math.PI / 9; /* ~20° view-from-above */
-
-        /* ── Static decorative nodes (always on globe) ───── */
-        var GNODES = [
-          { lat:  0.52, lon: -1.22, lbl: 'B1', type: 'b', r: 17 },
-          { lat:  0.44, lon:  0.96, lbl: 'B2', type: 'b', r: 17 },
-          { lat:  0.84, lon:  0.26, lbl: 'C1', type: 'c', r: 13 },
-          { lat: -0.09, lon: -0.61, lbl: 'C2', type: 'c', r: 13 },
-          { lat:  0.38, lon:  1.75, lbl: 'C3', type: 'c', r: 13 },
-          { lat:  0.66, lon: -0.70, lbl: 'N1', type: 'n', r: 10 },
-          { lat: -0.31, lon:  1.31, lbl: 'N2', type: 'n', r: 10 },
-        ];
-
-        /* ── Connection edges (AGENT = avatar top) ────────── */
-        var EDGES = [
-          ['AGENT','B1'],['AGENT','B2'],
-          ['B1','C1'],['B1','C2'],
-          ['B2','C3'],
-          ['C1','N1'],
-          ['C3','N2'],
-        ];
-
-        /* ── Pre-generated globe dot cloud (seeded) ───────── */
-        var GDOTS = (function(){
-          var out=[], s=0xDEAD1337, a=1664525, c=1013904223;
-          function rnd(){ s=((s*a+c)>>>0); return s/0x100000000; }
-          for(var lt=-80;lt<=80;lt+=4){
-            var latR=lt*Math.PI/180, cosL=Math.cos(latR);
-            var lStep=Math.max(4, 4/Math.max(0.15,cosL));
-            for(var ln=-180;ln<180;ln+=lStep){
-              if(rnd()<0.48) continue;
-              out.push({ lat:latR, lon:ln*Math.PI/180 });
-            }
+        /* ── Draw star/particle background ─────────────── */
+        function drawStars(){
+          var c=document.getElementById('agtStarBg');
+          var w=document.getElementById('agtTreeOuter');
+          if(!c||!w||!w.offsetWidth) return;
+          var dpr=window.devicePixelRatio||1;
+          c.width=w.offsetWidth*dpr; c.height=w.offsetHeight*dpr;
+          c.style.width=w.offsetWidth+'px'; c.style.height=w.offsetHeight+'px';
+          var ctx=c.getContext('2d'); ctx.scale(dpr,dpr);
+          var ow=w.offsetWidth, oh=w.offsetHeight;
+          var s=0xABCD1234,a=1664525,co=1013904223;
+          function rnd(){ s=((s*a+co)>>>0); return s/0x100000000; }
+          /* tiny dim stars */
+          for(var i=0;i<100;i++){
+            ctx.beginPath();
+            ctx.fillStyle='rgba(155,165,255,'+(rnd()*0.40+0.06)+')';
+            ctx.arc(rnd()*ow,rnd()*oh,rnd()*1.3+0.2,0,6.283);
+            ctx.fill();
           }
-          return out;
-        })();
-
-        /* ── Orthographic projection with tilt ────────────── */
-        function proj(lat,lon){
-          var la=lon+_rotY;
-          var x3=Math.cos(lat)*Math.sin(la);
-          var y3=-Math.sin(lat)*Math.cos(TILT)+Math.cos(lat)*Math.cos(la)*Math.sin(TILT);
-          var z3= Math.sin(lat)*Math.sin(TILT)+Math.cos(lat)*Math.cos(la)*Math.cos(TILT);
-          return { sx:GCX+GR*x3, sy:GCY+GR*y3, z:z3 };
-        }
-
-        /* ── Draw half-sphere globe (Cloudflare Region:Earth style) ── */
-        function drawGlobe(){
-          /* clip canvas so only top portion of sphere shows */
-          X.save();
-          X.beginPath();
-          X.rect(0, 0, NW, NH);
-          X.clip();
-
-          /* warm amber atmosphere glow */
-          var atm=X.createRadialGradient(GCX,GCY,GR*0.75,GCX,GCY,GR*1.30);
-          atm.addColorStop(0,'rgba(0,0,0,0)');
-          atm.addColorStop(0.55,'rgba(180,80,10,0.06)');
-          atm.addColorStop(1,'rgba(255,120,30,0.18)');
-          X.fillStyle=atm;
-          X.beginPath(); X.arc(GCX,GCY,GR*1.30,0,6.283); X.fill();
-
-          /* dark globe base */
-          X.fillStyle='rgba(6,8,18,0.92)';
-          X.beginPath(); X.arc(GCX,GCY,GR,0,6.283); X.fill();
-          X.strokeStyle='rgba(200,100,30,0.20)'; X.lineWidth=1.0; X.stroke();
-
-          /* latitude grid lines — amber tint */
-          for(var lt=-60;lt<=60;lt+=30){
-            var latR=lt*Math.PI/180;
-            X.save(); X.strokeStyle='rgba(220,130,40,0.09)'; X.lineWidth=0.5;
-            var st=false;
-            for(var ld=0;ld<=362;ld+=3){
-              var p=proj(latR,ld*Math.PI/180-Math.PI);
-              if(p.z>0){ if(!st){X.beginPath();X.moveTo(p.sx,p.sy);st=true;}else X.lineTo(p.sx,p.sy); }
-              else if(st){ X.stroke(); st=false; }
-            }
-            if(st) X.stroke(); X.restore();
+          /* brighter accent stars */
+          for(var j=0;j<14;j++){
+            ctx.save();
+            ctx.shadowColor='rgba(180,185,255,0.95)'; ctx.shadowBlur=6;
+            ctx.beginPath();
+            ctx.fillStyle='rgba(215,220,255,'+(rnd()*0.45+0.30)+')';
+            ctx.arc(rnd()*ow,rnd()*oh,rnd()*1.5+0.5,0,6.283);
+            ctx.fill();
+            ctx.restore();
           }
-
-          /* longitude grid lines */
-          for(var ln=0;ln<360;ln+=30){
-            var lonR=(ln-180)*Math.PI/180;
-            X.save(); X.strokeStyle='rgba(200,110,30,0.07)'; X.lineWidth=0.5;
-            var st2=false;
-            for(var ld2=-84;ld2<=84;ld2+=3){
-              var p2=proj(ld2*Math.PI/180,lonR);
-              if(p2.z>0){ if(!st2){X.beginPath();X.moveTo(p2.sx,p2.sy);st2=true;}else X.lineTo(p2.sx,p2.sy); }
-              else if(st2){ X.stroke(); st2=false; }
-            }
-            if(st2) X.stroke(); X.restore();
-          }
-
-          /* surface dot cloud — orange/amber */
-          GDOTS.forEach(function(d){
-            var p=proj(d.lat,d.lon);
-            if(p.z<=0.05) return;
-            var al=Math.min(p.z*0.72,0.58);
-            var sz=p.z*1.8+0.28;
-            /* gradient from bright orange near equator to dimmer at edges */
-            var r=Math.round(255), g=Math.round(90+p.z*55), b=Math.round(10+p.z*15);
-            X.fillStyle='rgba('+r+','+g+','+b+','+al*0.85+')';
-            X.beginPath(); X.arc(p.sx,p.sy,sz,0,6.283); X.fill();
-          });
-
-          /* horizon edge glow */
-          var hrg=X.createRadialGradient(GCX,GCY,GR*0.88,GCX,GCY,GR);
-          hrg.addColorStop(0,'rgba(0,0,0,0)');
-          hrg.addColorStop(1,'rgba(255,100,20,0.12)');
-          X.fillStyle=hrg;
-          X.beginPath(); X.arc(GCX,GCY,GR,0,6.283); X.fill();
-
-          X.restore();
+          /* subtle nebula glow near center */
+          var ng=ctx.createRadialGradient(ow*0.5,oh*0.38,0,ow*0.5,oh*0.38,ow*0.55);
+          ng.addColorStop(0,'rgba(90,50,180,0.07)');
+          ng.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.fillStyle=ng;
+          ctx.fillRect(0,0,ow,oh);
         }
 
-        /* ── Draw arc connection line + traveling dot ─────── */
-        function drawEdge(x1,y1,x2,y2,edgeIdx){
-          var mx=(x1+x2)/2, dist=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-          var cpy=(y1+y2)/2 - dist*0.40, cpx=mx;
-          /* line — amber/orange */
-          X.save();
-          X.globalAlpha=0.65;
-          X.shadowColor='rgba(255,130,30,0.5)'; X.shadowBlur=5;
-          X.strokeStyle='rgba(255,140,40,0.72)'; X.lineWidth=0.9;
-          X.beginPath(); X.moveTo(x1,y1); X.quadraticCurveTo(cpx,cpy,x2,y2); X.stroke();
-          X.restore();
-          /* traveling pulse dot — bright orange */
-          var t=((_tick*0.42+edgeIdx*22)%100)/100, mt=1-t;
-          var px=mt*mt*x1+2*mt*t*cpx+t*t*x2;
-          var py=mt*mt*y1+2*mt*t*cpy+t*t*y2;
-          X.save();
-          X.shadowColor='rgba(255,180,60,1)'; X.shadowBlur=11;
-          X.fillStyle='rgba(255,200,80,0.95)';
-          X.beginPath(); X.arc(px,py,2.1,0,6.283); X.fill(); X.restore();
+        /* ── Element center/bounds relative to outer wrap ── */
+        function pos(id){
+          var el=document.getElementById(id);
+          var wr=document.getElementById('agtTreeOuter');
+          if(!el||!wr) return null;
+          var er=el.getBoundingClientRect(), wR=wr.getBoundingClientRect();
+          return {
+            cx:er.left-wR.left+er.width/2,
+            cy:er.top-wR.top+er.height/2,
+            top:er.top-wR.top,
+            bot:er.bottom-wR.top
+          };
         }
 
-        /* ── Build node map + draw globe nodes & edges ────── */
-        function drawNetwork(){
-          /* project all nodes */
-          var map={};
-          GNODES.forEach(function(nd){
-            var p=proj(nd.lat,nd.lon);
-            map[nd.lbl]={ sx:p.sx, sy:p.sy, z:p.z, nd:nd };
-          });
+        /* ── Build SVG bezier lines with animated dots ─── */
+        function buildLines(){
+          var svg=document.getElementById('agtLineSvg');
+          var wr=document.getElementById('agtTreeOuter');
+          if(!svg||!wr||!wr.offsetWidth) return;
+          svg.innerHTML='';
+          var W=wr.offsetWidth, H=wr.offsetHeight;
+          svg.setAttribute('viewBox','0 0 '+W+' '+H);
+          svg.setAttribute('width',W); svg.setAttribute('height',H);
 
-          /* draw edges (behind nodes) */
-          EDGES.forEach(function(e,ei){
-            var fk=e[0], tk=e[1];
-            var fx,fy, fn=map[fk], tn=map[tk];
-            if(fk==='AGENT'){ fx=ACX; fy=ACY+ACR+2; }
-            else{ if(!fn||fn.z<=0) return; fx=fn.sx; fy=fn.sy; }
-            if(!tn||tn.z<=0) return;
-            drawEdge(fx,fy,tn.sx,tn.sy,ei);
-          });
+          /* define defs for glow filter */
+          var defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+          defs.innerHTML='<filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+          svg.appendChild(defs);
 
-          /* draw nodes (sort back-to-front) */
-          var vis=GNODES.filter(function(nd){ var m=map[nd.lbl]; return m&&m.z>0; });
-          vis.sort(function(a,b){ return map[a.lbl].z-map[b.lbl].z; });
-
-          vis.forEach(function(nd){
-            var m=map[nd.lbl], p=m, r=nd.r;
-            var pls=Math.sin(_tick*0.042+nd.lon)*0.5+0.5;
-
-            /* colors by type — orange/amber theme */
-            var fillC = nd.type==='b' ? 'rgba(160,65,10,0.96)' : nd.type==='c' ? 'rgba(120,50,8,0.92)' : 'rgba(80,35,6,0.88)';
-            var brdC  = nd.type==='b' ? 'rgba(255,150,50,'+(0.60+pls*0.35)+')' : nd.type==='c' ? 'rgba(230,120,35,'+(0.48+pls*0.28)+')' : 'rgba(200,100,25,'+(0.32+pls*0.20)+')';
-            var glowC = nd.type==='b' ? 'rgba(255,140,40,0.80)' : nd.type==='c' ? 'rgba(230,115,30,0.65)' : 'rgba(200,95,20,0.45)';
-
-            /* glow ring */
-            X.save(); X.shadowColor=glowC; X.shadowBlur=13;
-            X.strokeStyle=brdC; X.lineWidth=1.2;
-            X.beginPath(); X.arc(p.sx,p.sy,r+4,0,6.283); X.stroke(); X.restore();
-
-            /* fill */
-            X.save(); X.shadowColor=glowC; X.shadowBlur=14;
-            X.fillStyle=fillC;
-            X.beginPath(); X.arc(p.sx,p.sy,r,0,6.283); X.fill(); X.restore();
-
-            /* border */
-            X.save(); X.strokeStyle=brdC; X.lineWidth=1.2;
-            X.beginPath(); X.arc(p.sx,p.sy,r,0,6.283); X.stroke(); X.restore();
-
-            /* highlight */
-            X.save(); X.fillStyle='rgba(220,205,255,0.42)';
-            X.beginPath(); X.arc(p.sx-r*0.32,p.sy-r*0.32,r*0.26,0,6.283); X.fill(); X.restore();
-
-            /* label */
-            var fSize=nd.type==='b'?'bold 9px':'nd.type==="c"?bold 8px:7px'; // fallback
-            var fS=nd.type==='b'?'bold 9px sans-serif':nd.type==='c'?'bold 8px sans-serif':'7px sans-serif';
-            X.save(); X.fillStyle='#fff'; X.font=fS;
-            X.textAlign='center'; X.textBaseline='middle';
-            X.fillText(nd.lbl,p.sx,p.sy); X.restore();
-          });
-        }
-
-        /* ── Right-side flowing network tree ─────────────── */
-        function drawTree(){
-          /* use NW-based percentages — decoupled from globe size */
-          var rx0 = Math.round(NW * 0.42);
-          var rw  = NW - rx0 - 4;
-          if(rw < 60) return;
-          var TX = rx0 + Math.round(rw * 0.5);
-
-          /* vertical levels — guaranteed within NH */
-          var yA = GCY - GR * 0.52;
-          var yB = GCY + GR * 0.30;
-          var yC = NH - 22;            /* always 22px from canvas bottom */
-
-          /* horizontal positions */
-          var dx = rw * 0.26;
-          var xB1= TX - dx,  xB2 = TX + dx;
-          var xC1= TX - dx*1.45, xC2 = TX - dx*0.10, xC3 = TX + dx;
-
-          /* node definitions */
-          var NS = [
-            {x:TX,  y:yA, r:13, lbl:'A',  col:'#a78bfa', glow:'#7c3aed'},
-            {x:xB1, y:yB, r:10, lbl:'B1', col:'#67e8f9', glow:'#0891b2'},
-            {x:xB2, y:yB, r:10, lbl:'B2', col:'#67e8f9', glow:'#0891b2'},
-            {x:xC1, y:yC, r:8,  lbl:'C1', col:'#34d399', glow:'#059669'},
-            {x:xC2, y:yC, r:8,  lbl:'C2', col:'#34d399', glow:'#059669'},
-            {x:xC3, y:yC, r:8,  lbl:'C3', col:'#34d399', glow:'#059669'},
+          var conns=[
+            {from:'agtA',  to:'agtB1', col:'rgba(130,120,255,0.55)', dc:'rgba(200,190,255,0.95)'},
+            {from:'agtA',  to:'agtB2', col:'rgba(130,120,255,0.55)', dc:'rgba(200,190,255,0.95)'},
+            {from:'agtB1', to:'agtC1', col:'rgba(72,185,220,0.50)',  dc:'rgba(170,235,255,0.95)'},
+            {from:'agtB1', to:'agtC2', col:'rgba(72,185,220,0.50)',  dc:'rgba(170,235,255,0.95)'},
+            {from:'agtB2', to:'agtC3', col:'rgba(72,185,220,0.50)',  dc:'rgba(170,235,255,0.95)'},
           ];
+          _paths=[];
 
-          /* edges: [fromIdx, toIdx] */
-          var ES = [[0,1],[0,2],[1,3],[1,4],[2,5]];
+          conns.forEach(function(c,i){
+            var p0=pos(c.from), p1=pos(c.to);
+            if(!p0||!p1) return;
+            var x0=p0.cx, y0=p0.bot;
+            var x1=p1.cx, y1=p1.top;
+            /* control point: midpoint, bowed slightly outward */
+            var mx=(x0+x1)/2, my=(y0+y1)/2;
+            var bow=(x1-x0)*0.12;
+            var cpx=mx+bow, cpy=my;
+            var d='M'+x0.toFixed(1)+','+y0.toFixed(1)+
+                  ' Q'+cpx.toFixed(1)+','+cpy.toFixed(1)+
+                  ' '+x1.toFixed(1)+','+y1.toFixed(1);
 
-          /* helper: quadratic bezier point */
-          function qbez(t, p0, cp, p1){
-            var mt=1-t;
-            return {x:mt*mt*p0.x+2*mt*t*cp.x+t*t*p1.x,
-                    y:mt*mt*p0.y+2*mt*t*cp.y+t*t*p1.y};
-          }
+            /* glow halo behind line */
+            var gl=document.createElementNS('http://www.w3.org/2000/svg','path');
+            gl.setAttribute('d',d); gl.setAttribute('fill','none');
+            gl.setAttribute('stroke',c.col.replace(/[\d.]+\)$/,'0.10)'));
+            gl.setAttribute('stroke-width','8');
+            svg.appendChild(gl);
 
-          /* control point — arc outward between nodes */
-          function cp(n0,n1){
-            var mx=(n0.x+n1.x)/2, my=(n0.y+n1.y)/2;
-            var ox=(n1.x-n0.x)*0.18; /* slight outward bow */
-            return {x:mx+ox, y:my-(Math.abs(n1.x-n0.x))*0.15};
-          }
+            /* main line */
+            var ln=document.createElementNS('http://www.w3.org/2000/svg','path');
+            ln.setAttribute('d',d); ln.setAttribute('fill','none');
+            ln.setAttribute('stroke',c.col); ln.setAttribute('stroke-width','1.8');
+            svg.appendChild(ln);
 
-          /* ① Draw static edge lines */
-          ES.forEach(function(e){
-            var n0=NS[e[0]], n1=NS[e[1]], cpt=cp(n0,n1);
-            X.save();
-            X.strokeStyle='rgba(103,232,249,0.45)';
-            X.lineWidth=1.6;
-            X.beginPath(); X.moveTo(n0.x,n0.y);
-            X.quadraticCurveTo(cpt.x,cpt.y,n1.x,n1.y);
-            X.stroke();
-            X.restore();
-          });
+            /* animated dot */
+            var dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+            dot.setAttribute('r','3.5');
+            dot.setAttribute('fill',c.dc);
+            dot.setAttribute('filter','url(#dotGlow)');
+            svg.appendChild(dot);
 
-          /* ② Update + draw flowing particles */
-          _tparts.forEach(function(p){
-            p.t += p.sp; if(p.t>1) p.t=0;
-            var e=ES[p.ei]; if(!e) return;
-            var n0=NS[e[0]], n1=NS[e[1]], cpt=cp(n0,n1);
-            var pt=qbez(p.t,n0,cpt,n1);
-            /* tail glow */
-            X.save();
-            X.shadowColor='rgba(103,232,249,1)'; X.shadowBlur=10;
-            X.fillStyle='rgba(220,250,255,0.95)';
-            X.beginPath(); X.arc(pt.x,pt.y,2.4,0,6.283); X.fill();
-            X.restore();
-          });
-
-          /* ③ Draw nodes */
-          NS.forEach(function(n){
-            /* outer glow */
-            X.save();
-            X.shadowColor=n.glow; X.shadowBlur=16;
-            var gr=X.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r+4);
-            gr.addColorStop(0,n.col+'44'); gr.addColorStop(1,n.col+'00');
-            X.fillStyle=gr;
-            X.beginPath(); X.arc(n.x,n.y,n.r+4,0,6.283); X.fill();
-            /* dark fill */
-            X.fillStyle='#0a0f1e';
-            X.beginPath(); X.arc(n.x,n.y,n.r,0,6.283); X.fill();
-            /* colored border */
-            X.strokeStyle=n.col; X.lineWidth=1.6;
-            X.beginPath(); X.arc(n.x,n.y,n.r,0,6.283); X.stroke();
-            /* label */
-            X.fillStyle='#fff';
-            X.font='bold '+Math.round(n.r*0.85)+'px sans-serif';
-            X.textAlign='center'; X.textBaseline='middle';
-            X.fillText(n.lbl,n.x,n.y+0.5);
-            X.restore();
+            _paths.push({
+              dot:dot, x0:x0,y0:y0,cpx:cpx,cpy:cpy,x1:x1,y1:y1,
+              t:(i/conns.length), sp:0.0038+i*0.0004
+            });
           });
         }
 
-        /* ── Main render loop ─────────────────────────────── */
-        function _loop(){
-          _raf=requestAnimationFrame(_loop); _tick++;
-          /* rotation */
-          if(!_dragging){ _rotVel=_rotVel*0.95+0.003*0.05; _rotY+=_rotVel; }
-          /* clear — very dark warm-tinted background */
-          X.clearRect(0,0,NW,NH);
-          X.fillStyle='rgba(6,5,10,1)'; X.fillRect(0,0,NW,NH);
-          /* render */
-          drawGlobe();
-          drawNetwork();
-          drawTree();
+        function qbez(t,a,b,c){ var m=1-t; return m*m*a+2*m*t*b+t*t*c; }
+
+        /* ── RAF animation loop ─────────────────────────── */
+        function loop(){
+          _raf=requestAnimationFrame(loop);
+          _paths.forEach(function(p){
+            p.t+=p.sp; if(p.t>1) p.t=0;
+            p.dot.setAttribute('cx',qbez(p.t,p.x0,p.cpx,p.x1).toFixed(1));
+            p.dot.setAttribute('cy',qbez(p.t,p.y0,p.cpy,p.y1).toFixed(1));
+          });
         }
 
-        /* ── Init canvas (compact half-sphere layout) ────── */
-        function nnInit(){
-          C=document.getElementById('nnCanvas');
-          if(!C) return;
-          var wrap=document.getElementById('nnCanvasWrap');
-          var realW=wrap.clientWidth;
-          /* Skip only if already inited with correct dimensions.
-             Allow reinit when page was hidden (realW was 0) and now visible. */
-          if(_inited && (realW===0 || Math.abs(realW-NW)<5)) return;
-          _inited=true;
-          if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
-
-          NW=realW||360;
-          GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
-          GCX=GR+14;                               /* globe left-aligned */
-          GCY=GR+28;                               /* globe-only, no avatar above */
-          /* tall enough: full globe height + tree C-level padding */
-          NH=Math.round(GCY+GR*1.10+12);
-          /* ── Fix ACX/ACY/ACR: agent anchor = top of globe ── */
-          ACX=GCX; ACY=GCY-GR; ACR=14;
-          dpr=window.devicePixelRatio||1;
-          C.width=NW*dpr; C.height=NH*dpr;
-          C.style.width=NW+'px'; C.style.height=NH+'px';
-          wrap.style.height=NH+'px';
-          X=C.getContext('2d'); X.scale(dpr,dpr);
-
-          /* drag handlers — attach only once */
-          if(!C._nnHandlers){
-            C._nnHandlers=true;
-            function onStart(px){ _dragging=true; _dragX0=px; _rotY0=_rotY; _prevX=px; _rotVel=0; }
-            function onMove(px){
-              if(!_dragging) return;
-              _rotVel=(px-_prevX)*0.004; _prevX=px;
-              _rotY=_rotY0+(px-_dragX0)*0.006;
-            }
-            function onEnd(){ _dragging=false; }
-            C.addEventListener('mousedown',function(e){onStart(e.clientX);});
-            window.addEventListener('mousemove',function(e){onMove(e.clientX);});
-            window.addEventListener('mouseup',onEnd);
-            C.addEventListener('touchstart',function(e){onStart(e.touches[0].clientX);e.preventDefault();},{passive:false});
-            C.addEventListener('touchmove',function(e){onMove(e.touches[0].clientX);e.preventDefault();},{passive:false});
-            C.addEventListener('touchend',onEnd);
-          }
-
-          _loop();
-        }
-
-        /* ── Get agent first letter (from ref_code or name, NOT phone) ── */
-        function _getLetter(){
-          /* Try ref_code first — "D-A3B9K" → "D" (always a letter) */
-          if(window.currentRefCode){
-            var rc=String(window.currentRefCode).replace(/[^A-Za-z]/g,'');
-            if(rc.length){ _aLetter=rc.charAt(0).toUpperCase(); return; }
-          }
-          /* Try display ref_code from DOM */
-          var refEl=document.getElementById('agentPhoneDisplay')||document.getElementById('inv-refcode');
-          if(refEl){ var rt=refEl.textContent.replace(/[^A-Za-z]/g,'').trim(); if(rt){ _aLetter=rt.charAt(0).toUpperCase(); return; } }
-          /* Fallback — always show "A" (Agent) */
-          _aLetter='A';
-        }
-
-        /* ── Supabase member count (live badge only) ─────── */
+        /* ── Member count badge via Supabase ────────────── */
         function nnSubscribe(agentId){
           if(!window.DB||!agentId) return;
           function fetchCount(){
@@ -740,59 +578,64 @@ async function loadAgentIcons() {
           fetchCount();
           if(_rtCh) try{ window.DB.removeChannel(_rtCh); }catch(e){}
           _rtCh=window.DB.channel('nn_cnt_'+agentId)
-            .on('postgres_changes',{event:'*',schema:'public',table:'users',filter:'referrer_id=eq.'+agentId},
-              function(){
-                fetchCount();
+            .on('postgres_changes',{event:'*',schema:'public',table:'users',
+                filter:'referrer_id=eq.'+agentId},
+              function(){ fetchCount();
                 var dot=document.getElementById('nnLiveDot');
-                if(dot){ dot.classList.add('flash'); setTimeout(function(){ dot.classList.remove('flash'); },1200); }
+                if(dot){ dot.classList.add('flash');
+                  setTimeout(function(){ dot.classList.remove('flash'); },1200); }
               })
             .subscribe();
         }
 
-        /* ── Bootstrap ────────────────────────────────────── */
+        /* ── Init (called when tree is visible) ─────────── */
+        function treeInit(){
+          var wr=document.getElementById('agtTreeOuter');
+          if(!wr||!wr.offsetWidth) return;
+          if(wr._ti && wr.offsetWidth===wr._tiW) return;
+          wr._ti=true; wr._tiW=wr.offsetWidth;
+          if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
+          drawStars();
+          /* settle layout then measure node positions */
+          setTimeout(function(){
+            buildLines();
+            loop();
+          },80);
+        }
+
+        /* ── Bootstrap ──────────────────────────────────── */
         function _boot(){
-          _getLetter(); nnInit();
-          /* watch ref_code display element for letter updates */
-          var phEl=document.getElementById('agentPhoneDisplay')||document.getElementById('inv-refcode');
-          if(phEl){
-            var obs=new MutationObserver(function(){ _getLetter(); });
-            obs.observe(phEl,{childList:true,subtree:true,characterData:true});
-          }
+          treeInit();
           if(window.currentAgentId){
             nnSubscribe(window.currentAgentId);
           } else {
-            var tries=0;
-            var w=setInterval(function(){
-              tries++; _getLetter();
+            var tries=0, iv=setInterval(function(){
+              tries++;
               if(window.currentAgentId||tries>50){
-                clearInterval(w);
+                clearInterval(iv);
                 if(window.currentAgentId) nnSubscribe(window.currentAgentId);
               }
             },400);
           }
         }
 
-        /* ── Run ──────────────────────────────────────────── */
         if(document.readyState==='loading'){
           document.addEventListener('DOMContentLoaded',function(){ setTimeout(_boot,700); });
-        } else {
-          setTimeout(_boot,700);
-        }
+        } else { setTimeout(_boot,700); }
 
-        /* Reinit canvas when wrap becomes visible (user opens Agent page) */
+        /* Reinit when tree scrolls into view */
         (function(){
-          var _wrapEl=document.getElementById('nnCanvasWrap');
-          if(!_wrapEl) return;
-          var _io=new IntersectionObserver(function(entries){
-            if(entries[0].isIntersecting){ setTimeout(nnInit,80); }
-          },{threshold:0.05});
-          _io.observe(_wrapEl);
+          var el=document.getElementById('agtTreeOuter');
+          if(!el) return;
+          new IntersectionObserver(function(entries){
+            if(entries[0].isIntersecting) setTimeout(treeInit,80);
+          },{threshold:0.05}).observe(el);
         })();
 
-        /* Also reinit on agent main-tab click */
+        /* Reinit on agent main-tab click */
         document.addEventListener('click',function(e){
           var btn=e.target&&e.target.closest&&e.target.closest('[data-atab]');
-          if(btn&&btn.dataset.atab==='main') setTimeout(nnInit,350);
+          if(btn&&btn.dataset.atab==='main') setTimeout(treeInit,300);
         });
       })();
       </script>
