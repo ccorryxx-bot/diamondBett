@@ -787,11 +787,11 @@
   margin: 16px 0 12px;
   border-radius: 18px;
   overflow: hidden;
-  background: linear-gradient(145deg, rgba(4,10,42,0.97) 0%, rgba(6,3,24,0.98) 100%);
-  border: 1px solid rgba(100,75,255,0.28);
+  background: linear-gradient(145deg, rgba(10,7,20,0.97) 0%, rgba(6,3,14,0.98) 100%);
+  border: 1px solid rgba(180,100,30,0.30);
   box-shadow:
-    0 0 32px rgba(80,55,200,0.14),
-    0 0 0 1px rgba(0,180,255,0.06),
+    0 0 32px rgba(180,90,20,0.12),
+    0 0 0 1px rgba(255,140,40,0.05),
     inset 0 0 24px rgba(0,0,0,0.35);
 }
 
@@ -800,7 +800,7 @@
   align-items: center;
   gap: 8px;
   padding: 11px 16px 10px;
-  border-bottom: 1px solid rgba(100,75,255,0.14);
+  border-bottom: 1px solid rgba(180,100,30,0.16);
   background: rgba(0,0,0,0.22);
 }
 
@@ -815,8 +815,8 @@
   transition: background .3s, box-shadow .3s;
 }
 .nn-live-dot.flash {
-  background: #00e8ff;
-  box-shadow: 0 0 16px #00e8ff, 0 0 4px #00e8ff;
+  background: #ffb030;
+  box-shadow: 0 0 16px #ffb030, 0 0 4px #ffb030;
 }
 @keyframes nn-pulse-dot {
   0%,100% { opacity:1; transform:scale(1); }
@@ -827,26 +827,26 @@
   flex: 1;
   font-size: 11px;
   font-weight: 700;
-  color: rgba(200,178,255,0.92);
+  color: rgba(230,200,160,0.90);
   letter-spacing: .35px;
 }
 
 .nn-count {
   font-size: 10px;
   font-weight: 700;
-  color: rgba(0,225,255,0.85);
-  background: rgba(0,210,255,0.08);
-  border: 1px solid rgba(0,200,255,0.22);
+  color: rgba(255,180,80,0.88);
+  background: rgba(255,140,30,0.08);
+  border: 1px solid rgba(200,120,30,0.24);
   padding: 3px 9px;
   border-radius: 20px;
   letter-spacing: .2px;
 }
 
-/* ── Canvas wrapper (height set by JS) ──────────────── */
+/* ── Canvas wrapper (height set by JS — compact half-sphere) ── */
 .nn-canvas-wrap {
   position: relative;
   width: 100%;
-  min-height: 380px;
+  min-height: 220px;
   overflow: hidden;
 }
 .nn-canvas-wrap canvas {
@@ -861,7 +861,7 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: 9px;
-  color: rgba(0,200,255,0.35);
+  color: rgba(200,130,50,0.38);
   letter-spacing: .5px;
   pointer-events: none;
   font-style: italic;
