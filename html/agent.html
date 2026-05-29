@@ -555,20 +555,21 @@ async function loadAgentIcons() {
 
         /* ── Right-side flowing network tree ─────────────── */
         function drawTree(){
-          var rx0 = GCX + GR + 12;
-          var rw  = NW - rx0 - 6;
-          if(rw < 50) return;
-          var TX = rx0 + rw * 0.5;
+          /* use NW-based percentages — decoupled from globe size */
+          var rx0 = Math.round(NW * 0.42);
+          var rw  = NW - rx0 - 4;
+          if(rw < 60) return;
+          var TX = rx0 + Math.round(rw * 0.5);
 
-          /* vertical levels */
-          var yA = GCY - GR * 0.58;
-          var yB = GCY + GR * 0.04;
-          var yC = GCY + GR * 0.62;
+          /* vertical levels — guaranteed within NH */
+          var yA = GCY - GR * 0.52;
+          var yB = GCY + GR * 0.30;
+          var yC = NH - 22;            /* always 22px from canvas bottom */
 
           /* horizontal positions */
-          var dx = rw * 0.27;
+          var dx = rw * 0.26;
           var xB1= TX - dx,  xB2 = TX + dx;
-          var xC1= TX - dx*1.48, xC2 = TX - dx*0.08, xC3 = TX + dx;
+          var xC1= TX - dx*1.45, xC2 = TX - dx*0.10, xC3 = TX + dx;
 
           /* node definitions */
           var NS = [
@@ -669,9 +670,9 @@ async function loadAgentIcons() {
           NW=wrap.clientWidth||360;
           GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
           GCX=GR+14;                               /* globe left-aligned */
-          GCY=GR+26;                               /* globe-only, no avatar above */
-          /* show 68% below globe centre — enough room for tree C-level */
-          NH=Math.round(GCY+GR*0.68);
+          GCY=GR+28;                               /* globe-only, no avatar above */
+          /* tall enough: full globe height + tree C-level padding */
+          NH=Math.round(GCY+GR*1.10+12);
           dpr=window.devicePixelRatio||1;
           C.width=NW*dpr; C.height=NH*dpr;
           C.style.width=NW+'px'; C.style.height=NH+'px';
