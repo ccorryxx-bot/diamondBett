@@ -21,10 +21,10 @@
 
   <!-- Bonus Code -->
   <div class="bonus-section">
-    <div class="bonus-label">Bonus Code ထည့်ပါ</div>
+    <div class="bonus-label" data-i18n="bonus_label">Bonus Code ထည့်ပါ</div>
     <div class="bonus-wrap">
-      <input type="text" id="bonusCodeInput" class="bonus-input" placeholder="DIAMOND-XXXX" autocapitalize="characters">
-      <button id="bonusCodeBtn" class="bonus-btn">လက်ခံ</button>
+      <input type="text" id="bonusCodeInput" class="bonus-input" placeholder="DIAMOND-XXXX" data-i18n-placeholder="ph_bonus" autocapitalize="characters">
+      <button id="bonusCodeBtn" class="bonus-btn" data-i18n="bonus_btn">လက်ခံ</button>
     </div>
   </div>
 
@@ -51,7 +51,7 @@
       <button id="spinBtn" class="wheel-spin-btn" disabled>SPIN</button>
 
       <div class="turnover-section">
-        <div class="turnover-title">TURNOVER သတ်မှတ်ချက်</div>
+        <div class="turnover-title" data-i18n="turnover_title">TURNOVER သတ်မှတ်ချက်</div>
         <div class="turnover-grid">
           <div class="to-item"><span>5,000 ကျပ်</span><span>×5</span></div>
           <div class="to-item"><span>15,000 ကျပ်</span><span>×6</span></div>
@@ -66,7 +66,7 @@
     <!-- Task List -->
     <div class="tasks-divider">
       <div class="tasks-divider-line"></div>
-      <div class="tasks-divider-text">အလုပ်များ</div>
+      <div class="tasks-divider-text" data-i18n="section_tasks">အလုပ်များ</div>
       <div class="tasks-divider-line"></div>
     </div>
 
@@ -78,8 +78,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
           </div>
           <div class="task-text">
-            <div class="task-title">နေ့တိုင်း ဂိမ်းထဲ ဝင်ရောက်ပါ</div>
-            <div class="task-desc">1 ကြိမ် ဝင်ရောက်ရင် spin 1 ကြိမ် ရမည်</div>
+            <div class="task-title" data-i18n="task1_title">နေ့တိုင်း ဂိမ်းထဲ ဝင်ရောက်ပါ</div>
+            <div class="task-desc" data-i18n="task1_desc">1 ကြိမ် ဝင်ရောက်ရင် spin 1 ကြိမ် ရမည်</div>
           </div>
         </div>
         <div class="task-card-row2">
@@ -97,8 +97,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
           </div>
           <div class="task-text">
-            <div class="task-title">Referral ကနေ ငွေသွင်းကစားတဲ့သူ ရှိရင်</div>
-            <div class="task-desc">မိတ်ဆက်ပေးသူ Player တစ်ဦးချင်း spin 3 ကြိမ် ရမည်</div>
+            <div class="task-title" data-i18n="task2_title">Referral ကနေ ငွေသွင်းကစားတဲ့သူ ရှိရင်</div>
+            <div class="task-desc" data-i18n="task2_desc">မိတ်ဆက်ပေးသူ Player တစ်ဦးချင်း spin 3 ကြိမ် ရမည်</div>
           </div>
         </div>
         <div class="task-card-row2">
@@ -106,7 +106,7 @@
             <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             <span class="task-reward-text">+3 Spins</span>
           </div>
-          <button class="task-action-btn" onclick="showPage('agent');setTimeout(()=>{const el=document.getElementById('atab-main');if(el){const inv=el.querySelector('.agent-invite');if(inv)inv.scrollIntoView({behavior:'smooth',block:'center'});}},300)">ဖိတ်ကြားရန်</button>
+          <button class="task-action-btn" onclick="showPage('agent');setTimeout(()=>{const el=document.getElementById('atab-main');if(el){const inv=el.querySelector('.agent-invite');if(inv)inv.scrollIntoView({behavior:'smooth',block:'center'});}},300)"><span data-i18n="task2_btn">ဖိတ်ကြားရန်</span></button>
         </div>
       </div>
 
@@ -116,8 +116,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
           <div class="task-text">
-            <div class="task-title">ကိုယ်တိုင် ငွေသွင်းကစားပါ</div>
-            <div class="task-desc">ကိုယ်တိုင် ငွေသွင်းပြီး ကစားတိုင်း spin 2 ကြိမ် ရမည်</div>
+            <div class="task-title" data-i18n="task3_title">ကိုယ်တိုင် ငွေသွင်းကစားပါ</div>
+            <div class="task-desc" data-i18n="task3_desc">ကိုယ်တိုင် ငွေသွင်းပြီး ကစားတိုင်း spin 2 ကြိမ် ရမည်</div>
           </div>
         </div>
         <div class="task-card-row2">
@@ -125,7 +125,7 @@
             <svg class="task-reward-wheel" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             <span class="task-reward-text">+2 Spins</span>
           </div>
-          <button class="task-action-btn" onclick="if(typeof openDepositModal==='function')openDepositModal()">ငွေသွင်းရန်</button>
+          <button class="task-action-btn" onclick="if(typeof openDepositModal==='function')openDepositModal()"><span data-i18n="task3_btn">ငွေသွင်းရန်</span></button>
         </div>
       </div>
 
@@ -135,8 +135,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
           </div>
           <div class="task-text">
-            <div class="task-title">15 ရက်ဆက်တိုက် ဝင်ကစားပါ</div>
-            <div class="task-desc">15 ရက်ဆက်တိုက် ဝင်ကစားရင် spin 5 ကြိမ် ရမည်</div>
+            <div class="task-title" data-i18n="task4_title">15 ရက်ဆက်တိုက် ဝင်ကစားပါ</div>
+            <div class="task-desc" data-i18n="task4_desc">15 ရက်ဆက်တိုက် ဝင်ကစားရင် spin 5 ကြိမ် ရမည်</div>
           </div>
         </div>
         <div class="task-card-row2">
@@ -153,12 +153,12 @@
     <!-- History -->
     <div class="tasks-divider">
       <div class="tasks-divider-line"></div>
-      <div class="tasks-divider-text">မှတ်တမ်း</div>
+      <div class="tasks-divider-text" data-i18n="section_history">မှတ်တမ်း</div>
       <div class="tasks-divider-line"></div>
     </div>
     <div class="history-section">
       <div id="spinHistoryList">
-        <div class="history-empty">မှတ်တမ်း မရှိသေးပါ</div>
+        <div class="history-empty" data-i18n="history_empty">မှတ်တမ်း မရှိသေးပါ</div>
       </div>
     </div>
 

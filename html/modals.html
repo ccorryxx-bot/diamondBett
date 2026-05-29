@@ -2,15 +2,15 @@
 <div class="level-modal" id="levelModal">
   <div class="level-modal-card">
     <div class="level-modal-header">
-      <div class="level-modal-header-title">အောက်အဆင့်!</div>
-      <div class="level-modal-header-sub">ကော်မရှင်ပမာဏ အလိုက် အဆင့်တိုးမည်</div>
+      <div class="level-modal-header-title" data-i18n="level_title">အောက်အဆင့်!</div>
+      <div class="level-modal-header-sub" data-i18n="level_sub">ကော်မရှင်ပမာဏ အလိုက် အဆင့်တိုးမည်</div>
     </div>
     <div class="level-table-head"><span>အဆင့်</span><span>နာမည်</span><span style="text-align:right;">လိုအပ်သောကော်မရှင်</span></div>
     <div class="level-modal-body" id="levelModalBody"></div>
     <div class="level-modal-footer">
       <button class="level-modal-close-btn" id="levelModalClose">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        ပိတ်မည်
+        <span data-i18n="close_btn">ပိတ်မည်</span>
       </button>
     </div>
   </div>
@@ -20,33 +20,33 @@
 <div class="overlay-backdrop" id="dlBackdrop"></div>
 <div class="dl-date-modal" id="dlDateModal">
   <div class="dl-modal-handle"></div>
-  <div class="dl-modal-title">ရက်စွဲ ရွေးချယ်ပါ</div>
+  <div class="dl-modal-title" data-i18n="date_select_title">ရက်စွဲ ရွေးချယ်ပါ</div>
   <div class="dl-period-grid">
-    <button class="dl-period-btn active" data-period="today">ဒီနေ့</button>
-    <button class="dl-period-btn" data-period="yesterday">မနေက</button>
-    <button class="dl-period-btn" data-period="this_week">ယခုအပတ်</button>
-    <button class="dl-period-btn" data-period="last_week">ပြီးခဲ့သောအပတ်</button>
-    <button class="dl-period-btn" data-period="this_month">ဒီလ</button>
-    <button class="dl-period-btn" data-period="last_month">ပြီးခဲ့သည့်လ!</button>
-    <button class="dl-period-btn" data-period="all">အားလုံး</button>
+    <button class="dl-period-btn active" data-period="today" data-i18n="period_today">ဒီနေ့</button>
+    <button class="dl-period-btn" data-period="yesterday" data-i18n="period_yesterday">မနေက</button>
+    <button class="dl-period-btn" data-period="this_week" data-i18n="period_this_week">ယခုအပတ်</button>
+    <button class="dl-period-btn" data-period="last_week" data-i18n="period_last_week">ပြီးခဲ့သောအပတ်</button>
+    <button class="dl-period-btn" data-period="this_month" data-i18n="period_this_month">ဒီလ</button>
+    <button class="dl-period-btn" data-period="last_month" data-i18n="period_last_month">ပြီးခဲ့သည့်လ!</button>
+    <button class="dl-period-btn" data-period="all" data-i18n="period_all">အားလုံး</button>
   </div>
-  <div class="dl-custom-title">စိတ်ကြိုက် ရက်ပိုင်းရွေး</div>
+  <div class="dl-custom-title" data-i18n="date_custom_title">စိတ်ကြိုက် ရက်ပိုင်းရွေး</div>
   <div class="dl-date-pickers">
-    <div><div class="dl-picker-label">စတင်ရက်</div><div class="dl-picker-selects"><select id="dlStartYear"></select><select id="dlStartMonth"></select><select id="dlStartDay"></select></div></div>
-    <div><div class="dl-picker-label">ပြီးဆုံးရက်</div><div class="dl-picker-selects"><select id="dlEndYear"></select><select id="dlEndMonth"></select><select id="dlEndDay"></select></div></div>
+    <div><div class="dl-picker-label" data-i18n="date_start">စတင်ရက်</div><div class="dl-picker-selects"><select id="dlStartYear"></select><select id="dlStartMonth"></select><select id="dlStartDay"></select></div></div>
+    <div><div class="dl-picker-label" data-i18n="date_end">ပြီးဆုံးရက်</div><div class="dl-picker-selects"><select id="dlEndYear"></select><select id="dlEndMonth"></select><select id="dlEndDay"></select></div></div>
   </div>
   <div class="dl-modal-actions">
-    <button class="dl-btn-cancel" id="dlDateCancel">မလုပ်တော့</button>
-    <button class="dl-btn-confirm" id="dlDateConfirm">အတည်ပြု</button>
+    <button class="dl-btn-cancel" id="dlDateCancel" data-i18n="date_cancel">မလုပ်တော့</button>
+    <button class="dl-btn-confirm" id="dlDateConfirm" data-i18n="date_confirm">အတည်ပြု</button>
   </div>
 </div>
 
 <!-- SPIN RESULT -->
 <div class="spin-result-overlay" id="spinResultOverlay">
   <div class="spin-result-card">
-    <div class="spin-result-label">ရလဒ်</div>
+    <div class="spin-result-label" data-i18n="result_label">ရလဒ်</div>
     <div id="spinResultContent"></div>
-    <button class="spin-result-close" id="spinResultClose">ပိတ်မည်</button>
+    <button class="spin-result-close" id="spinResultClose" data-i18n="close_btn">ပိတ်မည်</button>
   </div>
 </div>
 
@@ -64,23 +64,23 @@
     <div class="auth-tabs">
       <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-        <span>မှတ်ပုံတင်━━➤</span>
+        <span data-i18n="tab_register">မှတ်ပုံတင်━━➤</span>
       </button>
       <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-        <span>လော့ဂ်အင်➜</span>
+        <span data-i18n="tab_login">လော့ဂ်အင်➜</span>
       </button>
     </div>
     <div class="auth-body">
       <div id="registerForm" style="display:none;">
-        <p class="auth-subtitle">အကောင် မှတ်ပုံတင်ပါ</p>
+        <p class="auth-subtitle" data-i18n="auth_reg_title">အကောင် မှတ်ပုံတင်ပါ</p>
         <div class="input-group">
           <span class="inp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-          <input type="text" id="regName" placeholder="* နာမည် (English Only, No Space)" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'')">
+          <input type="text" id="regName" placeholder="* နာမည် (English Only, No Space)" data-i18n-placeholder="ph_reg_name" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'')">
         </div>
         <div class="input-group">
           <span class="inp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <input type="password" id="regPassword" placeholder="* စကားဝှက် (No Myanmar)" oninput="this.value=this.value.replace(/[\u1000-\u109F]/g,'')">
+          <input type="password" id="regPassword" placeholder="* စကားဝှက် (No Myanmar)" data-i18n-placeholder="ph_reg_pass" oninput="this.value=this.value.replace(/[\u1000-\u109F]/g,'')">
           <button class="eye-toggle" onclick="toggleEye('regPassword',this)" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
@@ -103,24 +103,24 @@
           <input type="checkbox" id="ageCheck">
           <label for="ageCheck">ကျွန်ုပ်သည် အသက် 18 နှစ်ကျော်သည်! <a href="#">Terms</a> ကို ဖတ်ပြီး သဘောတူသည်။</label>
         </div>
-        <button class="auth-submit" id="registerBtn">မှတ်ပုံတင်မည်</button>
+        <button class="auth-submit" id="registerBtn" data-i18n="reg_btn">မှတ်ပုံတင်မည်</button>
         <div class="auth-footer-link"><a href="#">CS ဆက်သွယ်ရန်</a></div>
       </div>
 
       <div id="loginForm">
-        <p class="auth-subtitle">ကြိုဆိုပါသည် — ပြန်ဝင်ပါ</p>
+        <p class="auth-subtitle" data-i18n="auth_log_title">ကြိုဆိုပါသည် — ပြန်ဝင်ပါ</p>
         <div class="phone-wrap">
           <div class="phone-prefix">🇲🇲 +95</div>
-          <input type="tel" class="phone-input" id="loginPhone" placeholder="* ဖုန်းနံပါတ်">
+          <input type="tel" class="phone-input" id="loginPhone" placeholder="* ဖုန်းနံပါတ်" data-i18n-placeholder="ph_log_phone">
         </div>
         <div class="input-group">
           <span class="inp-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <input type="password" id="loginPassword" placeholder="* စကားဝှက်" oninput="this.value=this.value.replace(/[\u1000-\u109F]/g,'')">
+          <input type="password" id="loginPassword" placeholder="* စကားဝှက်" data-i18n-placeholder="ph_log_pass" oninput="this.value=this.value.replace(/[\u1000-\u109F]/g,'')">
           <button class="eye-toggle" onclick="toggleEye('loginPassword',this)" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <button class="auth-submit" id="loginBtn">ဝင်ရောက်မည်</button>
+        <button class="auth-submit" id="loginBtn" data-i18n="login_submit">ဝင်ရောက်မည်</button>
         <div class="auth-footer-link"><a href="#">CS ဆက်သွယ်ရန်</a></div>
       </div>
     </div>

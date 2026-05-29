@@ -56,9 +56,17 @@ function initScrollObserver() {
 // initBanner() — moved to js/swiper.js (DiamondSwiper)
 
 function initLangBtn() {
+  const initLang = localStorage.getItem('_db_lang') || 'mm';
+  if (typeof window.applyLang === 'function') window.applyLang(initLang);
+
   document.getElementById('langBtn')?.addEventListener('click', () => {
-    const lbl = document.getElementById('langLabel');
-    if (lbl) lbl.textContent = lbl.textContent === 'မြန်မာ' ? 'EN' : 'မြန်မာ';
+    const cur  = localStorage.getItem('_db_lang') || 'mm';
+    const next = cur === 'mm' ? 'en' : 'mm';
+    if (typeof window.selectLang === 'function') {
+      window.selectLang(next);
+    } else if (typeof window.applyLang === 'function') {
+      window.applyLang(next);
+    }
   });
 }
 

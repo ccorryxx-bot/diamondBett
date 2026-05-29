@@ -111,7 +111,7 @@
               <div class="nav-ico">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M3 20h18"/></svg>
               </div>
-              <span>ဒေါင်း</span>
+              <span data-i18n="download">ဒေါင်း</span>
             </a>
             <a class="nav-icon-btn nav-bot-btn" href="https://ccorryxx-bot.github.io/updated_premiumv2BOT/" target="_blank" rel="noopener">
               <div class="nav-ico nav-ico-bot">
@@ -129,10 +129,10 @@
         </div>
 
         <div class="qnav-actions">
-          <button class="login-btn" id="showAuthBtn">လော့ဂ်အင်!</button>
+          <button class="login-btn" id="showAuthBtn" data-i18n="login_btn">လော့ဂ်အင်!</button>
           <div class="wallet-btns" id="walletBtns" style="display:none;">
-            <button class="wallet-btn deposit">ငွေသွင်း</button>
-            <button class="wallet-btn withdraw">ငွေထုတ်</button>
+            <button class="wallet-btn deposit" data-i18n="deposit">ငွေသွင်း</button>
+            <button class="wallet-btn withdraw" data-i18n="withdraw">ငွေထုတ်</button>
           </div>
           <div class="qnav-balance" id="qnavBalanceWrap" style="display:none;">
             <canvas id="nftAvatar" class="nft-avatar-canvas" width="30" height="30"></canvas>
@@ -154,7 +154,7 @@
 
       <div class="announce">
         <div class="announce-ticker">
-          <span>ကြိုဆိုပါတယ်! Diamond-BETT မှာ မှတ်ပုံတင်ပြီး ဆုငွေများ ရယူပါ။</span>
+          <span data-i18n="announce">ကြိုဆိုပါတယ်! Diamond-BETT မှာ မှတ်ပုံတင်ပြီး ဆုငွေများ ရယူပါ။</span>
         </div>
       </div>
     </div>
@@ -209,6 +209,7 @@
 <script src="js/agent.js"    defer></script>
 <script src="js/home_assets.js" defer></script>
 <script src="js/realtime.js"     defer></script>
+<script src="js/i18n.js"     defer></script>
 <script src="js/main.js"     defer></script>
 <script>
   if ('serviceWorker' in navigator) {

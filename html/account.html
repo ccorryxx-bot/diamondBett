@@ -43,11 +43,11 @@
       <div class="holo-base"></div>
     </div>
 
-    <p class="acct-guest-title">Account ကြည့်ရန် အကောင့်ဝင်ရန်လိုအပ်သည်</p>
+    <p class="acct-guest-title" data-i18n="acct_guest_title">Account ကြည့်ရန် အကောင့်ဝင်ရန်လိုအပ်သည်</p>
     <p class="acct-guest-sub">Diamond-BETT Account Panel</p>
     <button class="acct-guest-btn" onclick="openAuthModal('login')">
       <span class="btn-aura"></span>
-      <span class="btn-label">အကောင့်ဝင်ရန်</span>
+      <span class="btn-label" data-i18n="acct_guest_btn">အကောင့်ဝင်ရန်</span>
     </button>
   </div>
 </div>
@@ -99,7 +99,7 @@
           </svg>
         </div>
       </div>
-      <span>ငွေထုတ်ရန်</span>
+      <span data-i18n="acct_withdraw">ငွေထုတ်ရန်</span>
     </button>
     <button class="acct-act-btn acct-act-dep" onclick="if(typeof openDepositModal==='function')openDepositModal()">
       <div class="acct-act-ico dep-ico" id="depActIco">
@@ -115,7 +115,7 @@
           </svg>
         </div>
       </div>
-      <span>ငွေသွင်းရန်</span>
+      <span data-i18n="acct_deposit">ငွေသွင်းရန်</span>
     </button>
   </div>
 
@@ -144,14 +144,14 @@
       <div class="vip-data-col">
         <div class="vip-promo-line">
           <span class="vip-promo-ico">◈</span>
-          ပရိုမိုးရှင်းကြေးငွေ
+          <span data-i18n="vip_promo">ပရိုမိုးရှင်းကြေးငွေ</span>
           <span class="vip-promo-val" id="acctPromoAmt">0.00</span>
         </div>
 
         <!-- Deposit progress -->
         <div class="vip-prog-wrap">
           <div class="vip-prog-header">
-            <span class="vip-prog-label">ငွေသွင်း</span>
+            <span class="vip-prog-label" data-i18n="vip_dep_label">ငွေသွင်း</span>
             <span id="acctDepProg" class="vip-prog-cur">0.00 / 10,000.00</span>
           </div>
           <div class="vip-bar-track">
@@ -163,13 +163,13 @@
         <!-- Turnover progress -->
         <div class="vip-prog-wrap">
           <div class="vip-prog-header">
-            <span class="vip-prog-label vip-tov-label">အလောင်းအစား</span>
+            <span class="vip-prog-label vip-tov-label" data-i18n="vip_tov_label">အလောင်းအစား</span>
             <span id="acctTovProg" class="vip-prog-cur">0.00 / 0.00</span>
           </div>
           <div class="vip-bar-track">
             <div class="vip-bar-fill vip-tov-fill" id="acctTovFill" style="width:0%"></div>
           </div>
-          <span class="vip-prog-need">လိုအပ်သည်: <strong><span id="acctTovNeed">—</span></strong></span>
+          <span class="vip-prog-need"><span data-i18n="vip_needed">လိုအပ်သည်:</span> <strong><span id="acctTovNeed">—</span></strong></span>
         </div>
       </div>
 
@@ -184,8 +184,8 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="1.8" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
       </div>
       <div class="acct-mtext">
-        <span class="acct-mlabel">ငါ့မှတ်တမ်း</span>
-        <span class="acct-mhint">ငွေသွင်း/ထုတ် မှတ်တမ်းများ · Real-Time</span>
+        <span class="acct-mlabel" data-i18n="menu_history">ငါ့မှတ်တမ်း</span>
+        <span class="acct-mhint" data-i18n="menu_history_sub">ငွေသွင်း/ထုတ် မှတ်တမ်းများ · Real-Time</span>
       </div>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
@@ -194,7 +194,7 @@
       <div class="acct-mico" style="background:rgba(239,68,68,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M16 12h.01M2 10h20"/></svg>
       </div>
-      <span class="acct-mlabel">ငွေထုတ်စီမံခန့်ခွဲမှု</span>
+      <span class="acct-mlabel" data-i18n="menu_withdraw">ငွေထုတ်စီမံခန့်ခွဲမှု</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
   </div>
@@ -205,8 +205,8 @@
       <div class="acct-mico" style="background:rgba(99,102,241,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       </div>
-      <span class="acct-mlabel">အေးဂျင့်!</span>
-      <span class="acct-mval">တစ်လဝင်ငွေ 2သန်း</span>
+      <span class="acct-mlabel" data-i18n="menu_agent">အေးဂျင့်!</span>
+      <span class="acct-mval" data-i18n="menu_agent_val">တစ်လဝင်ငွေ 2သန်း</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
@@ -214,7 +214,7 @@
       <div class="acct-mico" style="background:rgba(251,146,60,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
-      <span class="acct-mlabel">ကိုယ်ရေးအချက်အလက်များ</span>
+      <span class="acct-mlabel" data-i18n="menu_profile">ကိုယ်ရေးအချက်အလက်များ</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
@@ -222,7 +222,7 @@
       <div class="acct-mico" style="background:rgba(34,197,94,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       </div>
-      <span class="acct-mlabel">လုံခြုံရေးစင်တာ</span>
+      <span class="acct-mlabel" data-i18n="menu_security">လုံခြုံရေးစင်တာ</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
@@ -230,7 +230,7 @@
       <div class="acct-mico" style="background:rgba(56,189,248,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
       </div>
-      <span class="acct-mlabel">ဘာသာစကား</span>
+      <span class="acct-mlabel" data-i18n="menu_language">ဘာသာစကား</span>
       <span class="acct-mval" id="acctLangLabel">မြန်မာဘာသာ</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
@@ -239,7 +239,7 @@
       <div class="acct-mico" style="background:rgba(168,85,247,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       </div>
-      <span class="acct-mlabel">ဖောက်သည် ဝန်ဆောင်မှု့</span>
+      <span class="acct-mlabel" data-i18n="menu_cs">ဖောက်သည် ဝန်ဆောင်မှု့</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
@@ -247,7 +247,7 @@
       <div class="acct-mico" style="background:rgba(234,179,8,.12);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.8" stroke-linecap="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </div>
-      <span class="acct-mlabel">အကြံပြုချက်များ</span>
+      <span class="acct-mlabel" data-i18n="menu_feedback">အကြံပြုချက်များ</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
     <div class="acct-divider"></div>
@@ -255,7 +255,7 @@
       <div class="acct-mico" style="background:rgba(239,68,68,.1);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
       </div>
-      <span class="acct-mlabel acct-logout-label">အကောင့်ထွက်ရန်</span>
+      <span class="acct-mlabel acct-logout-label" data-i18n="menu_logout">အကောင့်ထွက်ရန်</span>
       <svg class="acct-mchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
   </div>
