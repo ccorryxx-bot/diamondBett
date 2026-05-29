@@ -623,7 +623,7 @@ async function loadAgentIcons() {
           if(!C||_inited) return; _inited=true;
           var wrap=document.getElementById('nnCanvasWrap');
           NW=wrap.clientWidth||360;
-          GR=Math.min(Math.floor((NW-20)/2),88);   /* smaller globe radius */
+          GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
           ACX=NW/2; ACY=ACR+14;
           GCX=NW/2; GCY=ACY+ACR+28+GR;
           /* compact half-sphere — show ~55% below globe centre */
