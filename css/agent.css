@@ -888,11 +888,50 @@
   min-height: 70px;
   overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 .nn-split-wrap .nn-canvas-wrap canvas {
   display: block;
   max-width: 100%;
   height: auto;
+  flex-shrink: 0;
+}
+
+/* ── Globe empty-space message ── */
+.nn-globe-msg {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px 8px;
+  text-align: center;
+  gap: 5px;
+  border-top: 1px solid rgba(74,222,128,0.09);
+}
+.nn-globe-msg-p1 {
+  margin: 0;
+  font-size: 8.5px;
+  line-height: 1.55;
+  color: rgba(74,222,128,0.58);
+  letter-spacing: 0.2px;
+  word-break: break-word;
+  text-shadow: 0 0 8px rgba(74,222,128,0.28);
+}
+.nn-globe-msg-p2 {
+  margin: 0;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: rgba(134,239,172,0.78);
+  letter-spacing: 0.25px;
+  text-shadow: 0 0 12px rgba(74,222,128,0.45);
+  padding: 3px 7px;
+  border: 1px solid rgba(74,222,128,0.18);
+  border-radius: 5px;
+  background: rgba(74,222,128,0.05);
 }
 
 /* Tree side: exactly 50% width — content stretches to fill frame */

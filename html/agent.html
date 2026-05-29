@@ -336,6 +336,10 @@ async function loadAgentIcons() {
           <div class="nn-canvas-wrap" id="nnCanvasWrap">
             <canvas id="nnCanvas"></canvas>
             <div class="nn-drag-hint">← ဆွဲ →</div>
+            <div class="nn-globe-msg">
+              <p class="nn-globe-msg-p1">သင်၏ အောက်လက်ငယ်သားများအား ဤနေရာတွင် ဖော်ပြပေးမည်</p>
+              <p class="nn-globe-msg-p2">Referral Link အသုံးပြု၍ ဖိတ်ခေါ်ပါ!</p>
+            </div>
           </div>
 
           <!-- Card Tree (right) -->
@@ -647,7 +651,7 @@ async function loadAgentIcons() {
           var maxW=splitWrap ? Math.floor(splitWrap.clientWidth/2) : 0;
           NW=realW||(maxW||180);
           if(maxW && NW>maxW) NW=maxW;
-          GR=Math.min(Math.floor((NW-20)/2),38);   /* 38px globe radius — compact */
+          GR=Math.min(Math.floor((NW-20)/2),45);   /* 45px globe radius — slightly larger */
           GCX=GR+14;                               /* globe left-aligned */
           GCY=GR+28;                               /* globe-only, no avatar above */
           /* tall enough: full globe height + tree C-level padding */
