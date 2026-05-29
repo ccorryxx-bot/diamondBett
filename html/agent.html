@@ -345,6 +345,15 @@ async function loadAgentIcons() {
         var _rotY = 0, _rotVel = 0.003;
         var _dragging = false, _dragX0 = 0, _rotY0 = 0, _prevX = 0;
         var _aLetter = 'A';
+        var _avatarImg = null, _avatarLoaded = false;
+        (function(){
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function(){ _avatarLoaded = true; };
+          img.onerror = function(){ _avatarLoaded = false; };
+          img.src = 'https://ik.imagekit.io/tdpebgueq/Agent%20page%20avatar%20/IMG_20260529_140125.png';
+          _avatarImg = img;
+        })();
 
         /* ── Layout (set in nnInit) ───────────────────────── */
         var GR = 130, GCX, GCY;
@@ -549,7 +558,7 @@ async function loadAgentIcons() {
           var pulse=Math.sin(_tick*0.04)*0.5+0.5;
           var cx=ACX, cy=ACY, r=ACR;
 
-          /* ① Gold ring glow — NO orbit/dash rings */
+          /* ① Gold ring glow — pulsing, no orbit/dash rings */
           X.save();
           X.shadowColor='rgba(212,175,55,'+(0.55+pulse*0.40)+')';
           X.shadowBlur=10+pulse*6;
@@ -558,165 +567,22 @@ async function loadAgentIcons() {
           X.beginPath(); X.arc(cx,cy,r+1.5,0,6.283); X.stroke();
           X.restore();
 
-          /* ② Clip everything to circle */
+          /* ② Clip to circle then draw avatar image */
           X.save();
           X.beginPath(); X.arc(cx,cy,r,0,6.283); X.clip();
 
-          /* background — off-white / cream */
+          /* fallback background */
           X.fillStyle='#f2ede4';
           X.fillRect(cx-r,cy-r,r*2,r*2);
 
-          /* === JACKET / SUIT (bottom portion) === */
-          /* dark charcoal jacket body */
-          X.fillStyle='#1e1e2a';
-          X.beginPath();
-          X.moveTo(cx-r, cy+r);
-          X.lineTo(cx-r, cy+r*0.38);
-          X.bezierCurveTo(cx-r*0.7,cy+r*0.22, cx-r*0.35,cy+r*0.18, cx-r*0.12,cy+r*0.24);
-          X.lineTo(cx, cy+r*0.50);
-          X.lineTo(cx+r*0.12,cy+r*0.24);
-          X.bezierCurveTo(cx+r*0.35,cy+r*0.18, cx+r*0.7,cy+r*0.22, cx+r,cy+r*0.38);
-          X.lineTo(cx+r, cy+r);
-          X.closePath();
-          X.fill();
+          /* draw ImageKit avatar if loaded */
+          if(_avatarLoaded && _avatarImg){
+            X.drawImage(_avatarImg, cx-r, cy-r, r*2, r*2);
+          }
 
-          /* lapels — slightly lighter charcoal */
-          X.fillStyle='#2a2a3a';
-          X.beginPath();
-          X.moveTo(cx-r*0.12,cy+r*0.24);
-          X.lineTo(cx-r*0.28,cy+r*0.38);
-          X.lineTo(cx,cy+r*0.52);
-          X.lineTo(cx+r*0.28,cy+r*0.38);
-          X.lineTo(cx+r*0.12,cy+r*0.24);
-          X.lineTo(cx,cy+r*0.50);
-          X.closePath();
-          X.fill();
+          X.restore(); /* end clip */
 
-          /* white shirt front */
-          X.fillStyle='#eeeef0';
-          X.beginPath();
-          X.moveTo(cx-r*0.10,cy+r*0.24);
-          X.lineTo(cx,cy+r*0.48);
-          X.lineTo(cx+r*0.10,cy+r*0.24);
-          X.closePath();
-          X.fill();
-
-          /* dark tie */
-          X.fillStyle='#111118';
-          X.beginPath();
-          X.moveTo(cx-r*0.04,cy+r*0.22);
-          X.lineTo(cx+r*0.04,cy+r*0.22);
-          X.lineTo(cx+r*0.025,cy+r*0.50);
-          X.lineTo(cx,cy+r*0.56);
-          X.lineTo(cx-r*0.025,cy+r*0.50);
-          X.closePath();
-          X.fill();
-
-          /* === NECK === */
-          X.fillStyle='#c88855';
-          X.beginPath();
-          X.ellipse(cx,cy+r*0.14,r*0.12,r*0.14,0,0,6.283);
-          X.fill();
-
-          /* === FACE === */
-          X.fillStyle='#c8885a';
-          X.beginPath();
-          X.arc(cx,cy-r*0.14,r*0.52,0,6.283);
-          X.fill();
-
-          /* face shading — subtle */
-          var fshd=X.createRadialGradient(cx+r*0.15,cy-r*0.22,0,cx,cy-r*0.14,r*0.52);
-          fshd.addColorStop(0,'rgba(255,220,180,0.18)');
-          fshd.addColorStop(1,'rgba(140,70,20,0.14)');
-          X.fillStyle=fshd;
-          X.beginPath(); X.arc(cx,cy-r*0.14,r*0.52,0,6.283); X.fill();
-
-          /* === HAIR === */
-          /* main dark hair mass */
-          X.fillStyle='#1e1008';
-          X.beginPath();
-          X.arc(cx,cy-r*0.14,r*0.52,Math.PI,0);
-          /* swept-back top */
-          X.bezierCurveTo(cx+r*0.55,cy-r*0.68, cx+r*0.30,cy-r*0.88, cx,cy-r*0.90);
-          X.bezierCurveTo(cx-r*0.30,cy-r*0.88, cx-r*0.55,cy-r*0.68, cx-r*0.52,cy-r*0.14);
-          X.closePath();
-          X.fill();
-          /* side temple left */
-          X.beginPath();
-          X.arc(cx-r*0.50,cy-r*0.14,r*0.12,Math.PI*0.5,Math.PI*1.5);
-          X.fill();
-          /* side temple right */
-          X.beginPath();
-          X.arc(cx+r*0.50,cy-r*0.14,r*0.12,-Math.PI*0.5,Math.PI*0.5);
-          X.fill();
-          /* hair highlight — slight brown shine */
-          X.fillStyle='rgba(80,40,10,0.30)';
-          X.beginPath();
-          X.ellipse(cx+r*0.08,cy-r*0.60,r*0.18,r*0.08,-0.5,0,6.283);
-          X.fill();
-
-          /* === EYEBROWS === */
-          X.save();
-          X.strokeStyle='#1e1008'; X.lineWidth=r*0.065; X.lineCap='round';
-          X.beginPath(); X.moveTo(cx-r*0.30,cy-r*0.30); X.quadraticCurveTo(cx-r*0.18,cy-r*0.36,cx-r*0.06,cy-r*0.30); X.stroke();
-          X.beginPath(); X.moveTo(cx+r*0.06,cy-r*0.30); X.quadraticCurveTo(cx+r*0.18,cy-r*0.36,cx+r*0.30,cy-r*0.30); X.stroke();
-          X.restore();
-
-          /* === EYES === */
-          /* whites */
-          X.fillStyle='#f0ece0';
-          X.beginPath(); X.ellipse(cx-r*0.19,cy-r*0.20,r*0.10,r*0.072,0,0,6.283); X.fill();
-          X.beginPath(); X.ellipse(cx+r*0.19,cy-r*0.20,r*0.10,r*0.072,0,0,6.283); X.fill();
-          /* iris — dark brown */
-          X.fillStyle='#3a2010';
-          X.beginPath(); X.arc(cx-r*0.19,cy-r*0.20,r*0.065,0,6.283); X.fill();
-          X.beginPath(); X.arc(cx+r*0.19,cy-r*0.20,r*0.065,0,6.283); X.fill();
-          /* pupil */
-          X.fillStyle='#0a0604';
-          X.beginPath(); X.arc(cx-r*0.19,cy-r*0.20,r*0.035,0,6.283); X.fill();
-          X.beginPath(); X.arc(cx+r*0.19,cy-r*0.20,r*0.035,0,6.283); X.fill();
-          /* eye shine */
-          X.fillStyle='rgba(255,255,255,0.75)';
-          X.beginPath(); X.arc(cx-r*0.165,cy-r*0.225,r*0.022,0,6.283); X.fill();
-          X.beginPath(); X.arc(cx+r*0.215,cy-r*0.225,r*0.022,0,6.283); X.fill();
-
-          /* === NOSE === */
-          X.save();
-          X.strokeStyle='rgba(160,80,30,0.45)'; X.lineWidth=r*0.045; X.lineCap='round';
-          X.beginPath(); X.moveTo(cx-r*0.06,cy-r*0.08); X.lineTo(cx-r*0.04,cy+r*0.04); X.quadraticCurveTo(cx,cy+r*0.06,cx+r*0.04,cy+r*0.04); X.lineTo(cx+r*0.06,cy-r*0.08); X.stroke();
-          X.restore();
-
-          /* === BEARD === */
-          /* full beard — dark brown */
-          X.fillStyle='#291508';
-          X.beginPath();
-          X.moveTo(cx-r*0.48,cy+r*0.04);
-          X.bezierCurveTo(cx-r*0.50,cy+r*0.28, cx-r*0.40,cy+r*0.38, cx,cy+r*0.40);
-          X.bezierCurveTo(cx+r*0.40,cy+r*0.38, cx+r*0.50,cy+r*0.28, cx+r*0.48,cy+r*0.04);
-          X.bezierCurveTo(cx+r*0.38,cy+r*0.12, cx+r*0.20,cy+r*0.14, cx,cy+r*0.13);
-          X.bezierCurveTo(cx-r*0.20,cy+r*0.14, cx-r*0.38,cy+r*0.12, cx-r*0.48,cy+r*0.04);
-          X.fill();
-          /* mustache area — slightly darker */
-          X.fillStyle='#1e1005';
-          X.beginPath();
-          X.ellipse(cx,cy+r*0.085,r*0.20,r*0.065,0,0,6.283);
-          X.fill();
-          /* mouth gap — lighter line */
-          X.save();
-          X.strokeStyle='rgba(160,80,30,0.35)'; X.lineWidth=r*0.04; X.lineCap='round';
-          X.beginPath(); X.moveTo(cx-r*0.12,cy+r*0.135); X.quadraticCurveTo(cx,cy+r*0.16,cx+r*0.12,cy+r*0.135); X.stroke();
-          X.restore();
-          /* beard texture — lighter strands */
-          X.save();
-          X.strokeStyle='rgba(80,40,15,0.28)'; X.lineWidth=r*0.025; X.lineCap='round';
-          X.beginPath(); X.moveTo(cx-r*0.28,cy+r*0.10); X.lineTo(cx-r*0.30,cy+r*0.32); X.stroke();
-          X.beginPath(); X.moveTo(cx,cy+r*0.14); X.lineTo(cx,cy+r*0.38); X.stroke();
-          X.beginPath(); X.moveTo(cx+r*0.28,cy+r*0.10); X.lineTo(cx+r*0.30,cy+r*0.32); X.stroke();
-          X.restore();
-
-          X.restore(); /* end circle clip */
-
-          /* ③ Gold border — drawn on top of clip, stays crisp */
+          /* ③ Gold border on top */
           X.save();
           X.strokeStyle='rgba(212,175,55,0.92)'; X.lineWidth=2.5;
           X.beginPath(); X.arc(cx,cy,r,0,6.283); X.stroke();
@@ -757,11 +623,11 @@ async function loadAgentIcons() {
           if(!C||_inited) return; _inited=true;
           var wrap=document.getElementById('nnCanvasWrap');
           NW=wrap.clientWidth||360;
-          GR=Math.min(Math.floor((NW-20)/2),148);
-          ACX=NW/2; ACY=ACR+18;
-          GCX=NW/2; GCY=ACY+ACR+38+GR;
-          /* cut canvas at ~60% below globe center — shows half-sphere horizon */
-          NH=Math.round(GCY+GR*0.58);
+          GR=Math.min(Math.floor((NW-20)/2),88);   /* smaller globe radius */
+          ACX=NW/2; ACY=ACR+14;
+          GCX=NW/2; GCY=ACY+ACR+28+GR;
+          /* compact half-sphere — show ~55% below globe centre */
+          NH=Math.round(GCY+GR*0.52);
           dpr=window.devicePixelRatio||1;
           C.width=NW*dpr; C.height=NH*dpr;
           C.style.width=NW+'px'; C.style.height=NH+'px';
