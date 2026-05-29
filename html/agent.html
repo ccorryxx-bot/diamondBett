@@ -348,7 +348,16 @@ async function loadAgentIcons() {
 
         /* ── Layout (set in nnInit) ───────────────────────── */
         var GR = 130, GCX, GCY;
-        var ACR = 34, ACX, ACY;
+
+        /* ── Flowing-particle state for right-side tree ───── */
+        /* ei = edge index 0-4, t = progress 0→1, speed */
+        var _tparts = [
+          {ei:0,t:0.00,sp:0.0070},{ei:0,t:0.55,sp:0.0065},
+          {ei:1,t:0.20,sp:0.0068},{ei:1,t:0.75,sp:0.0072},
+          {ei:2,t:0.10,sp:0.0060},{ei:2,t:0.62,sp:0.0075},
+          {ei:3,t:0.35,sp:0.0065},{ei:3,t:0.82,sp:0.0070},
+          {ei:4,t:0.45,sp:0.0068},{ei:4,t:0.90,sp:0.0062},
+        ];
         var TILT = Math.PI / 9; /* ~20° view-from-above */
 
         /* ── Static decorative nodes (always on globe) ───── */
@@ -544,57 +553,98 @@ async function loadAgentIcons() {
           });
         }
 
-        /* ── Draw agent avatar — realistic male face (picture 1 style) ── */
-        function drawAgent(){
-          var pulse=Math.sin(_tick*0.04)*0.5+0.5;
-          var cx=ACX, cy=ACY, r=ACR;
+        /* ── Right-side flowing network tree ─────────────── */
+        function drawTree(){
+          var rx0 = GCX + GR + 12;
+          var rw  = NW - rx0 - 6;
+          if(rw < 50) return;
+          var TX = rx0 + rw * 0.5;
 
-          /* ① Gold ring glow — pulsing, no orbit/dash rings */
-          X.save();
-          X.shadowColor='rgba(212,175,55,'+(0.55+pulse*0.40)+')';
-          X.shadowBlur=10+pulse*6;
-          X.strokeStyle='rgba(212,175,55,'+(0.82+pulse*0.15)+')';
-          X.lineWidth=3;
-          X.beginPath(); X.arc(cx,cy,r+1.5,0,6.283); X.stroke();
-          X.restore();
+          /* vertical levels */
+          var yA = GCY - GR * 0.58;
+          var yB = GCY + GR * 0.04;
+          var yC = GCY + GR * 0.62;
 
-          /* ② Clip to circle — dark background + "Agent A" text */
-          X.save();
-          X.beginPath(); X.arc(cx,cy,r,0,6.283); X.clip();
+          /* horizontal positions */
+          var dx = rw * 0.27;
+          var xB1= TX - dx,  xB2 = TX + dx;
+          var xC1= TX - dx*1.48, xC2 = TX - dx*0.08, xC3 = TX + dx;
 
-          /* dark gradient background */
-          var bg=X.createRadialGradient(cx,cy-r*0.2,0,cx,cy,r);
-          bg.addColorStop(0,'#1e1a2e');
-          bg.addColorStop(1,'#0d0b18');
-          X.fillStyle=bg; X.fillRect(cx-r,cy-r,r*2,r*2);
+          /* node definitions */
+          var NS = [
+            {x:TX,  y:yA, r:13, lbl:'A',  col:'#a78bfa', glow:'#7c3aed'},
+            {x:xB1, y:yB, r:10, lbl:'B1', col:'#67e8f9', glow:'#0891b2'},
+            {x:xB2, y:yB, r:10, lbl:'B2', col:'#67e8f9', glow:'#0891b2'},
+            {x:xC1, y:yC, r:8,  lbl:'C1', col:'#34d399', glow:'#059669'},
+            {x:xC2, y:yC, r:8,  lbl:'C2', col:'#34d399', glow:'#059669'},
+            {x:xC3, y:yC, r:8,  lbl:'C3', col:'#34d399', glow:'#059669'},
+          ];
 
-          /* "Agent A" label */
-          X.fillStyle='rgba(212,175,55,0.92)';
-          X.font='bold '+Math.round(r*0.30)+'px sans-serif';
-          X.textAlign='center'; X.textBaseline='middle';
-          X.fillText('Agent A', cx, cy);
+          /* edges: [fromIdx, toIdx] */
+          var ES = [[0,1],[0,2],[1,3],[1,4],[2,5]];
 
-          X.restore(); /* end clip */
+          /* helper: quadratic bezier point */
+          function qbez(t, p0, cp, p1){
+            var mt=1-t;
+            return {x:mt*mt*p0.x+2*mt*t*cp.x+t*t*p1.x,
+                    y:mt*mt*p0.y+2*mt*t*cp.y+t*t*p1.y};
+          }
 
-          /* ③ Gold border on top */
-          X.save();
-          X.strokeStyle='rgba(212,175,55,0.92)'; X.lineWidth=2.5;
-          X.beginPath(); X.arc(cx,cy,r,0,6.283); X.stroke();
-          X.restore();
+          /* control point — arc outward between nodes */
+          function cp(n0,n1){
+            var mx=(n0.x+n1.x)/2, my=(n0.y+n1.y)/2;
+            var ox=(n1.x-n0.x)*0.18; /* slight outward bow */
+            return {x:mx+ox, y:my-(Math.abs(n1.x-n0.x))*0.15};
+          }
 
-          /* ④ Orange letter badge — bottom-right */
-          var bx=cx+r*0.68, by=cy+r*0.68, br=Math.max(9,r*0.28);
-          X.save();
-          X.shadowColor='rgba(249,115,22,0.85)'; X.shadowBlur=7;
-          X.fillStyle='#f97316';
-          X.beginPath(); X.arc(bx,by,br,0,6.283); X.fill();
-          X.strokeStyle='rgba(212,175,55,0.85)'; X.lineWidth=1.5;
-          X.beginPath(); X.arc(bx,by,br,0,6.283); X.stroke();
-          X.fillStyle='#fff';
-          X.font='bold '+(Math.round(br*1.1))+'px sans-serif';
-          X.textAlign='center'; X.textBaseline='middle';
-          X.fillText(_aLetter,bx,by+0.5);
-          X.restore();
+          /* ① Draw static edge lines */
+          ES.forEach(function(e){
+            var n0=NS[e[0]], n1=NS[e[1]], cpt=cp(n0,n1);
+            X.save();
+            X.strokeStyle='rgba(103,232,249,0.18)';
+            X.lineWidth=1.4;
+            X.beginPath(); X.moveTo(n0.x,n0.y);
+            X.quadraticCurveTo(cpt.x,cpt.y,n1.x,n1.y);
+            X.stroke();
+            X.restore();
+          });
+
+          /* ② Update + draw flowing particles */
+          _tparts.forEach(function(p){
+            p.t += p.sp; if(p.t>1) p.t=0;
+            var e=ES[p.ei]; if(!e) return;
+            var n0=NS[e[0]], n1=NS[e[1]], cpt=cp(n0,n1);
+            var pt=qbez(p.t,n0,cpt,n1);
+            /* tail glow */
+            X.save();
+            X.shadowColor='rgba(103,232,249,1)'; X.shadowBlur=10;
+            X.fillStyle='rgba(220,250,255,0.95)';
+            X.beginPath(); X.arc(pt.x,pt.y,2.4,0,6.283); X.fill();
+            X.restore();
+          });
+
+          /* ③ Draw nodes */
+          NS.forEach(function(n){
+            /* outer glow */
+            X.save();
+            X.shadowColor=n.glow; X.shadowBlur=16;
+            var gr=X.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r+4);
+            gr.addColorStop(0,n.col+'44'); gr.addColorStop(1,n.col+'00');
+            X.fillStyle=gr;
+            X.beginPath(); X.arc(n.x,n.y,n.r+4,0,6.283); X.fill();
+            /* dark fill */
+            X.fillStyle='#0a0f1e';
+            X.beginPath(); X.arc(n.x,n.y,n.r,0,6.283); X.fill();
+            /* colored border */
+            X.strokeStyle=n.col; X.lineWidth=1.6;
+            X.beginPath(); X.arc(n.x,n.y,n.r,0,6.283); X.stroke();
+            /* label */
+            X.fillStyle='#fff';
+            X.font='bold '+Math.round(n.r*0.85)+'px sans-serif';
+            X.textAlign='center'; X.textBaseline='middle';
+            X.fillText(n.lbl,n.x,n.y+0.5);
+            X.restore();
+          });
         }
 
         /* ── Main render loop ─────────────────────────────── */
@@ -608,7 +658,7 @@ async function loadAgentIcons() {
           /* render */
           drawGlobe();
           drawNetwork();
-          drawAgent();
+          drawTree();
         }
 
         /* ── Init canvas (compact half-sphere layout) ────── */
@@ -619,10 +669,9 @@ async function loadAgentIcons() {
           NW=wrap.clientWidth||360;
           GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
           GCX=GR+14;                               /* globe left-aligned */
-          ACX=GCX; ACY=ACR+14;
-          GCY=ACY+ACR+28+GR;
-          /* compact half-sphere — show ~55% below globe centre */
-          NH=Math.round(GCY+GR*0.52);
+          GCY=GR+26;                               /* globe-only, no avatar above */
+          /* show 68% below globe centre — enough room for tree C-level */
+          NH=Math.round(GCY+GR*0.68);
           dpr=window.devicePixelRatio||1;
           C.width=NW*dpr; C.height=NH*dpr;
           C.style.width=NW+'px'; C.style.height=NH+'px';
