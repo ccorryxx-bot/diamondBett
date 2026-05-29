@@ -28,6 +28,19 @@ class DiamondSwiper {
 
     // Backward-compat hook used by games.js after loadBanners()
     window._restartBanner = () => this.restart();
+
+    // Pause/resume on page visibility change (battery + performance)
+    var _self = this;
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) { _self._stopAuto(); }
+      else                 { _self._startAuto(); }
+    });
+
+    // GPU compositing hint
+    this.wraps.forEach(function(wrap) {
+      var t = wrap.querySelector('.banner-track');
+      if (t) t.style.willChange = 'transform';
+    });
   }
 
   // ── Slide count (read live from DOM for dynamic content) ──

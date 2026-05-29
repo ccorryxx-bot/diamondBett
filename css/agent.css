@@ -388,91 +388,42 @@
 }
 
 /* ═══════════════════════════════════════════════
-   RANK BADGE — AI Operator HUD Core  ← KEY ELEMENT
+   RANK BADGE — Luxury Gold Rank Medal
    ═══════════════════════════════════════════════ */
 .rank-badge-btn{
-  width:52px;height:52px;border-radius:50%;flex-shrink:0;
-  background:#020c1e;
-  border:none;
+  width:54px;height:66px;border-radius:4px;flex-shrink:0;
+  background:transparent;
+  border:none;padding:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:18px;font-weight:900;color:#fff;
   position:relative;cursor:pointer;
-  transition:transform .15s;
+  transition:transform .15s, filter .2s;
   z-index:1;
-  text-shadow:0 0 10px rgba(0,255,255,.85);
-  animation:cyanPulse 2.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 5px rgba(255,180,0,.45)) drop-shadow(0 2px 6px rgba(140,80,0,.4));
+  animation:goldMedalPulse 3s ease-in-out infinite;
 }
-/* conic spinning ring */
-.rank-badge-btn::before{
-  content:'';position:absolute;inset:-3px;border-radius:50%;
-  background:conic-gradient(
-    #00ffff 0deg 80deg,
-    transparent 80deg 110deg,
-    #ff00ff 110deg 190deg,
-    transparent 190deg 220deg,
-    #00e5ff 220deg 300deg,
-    transparent 300deg 330deg,
-    #7f00ff 330deg 360deg
-  );
-  animation:neonRingRotate 2.5s linear infinite;
-  z-index:-1;
-}
-/* inner bg */
-.rank-badge-btn::after{
-  content:'';position:absolute;inset:2.5px;
-  background:radial-gradient(circle at 35% 35%,#081a38,#010810);
-  border-radius:50%;z-index:-1;
-  box-shadow:inset 0 0 12px rgba(0,255,255,.12);
-}
-.rank-badge-btn:active{transform:scale(.88);}
+.rank-badge-btn::before{ display:none; }
+.rank-badge-btn::after{ display:none; }
+.rank-badge-btn:active{ transform:scale(.88); }
 
-/* HUD concentric pulse rings around badge */
-.hud-ring-wrap{
-  position:absolute;inset:-10px;border-radius:50%;
-  pointer-events:none;z-index:0;
-}
-.hud-ring-1{
-  position:absolute;inset:0;border-radius:50%;
-  border:1px solid rgba(0,255,255,.18);
-  animation:hudPulse 2s ease-in-out infinite;
-}
-.hud-ring-2{
-  position:absolute;inset:-7px;border-radius:50%;
-  border:1px solid rgba(255,0,255,.1);
-  animation:hudPulse 2s ease-in-out infinite .6s;
-}
-.hud-ring-3{
-  position:absolute;inset:-14px;border-radius:50%;
-  border:1px dashed rgba(0,200,255,.06);
-  animation:neonRingRotate 10s linear infinite reverse;
-}
+.gold-medal-svg{ display:block; }
 
-/* scanner sweep inside badge */
-.hud-scan-line{
-  position:absolute;top:50%;left:50%;
-  width:48%;height:1px;
-  background:linear-gradient(90deg,rgba(0,255,255,.9),transparent);
-  transform-origin:0% 50%;
-  animation:scanSweep 1.8s linear infinite;
-  pointer-events:none;z-index:3;
-  box-shadow:0 0 4px rgba(0,255,255,.6);
-}
+/* Suppress old HUD children */
+.hud-ring-wrap,.hud-scan-line,.rank-num{ display:none; }
 
-/* level number */
-.rank-num{
-  position:relative;z-index:4;
-  animation:glitchShift 7s infinite;
+@keyframes goldMedalPulse{
+  0%,100%{ filter:drop-shadow(0 0 5px rgba(255,180,0,.45)) drop-shadow(0 2px 6px rgba(140,80,0,.4)); }
+  50%{     filter:drop-shadow(0 0 12px rgba(255,215,0,.75)) drop-shadow(0 3px 10px rgba(160,90,0,.6)); }
 }
 
 .rank-badge-indicator{
-  position:absolute;top:-3px;right:-3px;
+  position:absolute;top:-2px;right:-2px;
   width:15px;height:15px;
-  background:rgba(0,15,35,.95);
-  border:1px solid rgba(0,255,255,.3);
+  background:rgba(20,10,0,.95);
+  border:1px solid rgba(255,200,50,.45);
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   z-index:5;
-  box-shadow:0 0 5px rgba(0,255,255,.4);
+  box-shadow:0 0 5px rgba(255,200,50,.35);
 }
 
 /* ═══════════════════════════════════════════════

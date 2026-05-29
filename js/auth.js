@@ -283,7 +283,7 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
   }
   // ──────────────────────────────────────────────────────────
 
-  setEl('agentUserPhone',    phone);
+  setEl('agentUserPhone',    agentRefCode);
   setEl('agentPhoneDisplay', agentRefCode);
   setEl('agentJoinDate',     new Date().toLocaleDateString('en-GB'));
   setEl('statBalance',       fmt(balance));

@@ -29,13 +29,24 @@ function buildLevelModal() {
   body.innerHTML = AGENT_LEVELS.map(({ lv, req }) => {
     const { a, b } = getLevelColor(lv);
     const isCurrent = lv === userLv;
-    const svg = `<svg width="36" height="36" viewBox="0 0 36 36">
-      <defs><linearGradient id="lg${lv}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${a}"/><stop offset="100%" stop-color="${b}"/>
-      </linearGradient></defs>
-      <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="url(#lg${lv})" opacity=".25" stroke="${a}" stroke-width="1.5"/>
-      <polygon points="18,6 28,12 28,24 18,30 8,24 8,12" fill="url(#lg${lv})" opacity=".6"/>
-      <text x="18" y="22" text-anchor="middle" fill="white" font-size="${lv >= 10 ? 9 : 11}" font-weight="900" font-family="sans-serif">${lv}</text>
+    const svg = `<svg width="36" height="44" viewBox="0 0 36 44" fill="none">
+      <defs>
+        <linearGradient id="ml${lv}" x1="0" y1="0" x2="36" y2="44" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="${a}cc"/><stop offset="100%" stop-color="${b}"/>
+        </linearGradient>
+      </defs>
+      <!-- Ribbon -->
+      <polygon points="10,29 14,43 18,36" fill="url(#ml${lv})" opacity="0.92"/>
+      <polygon points="26,29 22,43 18,36" fill="${b}" opacity="0.85"/>
+      <polygon points="15,29 18,38 21,29" fill="${b}" opacity="0.45"/>
+      <!-- Scalloped outer ring -->
+      <circle cx="18" cy="17" r="13.5" fill="none" stroke="${a}" stroke-width="3" stroke-dasharray="3.2 1.1" stroke-linecap="round" opacity="0.9"/>
+      <!-- Inner disc -->
+      <circle cx="18" cy="17" r="10.5" fill="rgba(10,5,0,0.9)"/>
+      <!-- Inner border -->
+      <circle cx="18" cy="17" r="10.5" fill="none" stroke="${a}" stroke-width="1" opacity="0.75"/>
+      <!-- Level number -->
+      <text x="18" y="21.5" text-anchor="middle" fill="${a}" font-size="${lv >= 10 ? 7.5 : 9.5}" font-weight="900" font-family="Arial,sans-serif">${lv}</text>
     </svg>`;
     return `<div class="level-row${isCurrent ? ' current-level' : ''}">
       <div class="level-badge-icon">${svg}</div>
