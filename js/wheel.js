@@ -1,4 +1,4 @@
-const WHEEL_SLOTS = [
+let WHEEL_SLOTS = [
   { label: '5,000',   amount: 5000,  color: '#6B1010' },
   { label: '15,000',  amount: 15000, color: '#3D0707' },
   { label: '30,000',  amount: 30000, color: '#6B1010' },
@@ -130,11 +130,50 @@ function spinToSlot(slotIndex, onDone) {
   _animId = requestAnimationFrame(animate);
 }
 
+
+// ============================================================
+// LOAD WHEEL CONFIG FROM DB
+// ============================================================
+async function loadWheelConfig() {
+  if (!window.DB) return;
+  try {
+    const { data, error } = await window.DB
+      .from('wheel_config')
+      .select('slot_index,prize_amount,turnover_multiplier')
+      .order('slot_index');
+    if (error || !data || !data.length) return;
+    const DARK = ['#6B1010','#3D0707'];
+    const BLANK = ['#151525','#0D0D18'];
+    const newSlots = Array.from({ length: 8 }, (_, i) => ({
+      label: 'ဗလာ', amount: 0, color: BLANK[i % 2]
+    }));
+    data.forEach(row => {
+      const idx = (parseInt(row.slot_index) || 1) - 1;
+      if (idx < 0 || idx > 7) return;
+      const amt = parseInt(row.prize_amount) || 0;
+      const lbl = amt > 0
+        ? (amt >= 10000 ? Math.round(amt/1000)+'K' : String(amt))
+        : 'ဗလာ';
+      newSlots[idx] = { label: lbl, amount: amt, color: DARK[idx % 2] };
+    });
+    WHEEL_SLOTS = newSlots;
+    data.forEach(row => {
+      const amt  = parseInt(row.prize_amount) || 0;
+      const mult = parseInt(row.turnover_multiplier) || 5;
+      if (amt > 0) TURNOVER_MULT[amt] = mult;
+    });
+    drawWheel(_wheelAngle);
+  } catch (e) {
+    console.warn('[Wheel] DB config load failed, using defaults:', e);
+  }
+}
+
 // ============================================================
 // INIT WHEEL EVENTS
 // ============================================================
 function initWheel() {
   drawWheel(0);
+  loadWheelConfig();
 
   document.getElementById('spinBtn').addEventListener('click', async () => {
     if (!window.currentUserId) { openAuthModal('login'); return; }
