@@ -345,15 +345,6 @@ async function loadAgentIcons() {
         var _rotY = 0, _rotVel = 0.003;
         var _dragging = false, _dragX0 = 0, _rotY0 = 0, _prevX = 0;
         var _aLetter = 'A';
-        var _avatarImg = null, _avatarLoaded = false;
-        (function(){
-          var img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = function(){ _avatarLoaded = true; };
-          img.onerror = function(){ _avatarLoaded = false; };
-          img.src = 'https://ik.imagekit.io/tdpebgueq/Agent%20page%20avatar%20/IMG_20260529_140125.png';
-          _avatarImg = img;
-        })();
 
         /* ── Layout (set in nnInit) ───────────────────────── */
         var GR = 130, GCX, GCY;
@@ -567,18 +558,21 @@ async function loadAgentIcons() {
           X.beginPath(); X.arc(cx,cy,r+1.5,0,6.283); X.stroke();
           X.restore();
 
-          /* ② Clip to circle then draw avatar image */
+          /* ② Clip to circle — dark background + "Agent A" text */
           X.save();
           X.beginPath(); X.arc(cx,cy,r,0,6.283); X.clip();
 
-          /* fallback background */
-          X.fillStyle='#f2ede4';
-          X.fillRect(cx-r,cy-r,r*2,r*2);
+          /* dark gradient background */
+          var bg=X.createRadialGradient(cx,cy-r*0.2,0,cx,cy,r);
+          bg.addColorStop(0,'#1e1a2e');
+          bg.addColorStop(1,'#0d0b18');
+          X.fillStyle=bg; X.fillRect(cx-r,cy-r,r*2,r*2);
 
-          /* draw ImageKit avatar if loaded */
-          if(_avatarLoaded && _avatarImg){
-            X.drawImage(_avatarImg, cx-r, cy-r, r*2, r*2);
-          }
+          /* "Agent A" label */
+          X.fillStyle='rgba(212,175,55,0.92)';
+          X.font='bold '+Math.round(r*0.30)+'px sans-serif';
+          X.textAlign='center'; X.textBaseline='middle';
+          X.fillText('Agent A', cx, cy);
 
           X.restore(); /* end clip */
 
@@ -624,8 +618,9 @@ async function loadAgentIcons() {
           var wrap=document.getElementById('nnCanvasWrap');
           NW=wrap.clientWidth||360;
           GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
-          ACX=NW/2; ACY=ACR+14;
-          GCX=NW/2; GCY=ACY+ACR+28+GR;
+          GCX=GR+14;                               /* globe left-aligned */
+          ACX=GCX; ACY=ACR+14;
+          GCY=ACY+ACR+28+GR;
           /* compact half-sphere — show ~55% below globe centre */
           NH=Math.round(GCY+GR*0.52);
           dpr=window.devicePixelRatio||1;
