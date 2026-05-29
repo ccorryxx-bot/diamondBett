@@ -316,6 +316,413 @@ async function loadAgentIcons() {
         <div><div class="collection-label">ပွဲအတွက် စုဆောင်းငွေများ</div><div class="collection-val">0.00</div></div>
         <button class="collection-btn">လွတ်ခ...</button>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           NEURAL NETWORK — DOWNLINE LIVE VISUALIZATION
+           ═══════════════════════════════════════════════════ -->
+      <div class="nn-wrap" id="nnNetworkWrap">
+
+        <!-- Header -->
+        <div class="nn-header">
+          <span class="nn-live-dot" id="nnLiveDot"></span>
+          <span class="nn-title">ကျွန်ုပ်၏ အောက်လက်ငယ်သားများ!</span>
+          <span class="nn-count" id="nnMemberCount">0 members</span>
+        </div>
+
+        <!-- Canvas -->
+        <div class="nn-canvas-wrap" id="nnCanvasWrap">
+          <canvas id="nnCanvas"></canvas>
+
+          <!-- Empty state overlay (no downlines yet) -->
+          <div class="nn-empty-state" id="nnEmptyState">
+            <div class="nn-empty-title">Downline မရှိသေးပါ</div>
+            <div class="nn-empty-sub">Referral link မျှဝေပြီး ဖိတ်ပါ<br>Network grow ဖြစ်သင့်ပြီ</div>
+            <div class="nn-wait-row">
+              <span class="nn-dot-anim"></span>
+              <span class="nn-dot-anim"></span>
+              <span class="nn-dot-anim"></span>
+              <span class="nn-wait-text">Waiting for connections...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Neural Network Canvas Engine ─────────────────── -->
+      <script>
+      (function(){
+        var C, X, NW, NH, dpr;
+        var _agent  = null;
+        var _nodes  = [];
+        var _parts  = [];
+        var _phantoms = [];
+        var _tick   = 0;
+        var _raf    = null;
+        var _inited = false;
+        var _rtCh   = null;
+
+        /* ── Positions on a circle ─────────────────────── */
+        function _circle(n, radius, cx, cy, startAngle) {
+          var out = [];
+          for (var i = 0; i < n; i++) {
+            var a = (i / n) * Math.PI * 2 + (startAngle || -Math.PI / 2);
+            out.push({ x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius });
+          }
+          return out;
+        }
+
+        /* ── Spawn background particles ────────────────── */
+        function _spawnParts(n) {
+          _parts = [];
+          for (var i = 0; i < n; i++) {
+            _parts.push({
+              x: Math.random() * NW,
+              y: Math.random() * NH,
+              vx: (Math.random() - 0.5) * 0.45,
+              vy: (Math.random() - 0.5) * 0.45,
+              r:  Math.random() * 1.6 + 0.4,
+              a:  Math.random() * 0.7 + 0.3,
+              hue: Math.random() > 0.5 ? '0,229,255' : '157,78,221',
+              ct: Math.random() * 180,
+              tp: Math.floor(Math.random() * 7),
+            });
+          }
+        }
+
+        /* ── Build downline node list ───────────────────── */
+        function _buildNodes(users) {
+          if (!users.length) { _nodes = []; return; }
+          var pos = _circle(Math.min(users.length, 12), 120, _agent.x, _agent.y);
+          _nodes = users.slice(0, 12).map(function(u, i) {
+            return {
+              bx: pos[i].x, by: pos[i].y,
+              x:  pos[i].x, y:  pos[i].y,
+              r:  22,
+              lbl: (u.fullname || u.phone || 'U').charAt(0).toUpperCase(),
+              ph:  (u.phone || '').slice(-4),
+              pulse: Math.random() * Math.PI * 2,
+            };
+          });
+        }
+
+        /* ── Set downlines from Supabase data ──────────── */
+        function nnSet(users) {
+          var cnt = document.getElementById('nnMemberCount');
+          if (cnt) cnt.textContent = (users.length) + ' members';
+          _buildNodes(users);
+          var emp = document.getElementById('nnEmptyState');
+          if (emp) emp.style.display = users.length ? 'none' : 'flex';
+        }
+
+        /* ── INIT canvas ───────────────────────────────── */
+        function nnInit() {
+          C = document.getElementById('nnCanvas');
+          if (!C || _inited) return;
+          _inited = true;
+          var wrap = document.getElementById('nnCanvasWrap');
+          NW  = wrap.clientWidth  || 360;
+          NH  = 330;
+          dpr = window.devicePixelRatio || 1;
+          C.width  = NW * dpr;
+          C.height = NH * dpr;
+          C.style.width  = NW + 'px';
+          C.style.height = NH + 'px';
+          X = C.getContext('2d');
+          X.scale(dpr, dpr);
+          _agent    = { x: NW / 2, y: NH / 2 - 15, r: 40 };
+          _phantoms = _circle(7, 128, _agent.x, _agent.y);
+          _spawnParts(32);
+          if (_raf) cancelAnimationFrame(_raf);
+          _loop();
+        }
+
+        /* ── Main render loop ──────────────────────────── */
+        function _loop() {
+          _raf = requestAnimationFrame(_loop);
+          _tick++;
+          X.clearRect(0, 0, NW, NH);
+
+          /* deep dark bg */
+          var bg = X.createRadialGradient(NW/2, NH/2, 0, NW/2, NH/2, NH);
+          bg.addColorStop(0, 'rgba(6,10,42,1)');
+          bg.addColorStop(1, 'rgba(2,3,16,1)');
+          X.fillStyle = bg;
+          X.fillRect(0, 0, NW, NH);
+
+          /* dot grid */
+          X.fillStyle = 'rgba(80,120,255,0.04)';
+          for (var gx = 0; gx < NW; gx += 24)
+            for (var gy = 0; gy < NH; gy += 24) {
+              X.beginPath(); X.arc(gx, gy, 0.8, 0, 6.28); X.fill();
+            }
+
+          _nodes.length ? _drawConnected() : _drawWaiting();
+          _drawAgent();
+        }
+
+        /* ── WAITING STATE (no downlines) ──────────────── */
+        function _drawWaiting() {
+          var t = _tick * 0.013;
+
+          /* phantom circles + dashed lines */
+          _phantoms.forEach(function(ph, i) {
+            var p = Math.sin(t + i * 0.85) * 0.5 + 0.5;
+            X.save();
+            X.strokeStyle = 'rgba(0,190,255,' + (0.07 + p * 0.13) + ')';
+            X.lineWidth = 0.8;
+            X.setLineDash([3, 6]);
+            X.lineDashOffset = -_tick * 0.35;
+            X.beginPath(); X.arc(ph.x, ph.y, 15, 0, 6.28); X.stroke();
+            X.restore();
+
+            X.save();
+            X.strokeStyle = 'rgba(0,190,255,' + (0.03 + p * 0.05) + ')';
+            X.lineWidth = 0.5;
+            X.setLineDash([2, 10]);
+            X.lineDashOffset = -_tick * 0.5;
+            X.beginPath(); X.moveTo(_agent.x, _agent.y); X.lineTo(ph.x, ph.y); X.stroke();
+            X.restore();
+          });
+
+          /* chasing particles */
+          _parts.forEach(function(p) {
+            p.ct--;
+            if (p.ct <= 0) { p.tp = Math.floor(Math.random() * _phantoms.length); p.ct = 90 + Math.random() * 130; }
+            var ph = _phantoms[p.tp];
+            var dx = ph.x - p.x, dy = ph.y - p.y;
+            var d = Math.sqrt(dx*dx + dy*dy);
+            if (d > 4) { p.vx += (dx/d)*0.05; p.vy += (dy/d)*0.05; }
+            else        { p.ct = 0; }
+            p.vx *= 0.91; p.vy *= 0.91;
+            p.x += p.vx;  p.y += p.vy;
+            X.save();
+            X.shadowColor = 'rgba('+p.hue+',1)'; X.shadowBlur = 7;
+            X.fillStyle = 'rgba('+p.hue+','+p.a*0.7+')';
+            X.beginPath(); X.arc(p.x, p.y, p.r, 0, 6.28); X.fill();
+            X.restore();
+          });
+
+          /* pulsing orbit rings */
+          [90, 115].forEach(function(rad, ri) {
+            var p = Math.sin(_tick * 0.025 + ri) * 0.5 + 0.5;
+            X.save();
+            X.strokeStyle = ri===0 ? 'rgba(0,200,255,'+(0.12+p*0.18)+')' : 'rgba(157,78,221,'+(0.07+p*0.1)+')';
+            X.lineWidth = 0.8;
+            X.setLineDash([4, 7]);
+            X.lineDashOffset = ri===0 ? -_tick*0.4 : _tick*0.28;
+            X.beginPath(); X.arc(_agent.x, _agent.y, rad, 0, 6.28); X.stroke();
+            X.restore();
+          });
+        }
+
+        /* ── CONNECTED STATE (has downlines) ───────────── */
+        function _drawConnected() {
+          /* connection lines + traveling dots */
+          _nodes.forEach(function(nd, i) {
+            nd.pulse += 0.016;
+            nd.x = nd.bx + Math.sin(nd.pulse) * 3.5;
+            nd.y = nd.by + Math.cos(nd.pulse * 0.7) * 2.5;
+
+            var dx = nd.x - _agent.x, dy = nd.y - _agent.y;
+
+            /* glow line */
+            var lg = X.createLinearGradient(_agent.x, _agent.y, nd.x, nd.y);
+            lg.addColorStop(0,   'rgba(110,80,255,0.85)');
+            lg.addColorStop(0.45,'rgba(0,210,255,0.60)');
+            lg.addColorStop(1,   'rgba(157,78,221,0.75)');
+            X.save();
+            X.shadowColor = 'rgba(0,210,255,0.55)'; X.shadowBlur = 10;
+            X.strokeStyle = lg; X.lineWidth = 1.3;
+            X.setLineDash([]);
+            X.beginPath(); X.moveTo(_agent.x, _agent.y); X.lineTo(nd.x, nd.y); X.stroke();
+            X.restore();
+
+            /* traveling pulse dot */
+            var prog = ((_tick * 0.45 + i * 28) % 100) / 100;
+            var px = _agent.x + dx * prog, py = _agent.y + dy * prog;
+            X.save();
+            X.shadowColor = 'rgba(0,245,255,1)'; X.shadowBlur = 14;
+            X.fillStyle = 'rgba(0,245,255,0.92)';
+            X.beginPath(); X.arc(px, py, 2.4, 0, 6.28); X.fill();
+            X.restore();
+          });
+
+          /* floating particles */
+          _parts.forEach(function(p) {
+            if (p.x < 0 || p.x > NW) p.vx *= -1;
+            if (p.y < 0 || p.y > NH) p.vy *= -1;
+            p.x += p.vx; p.y += p.vy;
+            X.save();
+            X.shadowColor = 'rgba('+p.hue+',0.8)'; X.shadowBlur = 5;
+            X.fillStyle   = 'rgba('+p.hue+','+p.a*0.45+')';
+            X.beginPath(); X.arc(p.x, p.y, p.r*0.75, 0, 6.28); X.fill();
+            X.restore();
+          });
+
+          /* downline nodes */
+          _nodes.forEach(function(nd) {
+            var pulse = Math.sin(nd.pulse) * 0.5 + 0.5;
+
+            /* glow ring */
+            X.save();
+            X.shadowColor = 'rgba(157,78,221,0.85)'; X.shadowBlur = 14;
+            X.strokeStyle = 'rgba(157,78,221,'+(0.45+pulse*0.4)+')';
+            X.lineWidth = 1.3;
+            X.beginPath(); X.arc(nd.x, nd.y, nd.r + 5, 0, 6.28); X.stroke();
+            X.restore();
+
+            /* fill */
+            var ng = X.createRadialGradient(nd.x-4, nd.y-4, 2, nd.x, nd.y, nd.r);
+            ng.addColorStop(0, 'rgba(85,60,190,0.98)');
+            ng.addColorStop(1, 'rgba(38,18,95,0.98)');
+            X.save();
+            X.shadowColor = 'rgba(120,80,255,0.9)'; X.shadowBlur = 18;
+            X.fillStyle = ng;
+            X.beginPath(); X.arc(nd.x, nd.y, nd.r, 0, 6.28); X.fill();
+            X.restore();
+
+            /* border */
+            X.save();
+            X.strokeStyle = 'rgba(160,100,255,0.75)'; X.lineWidth = 1.6;
+            X.beginPath(); X.arc(nd.x, nd.y, nd.r, 0, 6.28); X.stroke();
+            X.restore();
+
+            /* inner highlight */
+            X.save();
+            X.fillStyle = 'rgba(210,190,255,0.55)';
+            X.beginPath(); X.arc(nd.x - nd.r*0.35, nd.y - nd.r*0.35, 3.5, 0, 6.28); X.fill();
+            X.restore();
+
+            /* letter */
+            X.save();
+            X.shadowColor = 'rgba(255,255,255,0.5)'; X.shadowBlur = 6;
+            X.fillStyle = '#fff'; X.font = 'bold 14px sans-serif';
+            X.textAlign = 'center'; X.textBaseline = 'middle';
+            X.fillText(nd.lbl, nd.x, nd.y); X.restore();
+
+            /* last-4 phone */
+            X.save();
+            X.fillStyle = 'rgba(180,155,255,0.65)'; X.font = '8px sans-serif';
+            X.textAlign = 'center';
+            X.fillText(nd.ph, nd.x, nd.y + nd.r + 11); X.restore();
+          });
+        }
+
+        /* ── Agent center node ─────────────────────────── */
+        function _drawAgent() {
+          var p = Math.sin(_tick * 0.038) * 0.5 + 0.5;
+          var cx = _agent.x, cy = _agent.y, r = _agent.r;
+
+          /* orbit rings */
+          [[r+22,'rgba(0,210,255,',0.22,0.32,-0.5,0],[r+36,'rgba(157,78,221,',0.12,0.2,0.32,1]].forEach(function(d) {
+            X.save();
+            X.strokeStyle = d[1]+(d[2]+p*d[3])+')'; X.lineWidth = 0.9;
+            X.setLineDash([4,8]); X.lineDashOffset = d[4]*_tick*(d[5]?-1:1);
+            X.beginPath(); X.arc(cx, cy, d[0], 0, 6.28); X.stroke(); X.restore();
+          });
+
+          /* halo glow */
+          X.save();
+          X.shadowColor = 'rgba(90,60,240,1)'; X.shadowBlur = 36;
+          var hg = X.createRadialGradient(cx, cy, 0, cx, cy, r+8);
+          hg.addColorStop(0, 'rgba(110,80,230,0.0)');
+          hg.addColorStop(1, 'rgba(80,50,200,0.3)');
+          X.fillStyle = hg;
+          X.beginPath(); X.arc(cx, cy, r+8, 0, 6.28); X.fill(); X.restore();
+
+          /* body */
+          X.save();
+          X.shadowColor = 'rgba(110,80,255,1)'; X.shadowBlur = 28;
+          var ag = X.createRadialGradient(cx-9, cy-9, 4, cx, cy, r);
+          ag.addColorStop(0, 'rgba(125,85,235,0.99)');
+          ag.addColorStop(0.55,'rgba(75,45,185,0.99)');
+          ag.addColorStop(1,   'rgba(38,18,115,0.99)');
+          X.fillStyle = ag;
+          X.beginPath(); X.arc(cx, cy, r, 0, 6.28); X.fill(); X.restore();
+
+          /* border */
+          X.save(); X.strokeStyle = 'rgba(140,110,255,0.85)'; X.lineWidth = 2.2;
+          X.beginPath(); X.arc(cx, cy, r, 0, 6.28); X.stroke(); X.restore();
+
+          /* inner highlight */
+          X.save(); X.fillStyle = 'rgba(210,190,255,0.6)';
+          X.beginPath(); X.arc(cx-13, cy-13, 5, 0, 6.28); X.fill(); X.restore();
+
+          /* D letter */
+          X.save();
+          X.shadowColor = 'rgba(255,255,255,0.55)'; X.shadowBlur = 10;
+          X.fillStyle = '#fff'; X.font = 'bold 28px sans-serif';
+          X.textAlign = 'center'; X.textBaseline = 'middle';
+          X.fillText('D', cx, cy+1); X.restore();
+        }
+
+        /* ── Supabase realtime subscription ────────────── */
+        function nnSubscribe(agentId) {
+          if (!window.DB || !agentId) return;
+
+          /* initial load */
+          window.DB.from('users')
+            .select('id,phone,fullname,created_at')
+            .eq('referrer_id', agentId)
+            .order('created_at', { ascending: false })
+            .limit(12)
+            .then(function(r){ if (!r.error) nnSet(r.data || []); });
+
+          /* realtime changes */
+          if (_rtCh) try { window.DB.removeChannel(_rtCh); } catch(e){}
+          _rtCh = window.DB
+            .channel('nn_dl_' + agentId)
+            .on('postgres_changes', {
+              event: '*', schema: 'public', table: 'users',
+              filter: 'referrer_id=eq.' + agentId
+            }, function() {
+              window.DB.from('users')
+                .select('id,phone,fullname,created_at')
+                .eq('referrer_id', agentId)
+                .order('created_at', { ascending: false })
+                .limit(12)
+                .then(function(r){
+                  if (!r.error) {
+                    nnSet(r.data || []);
+                    var dot = document.getElementById('nnLiveDot');
+                    if (dot) { dot.classList.add('flash'); setTimeout(function(){ dot.classList.remove('flash'); }, 1200); }
+                  }
+                });
+            })
+            .subscribe();
+        }
+
+        /* ── Bootstrap ─────────────────────────────────── */
+        function _boot() {
+          nnInit();
+          if (window.currentAgentId) {
+            nnSubscribe(window.currentAgentId);
+          } else {
+            var tries = 0;
+            var w = setInterval(function(){
+              tries++;
+              if (window.currentAgentId || tries > 50) {
+                clearInterval(w);
+                if (window.currentAgentId) nnSubscribe(window.currentAgentId);
+              }
+            }, 400);
+          }
+        }
+
+        /* run after DOM ready */
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function(){ setTimeout(_boot, 700); });
+        } else {
+          setTimeout(_boot, 700);
+        }
+
+        /* also reinit if main tab is clicked */
+        document.addEventListener('click', function(e){
+          var btn = e.target && e.target.closest && e.target.closest('[data-atab]');
+          if (btn && btn.dataset.atab === 'main') setTimeout(function(){ if(!_inited) _boot(); }, 350);
+        });
+      })();
+      </script>
+
     </div>
   </div>
 
