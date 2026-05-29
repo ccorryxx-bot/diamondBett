@@ -348,6 +348,8 @@ async function loadAgentIcons() {
 
         /* ── Layout (set in nnInit) ───────────────────────── */
         var GR = 130, GCX, GCY;
+        /* ── Agent node anchor (globe center top) ─────────── */
+        var ACX = 0, ACY = 0, ACR = 14;
 
         /* ── Flowing-particle state for right-side tree ───── */
         /* ei = edge index 0-4, t = progress 0→1, speed */
@@ -602,8 +604,8 @@ async function loadAgentIcons() {
           ES.forEach(function(e){
             var n0=NS[e[0]], n1=NS[e[1]], cpt=cp(n0,n1);
             X.save();
-            X.strokeStyle='rgba(103,232,249,0.18)';
-            X.lineWidth=1.4;
+            X.strokeStyle='rgba(103,232,249,0.45)';
+            X.lineWidth=1.6;
             X.beginPath(); X.moveTo(n0.x,n0.y);
             X.quadraticCurveTo(cpt.x,cpt.y,n1.x,n1.y);
             X.stroke();
@@ -665,36 +667,47 @@ async function loadAgentIcons() {
         /* ── Init canvas (compact half-sphere layout) ────── */
         function nnInit(){
           C=document.getElementById('nnCanvas');
-          if(!C||_inited) return; _inited=true;
+          if(!C) return;
           var wrap=document.getElementById('nnCanvasWrap');
-          NW=wrap.clientWidth||360;
+          var realW=wrap.clientWidth;
+          /* Skip only if already inited with correct dimensions.
+             Allow reinit when page was hidden (realW was 0) and now visible. */
+          if(_inited && (realW===0 || Math.abs(realW-NW)<5)) return;
+          _inited=true;
+          if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
+
+          NW=realW||360;
           GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
           GCX=GR+14;                               /* globe left-aligned */
           GCY=GR+28;                               /* globe-only, no avatar above */
           /* tall enough: full globe height + tree C-level padding */
           NH=Math.round(GCY+GR*1.10+12);
+          /* ── Fix ACX/ACY/ACR: agent anchor = top of globe ── */
+          ACX=GCX; ACY=GCY-GR; ACR=14;
           dpr=window.devicePixelRatio||1;
           C.width=NW*dpr; C.height=NH*dpr;
           C.style.width=NW+'px'; C.style.height=NH+'px';
           wrap.style.height=NH+'px';
           X=C.getContext('2d'); X.scale(dpr,dpr);
 
-          /* drag handlers */
-          function onStart(px){ _dragging=true; _dragX0=px; _rotY0=_rotY; _prevX=px; _rotVel=0; }
-          function onMove(px){
-            if(!_dragging) return;
-            _rotVel=(px-_prevX)*0.004; _prevX=px;
-            _rotY=_rotY0+(px-_dragX0)*0.006;
+          /* drag handlers — attach only once */
+          if(!C._nnHandlers){
+            C._nnHandlers=true;
+            function onStart(px){ _dragging=true; _dragX0=px; _rotY0=_rotY; _prevX=px; _rotVel=0; }
+            function onMove(px){
+              if(!_dragging) return;
+              _rotVel=(px-_prevX)*0.004; _prevX=px;
+              _rotY=_rotY0+(px-_dragX0)*0.006;
+            }
+            function onEnd(){ _dragging=false; }
+            C.addEventListener('mousedown',function(e){onStart(e.clientX);});
+            window.addEventListener('mousemove',function(e){onMove(e.clientX);});
+            window.addEventListener('mouseup',onEnd);
+            C.addEventListener('touchstart',function(e){onStart(e.touches[0].clientX);e.preventDefault();},{passive:false});
+            C.addEventListener('touchmove',function(e){onMove(e.touches[0].clientX);e.preventDefault();},{passive:false});
+            C.addEventListener('touchend',onEnd);
           }
-          function onEnd(){ _dragging=false; }
-          C.addEventListener('mousedown',function(e){onStart(e.clientX);});
-          window.addEventListener('mousemove',function(e){onMove(e.clientX);});
-          window.addEventListener('mouseup',onEnd);
-          C.addEventListener('touchstart',function(e){onStart(e.touches[0].clientX);e.preventDefault();},{passive:false});
-          C.addEventListener('touchmove',function(e){onMove(e.touches[0].clientX);e.preventDefault();},{passive:false});
-          C.addEventListener('touchend',onEnd);
 
-          if(_raf) cancelAnimationFrame(_raf);
           _loop();
         }
 
@@ -765,9 +778,21 @@ async function loadAgentIcons() {
         } else {
           setTimeout(_boot,700);
         }
+
+        /* Reinit canvas when wrap becomes visible (user opens Agent page) */
+        (function(){
+          var _wrapEl=document.getElementById('nnCanvasWrap');
+          if(!_wrapEl) return;
+          var _io=new IntersectionObserver(function(entries){
+            if(entries[0].isIntersecting){ setTimeout(nnInit,80); }
+          },{threshold:0.05});
+          _io.observe(_wrapEl);
+        })();
+
+        /* Also reinit on agent main-tab click */
         document.addEventListener('click',function(e){
           var btn=e.target&&e.target.closest&&e.target.closest('[data-atab]');
-          if(btn&&btn.dataset.atab==='main') setTimeout(function(){ if(!_inited) _boot(); },350);
+          if(btn&&btn.dataset.atab==='main') setTimeout(nnInit,350);
         });
       })();
       </script>
