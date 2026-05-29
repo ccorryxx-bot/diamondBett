@@ -846,7 +846,7 @@
 .nn-canvas-wrap {
   position: relative;
   width: 100%;
-  min-height: 220px;
+  min-height: 160px;
   overflow: hidden;
 }
 .nn-canvas-wrap canvas {
