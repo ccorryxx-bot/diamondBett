@@ -642,7 +642,11 @@ async function loadAgentIcons() {
           _inited=true;
           if(_raf){ cancelAnimationFrame(_raf); _raf=null; }
 
-          NW=realW||360;
+          /* Cap NW to half the parent split-wrap width to prevent overflow */
+          var splitWrap=wrap.parentElement;
+          var maxW=splitWrap ? Math.floor(splitWrap.clientWidth/2) : 0;
+          NW=realW||(maxW||180);
+          if(maxW && NW>maxW) NW=maxW;
           GR=Math.min(Math.floor((NW-20)/2),60);   /* 60px globe radius */
           GCX=GR+14;                               /* globe left-aligned */
           GCY=GR+28;                               /* globe-only, no avatar above */

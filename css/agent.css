@@ -880,23 +880,28 @@
   min-height: 160px;
 }
 
-/* Globe side: fixed width (just the canvas, no full-width) */
+/* Globe side: exactly 50% width — canvas stretches to fill frame */
 .nn-split-wrap .nn-canvas-wrap {
-  flex: 0 0 auto;
-  width: auto;
+  flex: 0 0 50%;
+  width: 50%;
   min-width: 0;
-  min-height: 0;
+  min-height: 70px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .nn-split-wrap .nn-canvas-wrap canvas {
   display: block;
-  width: auto;
+  max-width: 100%;
+  height: auto;
 }
 
-/* Tree side: expand to fill remaining space */
+/* Tree side: exactly 50% width — content stretches to fill frame */
 .nn-tree-side {
   position: relative;
-  flex: 1 1 0;
+  flex: 0 0 50%;
+  width: 50%;
   min-width: 0;
+  min-height: 70px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -904,6 +909,7 @@
   padding: 6px 4px 8px;
   box-sizing: border-box;
   background: rgba(0,0,0,0);
+  overflow: hidden;
 }
 
 /* SVG overlay for bezier lines */
