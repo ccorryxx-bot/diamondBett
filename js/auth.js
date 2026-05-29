@@ -261,6 +261,10 @@ function onLoginSuccess(user, refCode, balance = 0, userId = null) {
 
   const phone        = user.phone || user.name || '—';
   const agentRefCode = refCode || user.ref_code || '—';
+  // Store globally so account page popups can read them
+  window.currentPhone   = phone;
+  window.currentRefCode = agentRefCode;
+  window.currentRole    = user.role || (user.is_admin ? 'admin' : 'user');
   const shareLink    = agentRefCode !== '—'
     ? `https://diamond-bett.vercel.app/?ref=${agentRefCode}` : '—';
   const bal          = parseFloat(balance || 0);
