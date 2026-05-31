@@ -92,6 +92,16 @@ function renderGames() {
   const grid = document.getElementById('gameGrid');
   if (!grid) return;
 
+  if (!grid._delegated) {
+    grid.addEventListener('click', (e) => {
+      const card = e.target.closest('.game-card');
+      if (card && card.dataset.code) {
+        playGame(card.dataset.code, card.dataset.name);
+      }
+    });
+    grid._delegated = true;
+  }
+
   const filtered = _activeCategory === 'all'
     ? _allGames
     : _allGames.filter(g => g.category === _activeCategory);
@@ -104,10 +114,20 @@ function renderGames() {
     return;
   }
 
-  grid.innerHTML = filtered.map((g, idx) => {
-    const hue    = (idx * 37) % 360;
+  const frag = document.createDocumentFragment();
+  filtered.forEach((g, idx) => {
+    const hue = (idx * 37) % 360;
     const hasImg = g.image_url && !g.image_url.includes('placeholder');
-    return `<div class="game-card" id="gc-${g.game_code}" style="background:linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue+20},55%,11%));" onclick="playGame('${g.game_code}','${(g.game_name||'').replace(/'/g,'')}')">
+    const safeName = (g.game_name || '').replace(/'/g, '');
+    
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.id = `gc-${g.game_code}`;
+    card.dataset.code = g.game_code;
+    card.dataset.name = safeName;
+    card.style.background = `linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue+20},55%,11%))`;
+    
+    card.innerHTML = `
       ${hasImg
         ? `<img src="${g.image_url}" class="gc-bg" loading="lazy" onerror="this.style.display='none'">`
         : `<div class="gc-char">
@@ -119,9 +139,12 @@ function renderGames() {
       <div class="gc-label">
         <span>${g.game_name}</span>
         <span>${(g.category||'').toUpperCase()}</span>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    frag.appendChild(card);
+  });
+
+  grid.innerHTML = '';
+  grid.appendChild(frag);
 }
 
 function filterGames(category) {
@@ -148,6 +171,11 @@ async function playGame(gameCode, gameName) {
   if (card) {
     card.style.opacity       = '0.6';
     card.style.pointerEvents = 'none';
+    const loader = document.createElement('div');
+    loader.className = 'card-loader';
+    loader.innerHTML = '<div class="md-spin"></div>';
+    loader.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;background:rgba(0,0,0,0.3);';
+    card.appendChild(loader);
   }
 
   try {
@@ -215,6 +243,7 @@ async function playGame(gameCode, gameName) {
     if (card) {
       card.style.opacity       = '';
       card.style.pointerEvents = '';
+      card.querySelector('.card-loader')?.remove();
     }
     _launchingGame = null;
   }
