@@ -75,7 +75,7 @@ function initCatItems() {
     item.addEventListener('click', () => {
       document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
       item.classList.add('active');
-      const catMap = { all:'all', show:'show', slot:'slot', arcade:'arcade', live:'live', fish:'fish', sport:'sport', lottery:'lottery' };
+      const catMap = { all:'all', show:'show', slot:'slot', arcade:'arcade', live:'live', fish:'fish', sport:'sport', lottery:'lottery', pg:'pg', pp:'pp', jili:'jili', jdb:'jdb' };
       if (typeof filterGames === 'function') filterGames(catMap[item.dataset.cat] || 'all');
     });
   });
