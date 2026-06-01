@@ -14,7 +14,7 @@ async function openWithdrawModal() {
   const bal = document.getElementById('statBalance')?.textContent || '0.00';
   setEl('wdBalShow', bal);
   setEl('wdBalAmt',  bal + ' ကျပ်');
-  initLinked();
+  await initLinked();
   switchWdTab('wd', document.querySelectorAll('.wd-tab')[0]);
 }
 
@@ -28,11 +28,56 @@ function switchWdTab(tab, el) {
 }
 
 // ============================================================
-// LINKED ACCOUNT
+// LINKED ACCOUNT — DB is source of truth (Issue 2 fix)
+// localStorage is used only as a display cache (speed).
+// Actual withdrawal always reads from DB — not from cache.
 // ============================================================
-function initLinked() {
-  const s = localStorage.getItem('db_linked');
-  if (s) { window._linked = JSON.parse(s); renderLinked(); }
+async function initLinked() {
+  const uid = window.currentUserId;
+  if (!uid || !window.DB) return;
+
+  // Show cached data instantly while DB fetch runs (UX)
+  const cached = localStorage.getItem('db_linked');
+  if (cached) {
+    try {
+      window._linked = JSON.parse(cached);
+      renderLinked();
+    } catch(e) {
+      localStorage.removeItem('db_linked');
+    }
+  }
+
+  // Always sync from DB — DB is the source of truth
+  try {
+    const { data, error } = await window.DB
+      .from('users')
+      .select('withdrawal_method, withdrawal_account, withdrawal_name')
+      .eq('id', uid)
+      .single();
+
+    if (error || !data?.withdrawal_account) {
+      window._linked = null;
+      localStorage.removeItem('db_linked');
+      const noAcct  = document.getElementById('wdNoAcct');
+      const hasAcct = document.getElementById('wdHasAcct');
+      if (noAcct)  noAcct.style.display  = 'block';
+      if (hasAcct) hasAcct.style.display = 'none';
+      return;
+    }
+
+    const provider = (data.withdrawal_method || '').toLowerCase().includes('wave') ? 'wave' : 'kbz';
+    window._linked = {
+      provider,
+      name  : data.withdrawal_name    || '',
+      number: data.withdrawal_account || '',
+    };
+    // Refresh localStorage cache with verified DB data
+    localStorage.setItem('db_linked', JSON.stringify(window._linked));
+    renderLinked();
+  } catch(e) {
+    // Network error — keep showing cached data if any, but flag as unverified
+    console.warn('initLinked: DB sync failed, using cache', e);
+  }
 }
 
 function renderLinked() {
@@ -95,34 +140,52 @@ async function doPaste(id) {
   } catch { /* permission denied */ }
 }
 
+// FIX (Issue 2): confirmLink now awaits DB save — data is in DB before UI updates.
+// localStorage is only written after DB confirms success.
 async function confirmLink() {
   const name = document.getElementById('lnkName').value.trim();
   const num  = document.getElementById('lnkNum').value.trim();
   if (!name)              { gToast('နာမည် ထည့်ပါ');             return; }
   if (!num || num.length < 9) { gToast('ဖုန်းနံပါတ် မှန်ကန်စွာ ထည့်ပါ'); return; }
 
-  window._linked = { provider: window._curProv, name, number: num };
-  localStorage.setItem('db_linked', JSON.stringify(window._linked));
+  if (!window.currentUserId) { gToast('Login ဝင်ပါ', 'error'); return; }
 
-  if (window.currentUserId) {
-    window.DB.from('users').update({
+  // Disable confirm button during save
+  const confirmBtn = document.querySelector('#acctSheet button[onclick*="confirmLink"]');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'သိမ်းနေသည်...'; }
+
+  try {
+    const { error } = await window.DB.from('users').update({
       withdrawal_method : window._curProv === 'kbz' ? 'KBZ Pay' : 'Wave Money',
       withdrawal_account: num,
-      withdrawal_name   : name
-    }).eq('id', window.currentUserId).then(() => {});
-  }
+      withdrawal_name   : name,
+    }).eq('id', window.currentUserId);
 
-  closeSheet();
-  renderLinked();
-  updateLinkTab();
-  gToast('အကောင် ချိတ်ဆောင်ပြီးပါပြီ', 'success');
+    if (error) throw error;
+
+    // DB saved — now safe to update cache and in-memory state
+    window._linked = { provider: window._curProv, name, number: num };
+    localStorage.setItem('db_linked', JSON.stringify(window._linked));
+
+    closeSheet();
+    renderLinked();
+    updateLinkTab();
+    gToast('အကောင် ချိတ်ဆောင်ပြီးပါပြီ', 'success');
+  } catch(e) {
+    gToast('သိမ်းမရပါ: ' + (e.message || 'ထပ်ကြိုးစားပါ'), 'error');
+  } finally {
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'ချိတ်ဆောင်မည်'; }
+  }
 }
 
 // ============================================================
 // WITHDRAW REQUEST
+// FIX (Issue 2): wallet info is fetched FRESH from DB on every
+// submit — localStorage/window._linked are never used as the
+// payment target, so they cannot be tampered with.
 // ============================================================
 async function doWithdraw() {
-  if (!window.currentUserId || !window._linked) return;
+  if (!window.currentUserId) return;
   const amount = parseFloat(document.getElementById('wdAmtInput').value);
   if (!amount || amount <= 0) { gToast('ပမာဏ ထည့်ပါ'); return; }
 
@@ -130,9 +193,10 @@ async function doWithdraw() {
   btn.disabled = true; btn.textContent = 'စစ်ဆေးနေသည်...';
 
   try {
+    // Fetch user balance + verified wallet info + site limits in parallel
     const [uRes, sRes] = await Promise.all([
       window.DB.from('users')
-        .select('balance,remaining_turnover')
+        .select('balance,remaining_turnover,withdrawal_method,withdrawal_account,withdrawal_name')
         .eq('id', window.currentUserId).single(),
       window.DB.from('site_settings')
         .select('min_withdrawal,max_withdrawal')
@@ -140,6 +204,14 @@ async function doWithdraw() {
     ]);
 
     if (uRes.error || sRes.error) throw new Error('ဒေတာ ဆွဲမရပါ');
+
+    // ── Verified wallet from DB (not from localStorage) ──────────────────
+    const walletMethod  = uRes.data?.withdrawal_method  || null;
+    const walletNumber  = uRes.data?.withdrawal_account || null;
+    if (!walletMethod || !walletNumber) {
+      gToast('ငွေထုတ်မည့် ဖုန်းအကောင် မချိတ်ရသေးပါ', 'error');
+      resetWdBtn(); return;
+    }
 
     const tv  = parseFloat(uRes.data?.remaining_turnover || 0);
     const bal = parseFloat(uRes.data?.balance || 0);
@@ -161,8 +233,8 @@ async function doWithdraw() {
       user_id        : window.currentUserId,
       type           : 'withdrawal',
       amount,
-      payment_method : window._linked.provider === 'kbz' ? 'KBZ Pay' : 'Wave Money',
-      payment_details: window._linked.number,
+      payment_method : walletMethod,
+      payment_details: walletNumber,
       status         : 'pending'
     }]);
     if (txErr) throw txErr;
@@ -222,4 +294,4 @@ async function loadTxHistory() {
       </div>
     </div>`;
   }).join('');
-    }
+}
