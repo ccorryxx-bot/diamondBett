@@ -1,12 +1,15 @@
-// HUIDU Gaming API — Game Launch Edge Function
+// HUIDU Gaming API — Game Launch Edge Function (Production)
 // AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
-const AGENCY_UID    = '2c38947f4e36d6c7685583fa20e3acbf'
-const AES_KEY_STR   = '479060999a47a3a311ba5ad48032a5e0'   // 32 ASCII chars = 32 bytes = AES-256
-const PLAYER_PREFIX = 'he0cd4'
-const SERVER_URL    = 'https://jsgame.live'
+// ── Production credentials (V3-DiamodBETT-260601) ──────────────────────────
+const AGENCY_UID    = '31ce96cb1fbe80b35b4917ba95627d64'
+const AES_KEY_STR   = '526bedff1dc3050b0513ff20f0b775e5'  // 32 chars = AES-256
+const PLAYER_PREFIX = 'hdf801'
+// Calls route through static-IP VM proxy → whitelisted by HUIDU
+const SERVER_URL    = 'http://216.146.26.239:3000'
+const PROXY_SECRET  = 'dbet_proxy_k9x2mw7q'
 const HOME_URL      = 'https://diamond-bett.vercel.app'
 
 // ─── AES-256-ECB + PKCS7 ─────────────────────────────────────────────────────
@@ -86,9 +89,8 @@ Deno.serve(async (req: Request) => {
       const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
       const timestamp    = Math.floor(Date.now() / 1000)   // UNIX seconds
 
-      // NOTE: Change currency_code to 'MMK' once HUIDU enables MMK on your production account.
-      // Test environment only accepts 'INR'. Production may support 'MMK'.
-      const currency_code = body.currency || 'INR'
+      // Production account supports MMK
+      const currency_code = 'MMK'
 
       const innerPayload = {
         timestamp,
@@ -107,10 +109,14 @@ Deno.serve(async (req: Request) => {
         AES_KEY_STR
       )
 
+      // Call through VM proxy (static IP 216.146.26.239 — whitelisted by HUIDU)
       const huiduResp = await fetch(`${SERVER_URL}/game/v1`, {
         method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ agency_uid: AGENCY_UID, timestamp, payload: encryptedPayload }),
+        headers: {
+          'Content-Type'   : 'application/json',
+          'x-proxy-secret' : PROXY_SECRET,
+        },
+        body: JSON.stringify({ agency_uid: AGENCY_UID, timestamp, payload: encryptedPayload }),
       })
 
       const huiduData = await huiduResp.json() as {
