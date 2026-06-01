@@ -61,14 +61,32 @@ async function loadGamesFromDB() {
   try {
     if (!window.DB) throw new Error('Supabase client not initialized');
 
-    const { data, error } = await window.DB
-      .from('game_cards')
-      .select('id, game_name, game_code, image_url, category, provider_code')
-      .order('created_at', { ascending: false });
+    // Fetch all games in batches of 1000 (PostgREST max-rows default)
+    // to work around the 1000-row page limit on all Supabase plans.
+    const PAGE_SIZE = 1000;
+    let allData = [];
+    let from = 0;
+    let keepFetching = true;
 
-    if (error) throw error;
+    while (keepFetching) {
+      const { data, error } = await window.DB
+        .from('game_cards')
+        .select('id, game_name, game_code, image_url, category, provider_code')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
 
-    if (!data || data.length === 0) {
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        from += PAGE_SIZE;
+        keepFetching = data.length === PAGE_SIZE;
+      } else {
+        keepFetching = false;
+      }
+    }
+
+    if (allData.length === 0) {
       grid.innerHTML = `
         <div style="grid-column:span 3;text-align:center;color:#555;font-size:12px;padding:30px;">
           ဂိမ်း မရှိသေးပါ
@@ -76,7 +94,7 @@ async function loadGamesFromDB() {
       return;
     }
 
-    _allGames = data;
+    _allGames = allData;
     renderGames();
   } catch (err) {
     console.error('Game load error:', err);
