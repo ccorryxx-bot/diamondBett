@@ -139,14 +139,15 @@ async function registerUser() {
 
     // Step 3: Insert into users table
     const { error: insertErr } = await window.DB.from('users').insert([{
-      id          : uid,
+      id             : uid,
       phone,
-      fullname    : name,
-      balance     : 0,
-      role        : 'player',
-      ref_code    : refCodeNew,
-      referrer_id : referrerId,
-      is_admin    : false,
+      fullname       : name,
+      balance        : 0,
+      role           : 'player',
+      ref_code       : refCodeNew,
+      referrer_id    : referrerId,
+      is_admin       : false,
+      member_account : `hdf801_${uid.replace(/-/g,'').slice(0,10)}`,
     }]);
 
     if (insertErr) {
