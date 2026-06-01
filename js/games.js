@@ -4,6 +4,8 @@ let _allGames       = [];
 let _activeCategory = 'all';
 let _launchingGame  = null;
 
+const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
+
 // ============================================================
 // DYNAMIC BANNERS
 // ============================================================
@@ -61,7 +63,7 @@ async function loadGamesFromDB() {
 
     const { data, error } = await window.DB
       .from('game_cards')
-      .select('id, game_name, game_code, image_url, category')
+      .select('id, game_name, game_code, image_url, category, provider_code')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -104,7 +106,9 @@ function renderGames() {
 
   const filtered = _activeCategory === 'all'
     ? _allGames
-    : _allGames.filter(g => g.category === _activeCategory);
+    : _PROVIDER_CATS.includes(_activeCategory)
+      ? _allGames.filter(g => g.provider_code === _activeCategory)
+      : _allGames.filter(g => g.category === _activeCategory);
 
   if (!filtered.length) {
     grid.innerHTML = `
