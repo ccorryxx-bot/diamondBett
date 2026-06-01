@@ -119,6 +119,13 @@ async function registerUser() {
     const uid = signUpData?.user?.id;
     if (!uid) { gToast('အကောင့်ဖန်တီး မအောင်မြင်ပါ', 'error'); return; }
 
+    // Step 1b: Set session on client NOW so that RLS auth.uid() = id works for INSERT below.
+    // signUp() returns session immediately (mailer_autoconfirm=true) but the client needs
+    // setSession() called explicitly before any table operations.
+    if (signUpData?.session) {
+      await window.DB.auth.setSession(signUpData.session);
+    }
+
     // Step 2: Find referrer if ref code provided
     let referrerId = null;
     if (refCode) {
