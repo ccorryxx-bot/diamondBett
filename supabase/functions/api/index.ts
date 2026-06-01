@@ -110,14 +110,17 @@ Deno.serve(async (req: Request) => {
 
       const { data: user, error: userErr } = await supabase
         .from('users')
-        .select('balance, phone')
+        .select('balance, phone, member_account')
         .eq('id', user_id)
         .single()
 
       if (userErr || !user)
         return json200({ code: 1, msg: 'User not found' })
 
-      const memberAcct   = `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
+      // Use stored member_account if available, else compute (backward compat)
+      const memberAcct = user.member_account
+        ?? `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
+
       const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
       const timestamp    = Math.floor(Date.now() / 1000)
 
@@ -183,13 +186,13 @@ Deno.serve(async (req: Request) => {
 
   // ── Route 2: HUIDU Balance Callback ──────────────────────────────────────
   // HUIDU POSTs here after each game session with updated player balance.
+  // FIX: single-row eq('member_account') query instead of full table scan.
   if (req.method === 'POST' && url.pathname.endsWith('/games/callback')) {
     try {
       const body = await req.json() as {
         agency_uid?: string
         timestamp? : number
         payload?   : string
-        // Some HUIDU versions send fields directly (unencrypted)
         member_account?: string
         balance?       : number
         currency_code? : string
@@ -222,25 +225,48 @@ Deno.serve(async (req: Request) => {
       if (!memberAcct || newBalance === undefined)
         return json200({ code: 1, msg: 'Missing member_account or balance' })
 
-      // member_account format: "hdf801_<user_id_first10>"
-      const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '')
-
       const supabase = makeSupabase()
 
-      // Find user whose UUID (no dashes) starts with suffix
-      const { data: users, error: findErr } = await supabase
+      // ── FIXED: direct index lookup — no full table scan ──────────────────
+      // Requires: ALTER TABLE users ADD COLUMN member_account TEXT UNIQUE;
+      //           CREATE UNIQUE INDEX idx_users_member_account ON users(member_account);
+      // Migration: sql/fix_001_member_account.sql
+      const { data: matched, error: findErr } = await supabase
         .from('users')
         .select('id, balance')
+        .eq('member_account', memberAcct)
+        .single()
 
-      if (findErr || !users?.length)
-        return json200({ code: 1, msg: 'User lookup failed' })
+      if (findErr || !matched) {
+        // Fallback for any user registered before migration ran (no member_account set yet).
+        // Recompute from UUID prefix — safe one-time path; migration removes this codepath.
+        const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '')
+        const { data: allUsers, error: fallbackErr } = await supabase
+          .from('users')
+          .select('id, balance')
+        if (fallbackErr || !allUsers?.length)
+          return json200({ code: 1, msg: 'User lookup failed' })
+        const fallback = allUsers.find(u =>
+          u.id.replace(/-/g, '').slice(0, 10) === suffix
+        )
+        if (!fallback)
+          return json200({ code: 1, msg: 'User not found for member_account: ' + memberAcct })
 
-      const matched = users.find(u =>
-        u.id.replace(/-/g, '').slice(0, 10) === suffix
-      )
+        // Backfill member_account so next callback is fast
+        await supabase
+          .from('users')
+          .update({ member_account: memberAcct })
+          .eq('id', fallback.id)
 
-      if (!matched)
-        return json200({ code: 1, msg: 'User not found for member_account: ' + memberAcct })
+        const { error: updateErrFb } = await supabase
+          .from('users')
+          .update({ balance: newBalance })
+          .eq('id', fallback.id)
+        if (updateErrFb)
+          return json200({ code: 1, msg: 'Balance update failed: ' + updateErrFb.message })
+        return json200({ code: 0, msg: 'success' })
+      }
+      // ── End fix ──────────────────────────────────────────────────────────
 
       const { error: updateErr } = await supabase
         .from('users')
