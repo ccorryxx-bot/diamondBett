@@ -1,14 +1,85 @@
 /* ================================================
-   BANNER
+   BANNER — Glassmorphism redesign
    ================================================ */
-.banner-wrap{position:relative;width:100%;height:186px;flex-shrink:0;overflow:hidden;touch-action: pan-y; will-change: transform;}
+
+/* Outer glass container — sits on top of the green BG */
+.banner-glass-container {
+  position: relative;
+  width: 100%;
+  padding: 10px 10px 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Brand logo bar — glass pill at the very top */
+.banner-brand-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.banner-brand-logo-wrap {
+  background: rgba(255,255,255,.10);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 14px;
+  padding: 5px 16px;
+  box-shadow:
+    0 2px 16px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.banner-brand-logo-wrap img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Glass panel wrapping the banner slides */
+.banner-glass-panel {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.20);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,.28),
+    0 2px 0 rgba(255,255,255,.12) inset,
+    0 -1px 0 rgba(0,0,0,.12) inset;
+}
+
+/* Inner banner wrap — no overflow here, panel handles it */
+.banner-wrap {
+  position: relative;
+  width: 100%;
+  height: 172px;
+  touch-action: pan-y;
+  will-change: transform;
+  overflow: hidden;
+  border-radius: 18px;
+}
 .banner-track{display:flex;width:100%;height:100%;transition:transform .45s cubic-bezier(.4,0,.2,1);}
 .banner-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;}
 .banner-placeholder{text-align:center;pointer-events:none;position:relative;z-index:1;}
 .b-title{font-size:22px;font-weight:900;text-shadow:0 0 20px currentColor;}
 .b-sub{font-size:12px;color:rgba(255,255,255,.72);margin-top:6px;}
 .b-amount{font-size:34px;font-weight:900;color:var(--accent);text-shadow:0 0 30px var(--accent);margin-top:4px;}
-.banner-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5;}
+
+/* Dots — inside the glass panel, below the slides */
+.banner-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 0 8px;
+  background: rgba(0,0,0,.10);
+}
 .dot{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s;}
 .dot.active{width:18px;background:var(--accent);}
 
@@ -461,17 +532,17 @@
 /* Full-width game grid (no sidebar) */
 .game-area {
   flex: 1;
-  padding: 6px 6px 0;
+  padding: 10px 10px 0;
   scrollbar-width: none;
   min-height: 0;
 }
 .game-area::-webkit-scrollbar { display: none; }
 
-/* 3-col grid gets full width now — slightly wider cards */
+/* 3-col grid — proper spacing so cards don't touch */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 10px;
 }
 
 /* ================================================
