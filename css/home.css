@@ -1,86 +1,32 @@
 /* ================================================
-   BANNER — Glassmorphism redesign (logo | slides)
+   BANNER
    ================================================ */
-
-/* Outer container: flex ROW — logo left, slides right */
-.banner-glass-container {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 10px 8px;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-/* ── Left: Logo panel — full height glass column ── */
-.banner-logo-panel {
-  flex-shrink: 0;
-  width: 76px;
-  border-radius: 16px;
-  overflow: hidden;
-  background: rgba(255,255,255,.10);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,.24);
-  box-shadow:
-    0 4px 20px rgba(0,0,0,.22),
-    inset 0 1px 0 rgba(255,255,255,.20);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-}
-.banner-logo-panel img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-/* ── Right: Glass panel with slides ── */
-.banner-glass-panel {
-  flex: 1;
-  border-radius: 16px;
-  overflow: hidden;
-  background: rgba(255,255,255,.08);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,.20);
-  box-shadow:
-    0 8px 32px rgba(0,0,0,.28),
-    0 2px 0 rgba(255,255,255,.12) inset,
-    0 -1px 0 rgba(0,0,0,.12) inset;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Inner banner wrap */
-.banner-wrap {
-  position: relative;
-  width: 100%;
-  flex: 1;
-  height: 160px;
-  touch-action: pan-y;
-  will-change: transform;
-  overflow: hidden;
-}
+.banner-wrap{position:relative;width:100%;height:186px;flex-shrink:0;overflow:hidden;touch-action:pan-y;will-change:transform;}
 .banner-track{display:flex;width:100%;height:100%;transition:transform .45s cubic-bezier(.4,0,.2,1);}
 .banner-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;}
 .banner-placeholder{text-align:center;pointer-events:none;position:relative;z-index:1;}
-.b-title{font-size:20px;font-weight:900;text-shadow:0 0 20px currentColor;}
-.b-sub{font-size:11px;color:rgba(255,255,255,.72);margin-top:6px;}
-.b-amount{font-size:30px;font-weight:900;color:var(--accent);text-shadow:0 0 30px var(--accent);margin-top:4px;}
-
-/* Dots — hidden visually, JS logic still runs */
-.banner-dots { display: none; }
+.b-title{font-size:22px;font-weight:900;text-shadow:0 0 20px currentColor;}
+.b-sub{font-size:12px;color:rgba(255,255,255,.72);margin-top:6px;}
+.b-amount{font-size:34px;font-weight:900;color:var(--accent);text-shadow:0 0 30px var(--accent);margin-top:4px;}
+.banner-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5;}
 .dot{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s;}
 .dot.active{width:18px;background:var(--accent);}
 
-/* Legacy classes — no-op */
-.banner-brand-bar { display: none; }
-.banner-brand-logo-wrap { display: none; }
+/* Brand logo — top-left overlay inside banner */
+.banner-logo-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  pointer-events: none;
+}
+.banner-logo-overlay img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+}
 
 /* ================================================
    QUICK NAV — compact redesign
