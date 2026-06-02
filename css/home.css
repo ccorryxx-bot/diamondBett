@@ -388,3 +388,88 @@
   letter-spacing: .5px;
   line-height: 1;
 }
+
+/* ================================================
+   CATEGORY TAB BAR — Horizontal (replaces sidebar)
+   ================================================ */
+.cat-tab-bar {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  gap: 5px;
+  padding: 7px 10px;
+  background: var(--bg2);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.cat-tab-bar::-webkit-scrollbar { display: none; }
+
+/* Override sidebar's vertical .cat-item styles within the tab bar */
+.cat-tab-bar .cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 5px 10px 6px;
+  border-radius: 22px;
+  min-width: 52px;
+  gap: 3px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  min-height: unset;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+.cat-tab-bar .cat-item::after { display: none; }
+
+.cat-tab-bar .cat-item:active {
+  background: rgba(255,255,255,.10);
+}
+.cat-tab-bar .cat-item.active {
+  background: linear-gradient(135deg, rgba(245,197,24,.22), rgba(245,197,24,.08));
+  border-color: rgba(245,197,24,.35);
+}
+
+.cat-tab-bar .cat-ico {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-tab-bar .cat-lbl {
+  font-size: 7.5px;
+  color: rgba(255,255,255,.45);
+  text-align: center;
+  white-space: nowrap;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .2px;
+}
+.cat-tab-bar .cat-item.active .cat-lbl {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+/* Full-width game grid (no sidebar) */
+.game-area {
+  flex: 1;
+  padding: 6px 6px 0;
+  scrollbar-width: none;
+  min-height: 0;
+}
+.game-area::-webkit-scrollbar { display: none; }
+
+/* 3-col grid gets full width now — slightly wider cards */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
