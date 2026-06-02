@@ -292,9 +292,15 @@ function renderGames() {
         img.width       = 200;
         img.height      = 267;
         img.dataset.src = imgSrc;   // deferred — _gcObserver sets src on scroll
+        // Fallback: original jsDelivr URL if ImageKit CDN fails
+        if (g.image_url && g.image_url.includes('cdn.jsdelivr.net')) {
+          img.dataset.fallback = g.image_url;
+        }
 
         img.onload  = function() { card.classList.add('gc-img-loaded'); };
         img.onerror = function() {
+          const fb = this.dataset.fallback;
+          if (fb && this.src !== fb) { this.src = fb; return; }
           card.classList.add('gc-img-loaded');
           const ph = document.createElement('div');
           ph.innerHTML = _gcPlaceholder(g.game_name);
@@ -471,9 +477,15 @@ function _renderHomeSection(category, count, gridId) {
       img.width       = 200;
       img.height      = 267;
       img.dataset.src = imgSrc;   // deferred via _hsObserver
+      // Fallback: original jsDelivr URL if ImageKit CDN fails
+      if (gm.image_url && gm.image_url.includes('cdn.jsdelivr.net')) {
+        img.dataset.fallback = gm.image_url;
+      }
 
       img.onload  = function() { card.classList.add('gc-img-loaded'); };
       img.onerror = function() {
+        const fb = this.dataset.fallback;
+        if (fb && this.src !== fb) { this.src = fb; return; }
         card.classList.add('gc-img-loaded');
         const ph = document.createElement('div');
         ph.innerHTML = _gcPlaceholder(gm.game_name);
