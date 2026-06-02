@@ -1,40 +1,52 @@
-// IMAGE URL HELPER — optimized: ImageKit transforms ပါ + fallback handling
+// IMAGE URL HELPER
 // ============================================================
 const _IK_BASE = 'https://ik.imagekit.io/tdpebgueq';
-const _IK_TR   = 'tr:w-200,h-150,f-auto,q-75';
 
-function _imgUrl(url) {
+// Apply ImageKit transforms to a URL
+function _applyIkTr(url, tr) {
   if (!url) return '';
 
-  // jsDelivr → ImageKit with transforms (2× retina, auto-WebP, q75)
+  // jsDelivr → ImageKit with transforms
   if (url.includes('cdn.jsdelivr.net/gh/ccorryxx-bot/game-assets')) {
     const path = url.replace(
       'https://cdn.jsdelivr.net/gh/ccorryxx-bot/game-assets@main/', '');
-    return `${_IK_BASE}/${_IK_TR}/${path}`;
+    return `${_IK_BASE}/${tr}/${path}`;
   }
 
-  // Already ImageKit — inject transforms if not already present
+  // Already ImageKit — replace or inject transforms
   if (url.includes('ik.imagekit.io/tdpebgueq/')) {
-    if (url.includes('/tr:')) return url;          // already transformed
-    return url.replace(`${_IK_BASE}/`, `${_IK_BASE}/${_IK_TR}/`);
+    if (url.includes('/tr:')) {
+      return url.replace(/\/tr:[^/]+\//, `/${tr}/`);   // replace existing
+    }
+    return url.replace(`${_IK_BASE}/`, `${_IK_BASE}/${tr}/`);
   }
 
-  // Supabase storage or other CDN — return as-is (can't proxy)
+  // Supabase storage or other — return as-is
   return url;
 }
 
-// ── Inline game card placeholder (shown when img fails or url is missing) ──
+// Game card thumbnails: 3:4 portrait, 200×267 @2× for retina, auto-WebP, q75
+function _gameImgUrl(url) {
+  return _applyIkTr(url, 'tr:w-200,h-267,f-auto,q-75');
+}
+
+// Banner images: full-width banner, 800×400, auto-WebP, q85
+function _bannerImgUrl(url) {
+  return _applyIkTr(url, 'tr:w-800,h-400,f-auto,q-85');
+}
+
+// Legacy alias — kept for any other callers
+function _imgUrl(url) { return _gameImgUrl(url); }
+
+// Game card placeholder (shown when image fails or is missing)
 function _gcPlaceholder(name) {
   const init = ((name || '?')[0] || '?').toUpperCase();
   return `<div class="gc-char">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="1.5" opacity=".35">
+         stroke="currentColor" stroke-width="1.5" opacity=".3">
       <polygon points="12,2 22,8 22,16 12,22 2,16 2,8"/>
     </svg>
-    <span style="position:absolute;bottom:4px;left:0;right:0;text-align:center;
-      font-size:9px;color:rgba(255,255,255,.4);font-weight:700;letter-spacing:.5px;">
-      ${init}
-    </span>
+    <span class="gc-init">${init}</span>
   </div>`;
 }
 
@@ -43,12 +55,12 @@ function _gcPlaceholder(name) {
 let _allGames       = [];
 let _activeCategory = 'all';
 let _launchingGame  = null;
-let _gcObserver     = null;   // IntersectionObserver for lazy image loading
+let _gcObserver     = null;
 
 const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
 
 // ============================================================
-// DYNAMIC BANNERS
+// DYNAMIC BANNERS  (uses _bannerImgUrl — full-width transforms)
 // ============================================================
 async function loadBanners() {
   try {
@@ -68,7 +80,7 @@ async function loadBanners() {
     track.innerHTML = data.map(b => `
       <div class="banner-slide" style="background:#0c0a1e;position:relative;">
         <img
-          src="${_imgUrl(b.image_url)}"
+          src="${_bannerImgUrl(b.image_url)}"
           alt="${b.title || 'Banner'}"
           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
           onerror="this.style.display='none'">
@@ -145,8 +157,8 @@ async function loadGamesFromDB() {
 }
 
 // ============================================================
-// INTERSECTION OBSERVER — lazy image loading
-// Images have data-src; observer swaps to src when card enters viewport.
+// INTERSECTION OBSERVER — lazy load: swap data-src → src
+// on viewport entry (200px pre-load buffer)
 // ============================================================
 function _initGcObserver() {
   if (_gcObserver) _gcObserver.disconnect();
@@ -162,10 +174,7 @@ function _initGcObserver() {
       img.removeAttribute('data-src');
       _gcObserver.unobserve(img);
     });
-  }, {
-    rootMargin: '200px 0px',   // pre-load 200px before visible
-    threshold: 0
-  });
+  }, { rootMargin: '200px 0px', threshold: 0 });
 }
 
 // ============================================================
@@ -175,7 +184,6 @@ function renderGames() {
   const grid = document.getElementById('gameGrid');
   if (!grid) return;
 
-  // Disconnect old observer before re-render
   if (_gcObserver) _gcObserver.disconnect();
 
   if (!grid._delegated) {
@@ -202,16 +210,13 @@ function renderGames() {
     return;
   }
 
-  // ── Phase 1: Build all cards instantly (no network) ──────────
-  // Images use data-src — no network request yet.
-  // IntersectionObserver will swap data-src → src as cards enter viewport.
   _initGcObserver();
 
   const frag = document.createDocumentFragment();
   filtered.forEach((g, idx) => {
     const hue      = (idx * 37) % 360;
-    const imgSrc   = _imgUrl(g.image_url);
-    const hasImg   = imgSrc && !imgSrc.includes('placeholder');
+    const imgSrc   = _gameImgUrl(g.image_url);   // ← portrait transforms
+    const hasImg   = !!(imgSrc && !imgSrc.includes('placeholder'));
     const safeName = (g.game_name || '').replace(/'/g, '');
 
     const card = document.createElement('div');
@@ -223,22 +228,32 @@ function renderGames() {
       `linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue + 20},55%,11%))`;
 
     if (hasImg) {
-      // Use data-src for lazy IntersectionObserver loading
       const img = document.createElement('img');
-      img.className   = 'gc-bg';
-      img.alt         = g.game_name || '';
-      img.width       = 200;
-      img.height      = 150;
-      img.dataset.src = imgSrc;          // ← deferred, no network yet
-      // On error: replace img with placeholder (never show blank card)
+      img.className = 'gc-bg';
+      img.alt       = '';                      // empty alt = no alt text flash
+      img.width     = 200;
+      img.height    = 267;
+      img.dataset.src = imgSrc;               // deferred — no network until visible
+
+      // On load: fade in + remove shimmer from card
+      img.onload = function() {
+        card.classList.add('gc-img-loaded');
+      };
+
+      // On error: swap img → placeholder + remove shimmer
       img.onerror = function() {
+        card.classList.add('gc-img-loaded');
         const ph = document.createElement('div');
         ph.innerHTML = _gcPlaceholder(g.game_name);
-        this.parentNode.replaceChild(ph.firstElementChild, this);
+        if (this.parentNode) {
+          this.parentNode.replaceChild(ph.firstElementChild, this);
+        }
       };
+
       card.appendChild(img);
-      _gcObserver.observe(img);          // will set src when visible
+      _gcObserver.observe(img);
     } else {
+      card.classList.add('gc-img-loaded');    // no image — skip shimmer
       card.insertAdjacentHTML('beforeend', _gcPlaceholder(g.game_name));
     }
 
