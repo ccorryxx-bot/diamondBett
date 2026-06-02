@@ -58,6 +58,8 @@ let _launchingGame  = null;
 let _gcObserver     = null;
 
 const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
+// 'all' tab shows only these 3 providers (not all 1000+ games)
+const _DEFAULT_PROVIDERS = ['pp', 'jili', 'jdb'];
 
 // ============================================================
 // DYNAMIC BANNERS  (uses _bannerImgUrl — full-width transforms)
@@ -197,7 +199,7 @@ function renderGames() {
   }
 
   const filtered = _activeCategory === 'all'
-    ? _allGames
+    ? _allGames.filter(g => _DEFAULT_PROVIDERS.includes(g.provider_code))
     : _PROVIDER_CATS.includes(_activeCategory)
       ? _allGames.filter(g => g.provider_code === _activeCategory)
       : _allGames.filter(g => g.category === _activeCategory);
