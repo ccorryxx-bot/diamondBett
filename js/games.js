@@ -327,8 +327,18 @@ function _renderLoadMore(remaining, total) {
       <span class="lm-count">${remaining.toLocaleString()} ဂိမ်းကျန်သေးသည်</span>
       <span class="lm-divider">—</span>
       <span class="lm-cta">ဆက်ကြည့်ရန် နှိပ်ပါ</span>
-      <svg class="lm-arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
+<svg class="lm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 44" width="32" height="36">
+        <defs>
+          <style>
+            @keyframes fall{0%,100%{opacity:0.2;transform:translateY(-4px)}50%{opacity:1;transform:translateY(0px)}}
+            @keyframes fall2{0%,100%{opacity:0.15;transform:translateY(-4px)}50%{opacity:0.7;transform:translateY(0px)}}
+          </style>
+        </defs>
+        <line x1="20" y1="2" x2="20" y2="22" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+        <polyline points="4,20 20,38 36,20" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="10,14 20,24 30,14" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="animation:fall 1.8s ease-in-out infinite"/>
+        <polyline points="13,8 20,16 27,8" fill="none" stroke="#888" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="animation:fall2 1.8s ease-in-out infinite 0.3s"/>
+        <circle cx="20" cy="41" r="2" fill="#6366f1"/>
       </svg>
     </button>`;
 }
