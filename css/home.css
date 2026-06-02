@@ -442,64 +442,74 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-  gap: 5px;
+  gap: 4px;
   padding: 7px 10px;
-  background: var(--bg2);
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: #7d8c7d;
+  border-bottom: 1px solid rgba(0,0,0,.12);
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 50;
+  -webkit-overflow-scrolling: touch;
 }
 .cat-tab-bar::-webkit-scrollbar { display: none; }
 
-/* Override sidebar's vertical .cat-item styles within the tab bar */
+/* Items — horizontal: icon LEFT, text RIGHT, flat (no frame) */
 .cat-tab-bar .cat-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 20px;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  min-height: unset;
+  cursor: pointer;
+  transition: background .15s;
+}
+.cat-tab-bar .cat-item::after { display: none; }
+.cat-tab-bar .cat-item:active { background: rgba(0,0,0,.12); }
+.cat-tab-bar .cat-item.active {
+  background: rgba(255,255,255,.22);
+  box-shadow: 0 1px 6px rgba(0,0,0,.15);
+}
+
+/* Icon wrapper — SVG items */
+.cat-tab-bar .cat-ico {
+  width: 26px;
+  height: 26px;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 5px 10px 6px;
-  border-radius: 22px;
-  min-width: 52px;
-  gap: 3px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.07);
-  min-height: unset;
-  cursor: pointer;
-  transition: background .18s, border-color .18s;
-}
-.cat-tab-bar .cat-item::after { display: none; }
-
-.cat-tab-bar .cat-item:active {
-  background: rgba(255,255,255,.10);
-}
-.cat-tab-bar .cat-item.active {
-  background: linear-gradient(135deg, rgba(245,197,24,.22), rgba(245,197,24,.08));
-  border-color: rgba(245,197,24,.35);
 }
 
-.cat-tab-bar .cat-ico {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Real logo images */
+.cat-tab-bar .cat-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 5px;
+  flex-shrink: 0;
+  display: block;
 }
 
+/* Label text — visible on #7d8c7d */
 .cat-tab-bar .cat-lbl {
-  font-size: 7.5px;
-  color: rgba(255,255,255,.45);
-  text-align: center;
+  font-size: 11px;
+  color: rgba(255,255,255,.88);
   white-space: nowrap;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: .2px;
+  letter-spacing: .1px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
 }
 .cat-tab-bar .cat-item.active .cat-lbl {
-  color: var(--accent);
+  color: #fff;
   font-weight: 800;
+  text-shadow: 0 1px 4px rgba(0,0,0,.30);
 }
 
 /* Full-width game grid (no sidebar) */
@@ -547,20 +557,20 @@
 }
 .announce-ticker span { color: rgba(255,255,255,.62) !important; }
 
-/* Category tab bar — glass */
+/* Category tab bar — solid #7d8c7d (override glass) */
 .cat-tab-bar {
-  background: rgba(30,55,44,.80) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+  background: #7d8c7d !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid rgba(0,0,0,.12) !important;
 }
 .cat-tab-bar .cat-item {
-  background: rgba(255,255,255,.06) !important;
-  border-color: rgba(255,255,255,.10) !important;
+  background: transparent !important;
+  border: none !important;
 }
 .cat-tab-bar .cat-item.active {
-  background: linear-gradient(135deg, rgba(245,197,24,.25), rgba(245,197,24,.10)) !important;
-  border-color: rgba(245,197,24,.40) !important;
+  background: rgba(255,255,255,.22) !important;
+  border: none !important;
 }
 
 /* ── Game card wrap (grid item) ────────────────────── */
