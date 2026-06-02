@@ -53,12 +53,13 @@ html, body {
   flex-direction: column;
 }
 
+/* homeContent: column layout — tab bar on top, game grid below */
 #homeContent {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  flex-direction: column;
   width: 100%;
   flex: 1;
+  min-height: 0;
 }
 
 
