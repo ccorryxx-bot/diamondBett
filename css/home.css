@@ -340,3 +340,51 @@
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ================================================
+   GAME CARD — Skeleton shimmer while image loads
+   ================================================ */
+
+/* Shimmer pulse shown BEFORE image loads */
+.game-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0)    0%,
+    rgba(255,255,255,0.06) 40%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.06) 60%,
+    rgba(255,255,255,0)    100%
+  );
+  background-size: 250% 100%;
+  animation: gcShimmer 1.4s ease-in-out infinite;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* Once image loaded (or placeholder shown) — hide shimmer */
+.game-card.gc-img-loaded::before {
+  display: none;
+}
+
+@keyframes gcShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* gc-init: initial letter shown in placeholder */
+.gc-init {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,.38);
+  letter-spacing: .5px;
+  line-height: 1;
+}
