@@ -1,11 +1,41 @@
-// IMAGE URL HELPER — converts jsDelivr → ImageKit (faster CDN + auto WebP)
+// IMAGE URL HELPER — optimized: ImageKit transforms ပါ + fallback handling
 // ============================================================
+const _IK_BASE = 'https://ik.imagekit.io/tdpebgueq';
+const _IK_TR   = 'tr:w-200,h-150,f-auto,q-75';
+
 function _imgUrl(url) {
-  if (!url) return url;
-  return url.replace(
-    'https://cdn.jsdelivr.net/gh/ccorryxx-bot/game-assets@main/',
-    'https://ik.imagekit.io/tdpebgueq/'
-  );
+  if (!url) return '';
+
+  // jsDelivr → ImageKit with transforms (2× retina, auto-WebP, q75)
+  if (url.includes('cdn.jsdelivr.net/gh/ccorryxx-bot/game-assets')) {
+    const path = url.replace(
+      'https://cdn.jsdelivr.net/gh/ccorryxx-bot/game-assets@main/', '');
+    return `${_IK_BASE}/${_IK_TR}/${path}`;
+  }
+
+  // Already ImageKit — inject transforms if not already present
+  if (url.includes('ik.imagekit.io/tdpebgueq/')) {
+    if (url.includes('/tr:')) return url;          // already transformed
+    return url.replace(`${_IK_BASE}/`, `${_IK_BASE}/${_IK_TR}/`);
+  }
+
+  // Supabase storage or other CDN — return as-is (can't proxy)
+  return url;
+}
+
+// ── Inline game card placeholder (shown when img fails or url is missing) ──
+function _gcPlaceholder(name) {
+  const init = ((name || '?')[0] || '?').toUpperCase();
+  return `<div class="gc-char">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5" opacity=".35">
+      <polygon points="12,2 22,8 22,16 12,22 2,16 2,8"/>
+    </svg>
+    <span style="position:absolute;bottom:4px;left:0;right:0;text-align:center;
+      font-size:9px;color:rgba(255,255,255,.4);font-weight:700;letter-spacing:.5px;">
+      ${init}
+    </span>
+  </div>`;
 }
 
 // STATE
@@ -13,6 +43,7 @@ function _imgUrl(url) {
 let _allGames       = [];
 let _activeCategory = 'all';
 let _launchingGame  = null;
+let _gcObserver     = null;   // IntersectionObserver for lazy image loading
 
 const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
 
@@ -71,8 +102,6 @@ async function loadGamesFromDB() {
   try {
     if (!window.DB) throw new Error('Supabase client not initialized');
 
-    // Fetch all games in batches of 1000 (PostgREST max-rows default)
-    // to work around the 1000-row page limit on all Supabase plans.
     const PAGE_SIZE = 1000;
     let allData = [];
     let from = 0;
@@ -116,11 +145,38 @@ async function loadGamesFromDB() {
 }
 
 // ============================================================
+// INTERSECTION OBSERVER — lazy image loading
+// Images have data-src; observer swaps to src when card enters viewport.
+// ============================================================
+function _initGcObserver() {
+  if (_gcObserver) _gcObserver.disconnect();
+
+  _gcObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      const src = img.dataset.src;
+      if (!src) return;
+
+      img.src = src;
+      img.removeAttribute('data-src');
+      _gcObserver.unobserve(img);
+    });
+  }, {
+    rootMargin: '200px 0px',   // pre-load 200px before visible
+    threshold: 0
+  });
+}
+
+// ============================================================
 // RENDER + FILTER
 // ============================================================
 function renderGames() {
   const grid = document.getElementById('gameGrid');
   if (!grid) return;
+
+  // Disconnect old observer before re-render
+  if (_gcObserver) _gcObserver.disconnect();
 
   if (!grid._delegated) {
     grid.addEventListener('click', (e) => {
@@ -146,33 +202,52 @@ function renderGames() {
     return;
   }
 
+  // ── Phase 1: Build all cards instantly (no network) ──────────
+  // Images use data-src — no network request yet.
+  // IntersectionObserver will swap data-src → src as cards enter viewport.
+  _initGcObserver();
+
   const frag = document.createDocumentFragment();
   filtered.forEach((g, idx) => {
-    const hue = (idx * 37) % 360;
-    const hasImg = g.image_url && !g.image_url.includes('placeholder');
-    const imgSrc = _imgUrl(g.image_url);
+    const hue      = (idx * 37) % 360;
+    const imgSrc   = _imgUrl(g.image_url);
+    const hasImg   = imgSrc && !imgSrc.includes('placeholder');
     const safeName = (g.game_name || '').replace(/'/g, '');
-    
+
     const card = document.createElement('div');
     card.className = 'game-card';
     card.id = `gc-${g.game_code}`;
     card.dataset.code = g.game_code;
     card.dataset.name = safeName;
-    card.style.background = `linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue+20},55%,11%))`;
-    
-    card.innerHTML = `
-      ${hasImg
-        ? `<img src="${imgSrc}" class="gc-bg" loading="lazy" onerror="this.style.display='none'">`
-        : `<div class="gc-char">
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".4">
-               <polygon points="12,2 22,8 22,16 12,22 2,16 2,8"/>
-             </svg>
-           </div>`
-      }
+    card.style.background =
+      `linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue + 20},55%,11%))`;
+
+    if (hasImg) {
+      // Use data-src for lazy IntersectionObserver loading
+      const img = document.createElement('img');
+      img.className   = 'gc-bg';
+      img.alt         = g.game_name || '';
+      img.width       = 200;
+      img.height      = 150;
+      img.dataset.src = imgSrc;          // ← deferred, no network yet
+      // On error: replace img with placeholder (never show blank card)
+      img.onerror = function() {
+        const ph = document.createElement('div');
+        ph.innerHTML = _gcPlaceholder(g.game_name);
+        this.parentNode.replaceChild(ph.firstElementChild, this);
+      };
+      card.appendChild(img);
+      _gcObserver.observe(img);          // will set src when visible
+    } else {
+      card.insertAdjacentHTML('beforeend', _gcPlaceholder(g.game_name));
+    }
+
+    card.insertAdjacentHTML('beforeend', `
       <div class="gc-label">
         <span>${g.game_name}</span>
-        <span>${(g.category||'').toUpperCase()}</span>
-      </div>`;
+        <span>${(g.category || '').toUpperCase()}</span>
+      </div>`);
+
     frag.appendChild(card);
   });
 
@@ -191,15 +266,11 @@ function filterGames(category) {
 // Mobile Chrome/Safari kill the popup if ANY async gap precedes it.
 // ============================================================
 async function playGame(gameCode, gameName) {
-  // Prevent double-launch (sync check — no await yet)
   if (_launchingGame === gameCode) return;
   _launchingGame = gameCode;
 
-  // ── STEP 1: Open blank tab NOW, inside synchronous user-gesture ──
-  // This MUST come before any await or the browser popup-blocker fires.
   const gameWindow = window.open('about:blank', '_blank');
 
-  // Show loading state on card
   const card = document.getElementById('gc-' + gameCode);
   if (card) {
     card.style.opacity       = '0.6';
@@ -207,18 +278,17 @@ async function playGame(gameCode, gameName) {
     const loader = document.createElement('div');
     loader.className = 'card-loader';
     loader.innerHTML = '<div class="md-spin"></div>';
-    loader.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;background:rgba(0,0,0,0.3);';
+    loader.style.cssText =
+      'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;background:rgba(0,0,0,0.3);';
     card.appendChild(loader);
   }
 
   try {
-    // ── STEP 2: Resolve user ID (async is OK — tab already open) ──
     const uid = window.currentUserId || (
       typeof getAuthUid === 'function' ? await getAuthUid() : null
     );
 
     if (!uid) {
-      // Not logged in — close blank tab, show login modal
       if (gameWindow && !gameWindow.closed) gameWindow.close();
       if (typeof openAuthModal === 'function') openAuthModal('login');
       return;
@@ -226,9 +296,8 @@ async function playGame(gameCode, gameName) {
 
     if (typeof gToast === 'function') gToast(`ဂိမ်း ဖွင့်နေသည်... ${gameName || ''}`);
 
-    // ── STEP 3: Call Edge Function to get game URL ──
-    const apiBase  = (typeof GAME_API_BASE !== 'undefined') ? GAME_API_BASE : '';
-    const supaKey  = (typeof SUPA_KEY      !== 'undefined') ? SUPA_KEY      : '';
+    const apiBase = (typeof GAME_API_BASE !== 'undefined') ? GAME_API_BASE : '';
+    const supaKey = (typeof SUPA_KEY      !== 'undefined') ? SUPA_KEY      : '';
     const resp = await fetch(`${apiBase}/api/games/launch`, {
       method : 'POST',
       headers: {
@@ -236,7 +305,7 @@ async function playGame(gameCode, gameName) {
         'apikey'       : supaKey,
         'Authorization': `Bearer ${supaKey}`,
       },
-      body   : JSON.stringify({
+      body: JSON.stringify({
         user_id : uid,
         game_uid: gameCode,
         platform: 2,
@@ -254,15 +323,14 @@ async function playGame(gameCode, gameName) {
 
     if (result.code !== 0 || !result.game_url) {
       if (gameWindow && !gameWindow.closed) gameWindow.close();
-      if (typeof gToast === 'function') gToast(result.msg || 'ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
+      if (typeof gToast === 'function')
+        gToast(result.msg || 'ဂိမ်း မဖွင့်နိုင်ပါ', 'error');
       return;
     }
 
-    // ── STEP 4: Navigate pre-opened tab to the game ──
     if (gameWindow && !gameWindow.closed) {
       gameWindow.location.href = result.game_url;
     } else {
-      // Blank tab was blocked (very rare) — direct open as fallback
       const fallback = window.open(result.game_url, '_blank');
       if (!fallback && typeof gToast === 'function')
         gToast('Pop-up ပိတ်ထားပါသည် — Browser setting စစ်ပါ', 'error');
@@ -271,7 +339,8 @@ async function playGame(gameCode, gameName) {
   } catch (err) {
     console.error('Game launch error:', err);
     if (gameWindow && !gameWindow.closed) gameWindow.close();
-    if (typeof gToast === 'function') gToast('ဂိမ်း မဖွင့်နိုင်ပါ — ထပ်ကြိုးစားပါ', 'error');
+    if (typeof gToast === 'function')
+      gToast('ဂိမ်း မဖွင့်နိုင်ပါ — ထပ်ကြိုးစားပါ', 'error');
   } finally {
     if (card) {
       card.style.opacity       = '';
