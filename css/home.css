@@ -443,7 +443,7 @@
   overflow-y: hidden;
   scrollbar-width: none;
   gap: 4px;
-  padding: 7px 10px;
+  padding: 4px 10px;
   background: #7d8c7d;
   border-bottom: 1px solid rgba(0,0,0,.12);
   flex-shrink: 0;
