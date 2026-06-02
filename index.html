@@ -16,8 +16,23 @@
 <link rel="stylesheet" href="css/tasks.css">
 <link rel="stylesheet" href="css/account.css">
 <link rel="stylesheet" href="css/admin.css">
+<style>
+#db-splash{position:fixed;inset:0;z-index:99999;background:#0a0516;display:flex;align-items:center;justify-content:center;transition:opacity .65s ease;pointer-events:all;}
+#db-splash img{width:100%;height:100%;object-fit:cover;display:block;}
+#db-splash.hide{opacity:0;pointer-events:none;}
+</style>
 </head>
 <body>
+<div id="db-splash"><img src="https://ik.imagekit.io/tdpebgueq/First%20Load%20image%20/IMG_20260602_212324.png" alt="" draggable="false"></div>
+<script>
+(function(){
+  var s=document.getElementById('db-splash');
+  if(!s)return;
+  var done=false;
+  function rm(){if(done)return;done=true;s.classList.add('hide');setTimeout(function(){s&&s.parentNode&&s.parentNode.removeChild(s);},700);}
+  setTimeout(rm,3000);
+})();
+</script>
 
 <div class="main" id="mainContent">
   <!-- HOME PAGE -->
