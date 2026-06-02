@@ -1,48 +1,48 @@
 /* ================================================
-   BANNER — Glassmorphism redesign
+   BANNER — Glassmorphism redesign (logo | slides)
    ================================================ */
 
-/* Outer glass container — sits on top of the green BG */
+/* Outer container: flex ROW — logo left, slides right */
 .banner-glass-container {
-  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
   width: 100%;
-  padding: 10px 10px 0;
+  padding: 10px 10px 8px;
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
-/* Brand logo bar — glass pill at the very top */
-.banner-brand-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-.banner-brand-logo-wrap {
+/* ── Left: Logo panel — full height glass column ── */
+.banner-logo-panel {
+  flex-shrink: 0;
+  width: 76px;
+  border-radius: 16px;
+  overflow: hidden;
   background: rgba(255,255,255,.10);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 14px;
-  padding: 5px 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.24);
   box-shadow:
-    0 2px 16px rgba(0,0,0,.18),
-    inset 0 1px 0 rgba(255,255,255,.18);
+    0 4px 20px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.20);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 6px;
 }
-.banner-brand-logo-wrap img {
-  height: 32px;
-  width: auto;
+.banner-logo-panel img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
 }
 
-/* Glass panel wrapping the banner slides */
+/* ── Right: Glass panel with slides ── */
 .banner-glass-panel {
-  position: relative;
-  border-radius: 18px;
+  flex: 1;
+  border-radius: 16px;
   overflow: hidden;
   background: rgba(255,255,255,.08);
   backdrop-filter: blur(14px);
@@ -52,36 +52,35 @@
     0 8px 32px rgba(0,0,0,.28),
     0 2px 0 rgba(255,255,255,.12) inset,
     0 -1px 0 rgba(0,0,0,.12) inset;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Inner banner wrap — no overflow here, panel handles it */
+/* Inner banner wrap */
 .banner-wrap {
   position: relative;
   width: 100%;
-  height: 172px;
+  flex: 1;
+  height: 160px;
   touch-action: pan-y;
   will-change: transform;
   overflow: hidden;
-  border-radius: 18px;
 }
 .banner-track{display:flex;width:100%;height:100%;transition:transform .45s cubic-bezier(.4,0,.2,1);}
 .banner-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;}
 .banner-placeholder{text-align:center;pointer-events:none;position:relative;z-index:1;}
-.b-title{font-size:22px;font-weight:900;text-shadow:0 0 20px currentColor;}
-.b-sub{font-size:12px;color:rgba(255,255,255,.72);margin-top:6px;}
-.b-amount{font-size:34px;font-weight:900;color:var(--accent);text-shadow:0 0 30px var(--accent);margin-top:4px;}
+.b-title{font-size:20px;font-weight:900;text-shadow:0 0 20px currentColor;}
+.b-sub{font-size:11px;color:rgba(255,255,255,.72);margin-top:6px;}
+.b-amount{font-size:30px;font-weight:900;color:var(--accent);text-shadow:0 0 30px var(--accent);margin-top:4px;}
 
-/* Dots — inside the glass panel, below the slides */
-.banner-dots {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 0 8px;
-  background: rgba(0,0,0,.10);
-}
+/* Dots — hidden visually, JS logic still runs */
+.banner-dots { display: none; }
 .dot{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s;}
 .dot.active{width:18px;background:var(--accent);}
+
+/* Legacy classes — no-op */
+.banner-brand-bar { display: none; }
+.banner-brand-logo-wrap { display: none; }
 
 /* ================================================
    QUICK NAV — compact redesign
@@ -602,8 +601,8 @@
 
 /* ── Game card — Glassmorphism ─────────────────────── */
 .game-card {
-  aspect-ratio: 3/4;
-  border-radius: 12px !important;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px !important;
   overflow: hidden;
   cursor: pointer;
   position: relative;
@@ -613,7 +612,6 @@
   transition: transform .15s, box-shadow .15s;
   will-change: transform;
   transform: translateZ(0);
-  /* Glass */
   background: rgba(255,255,255,.09) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -631,9 +629,9 @@
 
 /* ── Game name below card ──────────────────────────── */
 .gc-name {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  color: rgba(255,255,255,.88);
+  color: rgba(255,255,255,.92);
   text-align: center;
   line-height: 1.3;
   white-space: nowrap;
@@ -642,7 +640,7 @@
   width: 100%;
   padding: 0 2px;
   letter-spacing: .2px;
-  text-shadow: 0 1px 4px rgba(0,0,0,.4);
+  text-shadow: 0 1px 4px rgba(0,0,0,.5);
 }
 
 /* Hide old gc-label (in case any card still has it) */
