@@ -61,6 +61,25 @@ const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
 // 'all' tab shows only these 3 providers (not all 1000+ games)
 const _DEFAULT_PROVIDERS = ['pp', 'jili', 'jdb'];
 
+// Featured game codes — shown on 'all' tab in this exact order
+const _FEATURED_CODES = [
+  '9b93cb0dc46d847864c87ed42a3428bb', // 1. Wild Ape #3258 (pg)
+  '880a68222d05a3697055d523d574cb2b', // 2. Gates of Olympus Super Scatter (pp)
+  // 3. Raven Party Fever — not in DB
+  '6dcaf78e4e23929cbe2deb3d1210928c', // 4. Sweet Bonanza (pp)
+  'b8e1e1eb06f840517980f96164bc3ccd', // 5. Jackpot Fishing 2 (jili)
+  '09699fd0de13edbb6c4a194d7494640b', // 6. Fengshen (jili)
+  'ab841b96a216b2321baa11d6121185a3', // 7. Pyramid Bonanza (pp)
+  'be6b6890587ed84289fad941d99a3613', // 8. Starlight Princess (pp)
+  '3b502aee6c9e1ef0f698332ee1b76634', // 9. Blackjack (jili)
+  '09d08939279289a03b89f2f146a7f817', // 10. Starlight Princess 1000 (pp)
+  '3ea8ed5f8ba2239e6cd49366afb743f8', // 11. 3 Charge Buffalo (jili)
+  'fe942e56d8f33522e4084e8e3aaa3523', // 12. Cash Coin (jili)
+  '4ae52ed2e1a8c353878ba65ed7791ac4', // 13. Gates of Olympus 1000 (pp)
+  '8cbb88bc0bc1f7be4379cf75abc6095f', // 14. Golden Empire 2 (jili)
+  '981f5f9675002fbeaaf24c4128b938d7', // 15. Boxing King (jili)
+];
+
 // ============================================================
 // DYNAMIC BANNERS  (uses _bannerImgUrl — full-width transforms)
 // ============================================================
@@ -200,7 +219,9 @@ function renderGames() {
   }
 
   const filtered = _activeCategory === 'all'
-    ? _allGames.filter(g => _DEFAULT_PROVIDERS.includes(g.provider_code)).slice(0, 15)
+    ? _FEATURED_CODES
+        .map(code => _allGames.find(g => g.game_code === code))
+        .filter(Boolean)
     : _PROVIDER_CATS.includes(_activeCategory)
       ? _allGames.filter(g => g.provider_code === _activeCategory)
       : _allGames.filter(g => g.category === _activeCategory);
