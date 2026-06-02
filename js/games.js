@@ -335,11 +335,13 @@ function _updateScrollSentinel(hasMore) {
 
   _scrollObserver = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting) {
-      // Disconnect before re-render to avoid double-fire
       _scrollObserver.disconnect();
       _scrollObserver = null;
-      _displayLimit += 20;
-      renderGames();
+      // Pause 1.5s — let current images start loading before fetching next 20
+      setTimeout(() => {
+        _displayLimit += 20;
+        renderGames();
+      }, 1500);
     }
   }, {
     root: null,
@@ -381,6 +383,26 @@ function filterProvider(el, provider) {
   }
   if (el) el.classList.add('active');
   renderGames();
+}
+// ── Quick-jump from provider/category grid ────────────────────────────────────
+function goToSection(cat, provider) {
+  // Activate the correct cat tab
+  document.querySelectorAll('.cat-item').forEach(b => b.classList.remove('active'));
+  const tabEl = document.querySelector('.cat-item[data-cat="' + cat + '"]');
+  if (tabEl) tabEl.classList.add('active');
+
+  // filterGames handles provider bar show/hide + resets provider to 'all'
+  filterGames(cat);
+
+  // If a specific provider requested, also apply provider filter
+  if (provider) {
+    const provEl = document.querySelector('.prov-item[data-prov="' + provider + '"]');
+    filterProvider(provEl, provider);
+  }
+
+  // Scroll to the top of the game section
+  const bar = document.getElementById('catTabBar');
+  if (bar) bar.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ============================================================
