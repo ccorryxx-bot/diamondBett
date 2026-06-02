@@ -24,55 +24,46 @@
   <div id="homePage" class="page-panel active">
     <!-- Top Area moved INSIDE homePage to scroll with content -->
     <div id="topArea">
-      <!-- ===== BANNER — Logo | Slides side by side ===== -->
-      <div class="banner-glass-container">
-
-        <!-- Left: Brand Logo panel (full height glass column) -->
-        <div class="banner-logo-panel">
+      <!-- ===== BANNER ===== -->
+      <div class="banner-wrap" id="bannerWrap">
+        <div class="banner-track" id="bannerTrack">
+          <div class="banner-slide" style="background:linear-gradient(135deg,#1a0850,#5a0095);">
+            <div class="banner-placeholder">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);">PRAGMATIC PLAY</div>
+              <div class="b-title" style="color:#f5c518;">Gates of OLYMPUS</div>
+              <div class="b-sub">ZEUS ရဲ့ အင်အား</div>
+              <div class="b-amount">10,000</div>
+            </div>
+          </div>
+          <div class="banner-slide" style="background:linear-gradient(135deg,#041840,#0060b0);">
+            <div class="banner-placeholder">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);">LIVE CASINO</div>
+              <div class="b-title" style="color:#40cfff;">Real Dealers</div>
+              <div class="b-sub">တိုက်ရိုက် ကာစိနို</div>
+              <div class="b-amount" style="color:#40cfff;">50,000</div>
+            </div>
+          </div>
+          <div class="banner-slide" style="background:linear-gradient(135deg,#300808,#900018);">
+            <div class="banner-placeholder">
+              <div style="font-size:11px;color:rgba(255,255,255,.6);">TOURNAMENT</div>
+              <div class="b-title" style="color:#ff5060;">Grand Prize</div>
+              <div class="b-sub">နှစ်တိုင်း ဆုငွေကြီး</div>
+              <div class="b-amount" style="color:#ff7080;">100,000</div>
+            </div>
+          </div>
+        </div>
+        <!-- Brand logo — top-left overlay -->
+        <div class="banner-logo-overlay">
           <img
             src="https://ik.imagekit.io/tdpebgueq/Brand%20Name%20Logo/IMG_20260602_154542.png"
             alt="Diamond Bett"
             onerror="this.style.display='none'">
         </div>
-
-        <!-- Right: Glass panel with banner slides inside -->
-        <div class="banner-glass-panel">
-          <div class="banner-wrap" id="bannerWrap">
-            <div class="banner-track" id="bannerTrack">
-              <div class="banner-slide" style="background:linear-gradient(135deg,#1a0850,#5a0095);">
-                <div class="banner-placeholder">
-                  <div style="font-size:11px;color:rgba(255,255,255,.6);">PRAGMATIC PLAY</div>
-                  <div class="b-title" style="color:#f5c518;">Gates of OLYMPUS</div>
-                  <div class="b-sub">ZEUS ရဲ့ အင်အား</div>
-                  <div class="b-amount">10,000</div>
-                </div>
-              </div>
-              <div class="banner-slide" style="background:linear-gradient(135deg,#041840,#0060b0);">
-                <div class="banner-placeholder">
-                  <div style="font-size:11px;color:rgba(255,255,255,.6);">LIVE CASINO</div>
-                  <div class="b-title" style="color:#40cfff;">Real Dealers</div>
-                  <div class="b-sub">တိုက်ရိုက် ကာစိနို</div>
-                  <div class="b-amount" style="color:#40cfff;">50,000</div>
-                </div>
-              </div>
-              <div class="banner-slide" style="background:linear-gradient(135deg,#300808,#900018);">
-                <div class="banner-placeholder">
-                  <div style="font-size:11px;color:rgba(255,255,255,.6);">TOURNAMENT</div>
-                  <div class="b-title" style="color:#ff5060;">Grand Prize</div>
-                  <div class="b-sub">နှစ်တိုင်း ဆုငွေကြီး</div>
-                  <div class="b-amount" style="color:#ff7080;">100,000</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- Dots inside the glass panel -->
-          <div class="banner-dots" id="bannerDots">
-            <div class="dot active" data-i="0"></div>
-            <div class="dot" data-i="1"></div>
-            <div class="dot" data-i="2"></div>
-          </div>
+        <div class="banner-dots" id="bannerDots">
+          <div class="dot active" data-i="0"></div>
+          <div class="dot" data-i="1"></div>
+          <div class="dot" data-i="2"></div>
         </div>
-
       </div>
 
       <!-- ===== QUICK NAV ===== -->
