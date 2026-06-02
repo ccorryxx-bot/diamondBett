@@ -682,3 +682,72 @@
 }
 .bnav-btn { color: rgba(255,255,255,.38) !important; }
 .bnav-btn.active { color: var(--accent) !important; }
+
+
+/* ================================================
+   PROVIDER FILTER BAR
+   Appears below cat-tab-bar ONLY when Slots tab is active.
+   Hidden by default (display:none set via JS).
+   ================================================ */
+.provider-filter-bar {
+  display: none;                    /* hidden until JS sets display:flex */
+  flex-direction: row;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #5a6b5a;              /* slightly darker than cat-tab-bar */
+  border-bottom: 1px solid rgba(0,0,0,.14);
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.provider-filter-bar::-webkit-scrollbar { display: none; }
+
+/* Provider button — pill shape */
+.prov-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.10);
+  border: none;
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.prov-item:active { background: rgba(255,255,255,.20); }
+
+/* Active provider pill — teal/green like the screenshot */
+.prov-item.active {
+  background: #3ecf8e;
+  box-shadow: 0 2px 8px rgba(62,207,142,.35);
+}
+
+/* Provider logo image */
+.prov-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Provider label */
+.prov-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
+  line-height: 1;
+  letter-spacing: .2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.prov-item.active .prov-lbl {
+  color: #fff;
+  font-weight: 800;
+}
