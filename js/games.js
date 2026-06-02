@@ -56,6 +56,7 @@ let _allGames       = [];
 let _activeCategory = 'all';
 let _activeProvider  = 'all';   // sub-filter used when Slots tab is active
 let _displayLimit    = 20;       // cards visible; auto-grows 20 on scroll
+let _renderedCount   = 0;        // cards currently in DOM (append-only tracking)
 let _scrollObserver  = null;     // IntersectionObserver for infinite scroll
 let _launchingGame  = null;
 let _gcObserver     = null;
@@ -208,7 +209,10 @@ function renderGames() {
   const grid = document.getElementById('gameGrid');
   if (!grid) return;
 
-  if (_gcObserver) _gcObserver.disconnect();
+  const isFirstRender = (_renderedCount === 0);
+
+  // Only reset the lazy-load observer on a full refresh
+  if (isFirstRender && _gcObserver) _gcObserver.disconnect();
 
   if (!grid._delegated) {
     grid.addEventListener('click', (e) => {
@@ -228,7 +232,6 @@ function renderGames() {
       .map(code => _allGames.find(g => g.game_code === code))
       .filter(Boolean);
   } else if (_activeCategory === 'slot') {
-    // Slots tab: apply optional provider sub-filter
     const slotGames = _allGames.filter(g => g.category === 'slot');
     filtered = _activeProvider === 'all'
       ? slotGames
@@ -239,82 +242,83 @@ function renderGames() {
     filtered = _allGames.filter(g => g.category === _activeCategory);
   }
 
-  if (!filtered.length) {
+  const totalCount = filtered.length;
+
+  if (!totalCount) {
     grid.innerHTML = `
       <div style="grid-column:span 3;text-align:center;color:#555;font-size:12px;padding:30px;">
         ဂိမ်း မရှိသေးပါ
       </div>`;
-    _renderLoadMore(0, 0);
+    _updateScrollSentinel(false);
     return;
   }
 
-  // Infinite scroll — show only _displayLimit cards
-  const totalCount   = filtered.length;
-  const displaySlice = filtered.slice(0, _displayLimit);
-  const hasMore      = displaySlice.length < totalCount;
+  // On first render: create fresh observer + clear grid
+  if (isFirstRender) {
+    _initGcObserver();
+    grid.innerHTML = '';
+  }
 
-  _initGcObserver();
+  // ── Append-only: only build cards that aren't in the DOM yet ──
+  const upTo     = Math.min(_displayLimit, totalCount);
+  const newSlice = filtered.slice(_renderedCount, upTo);
 
-  const frag = document.createDocumentFragment();
-  displaySlice.forEach((g, idx) => {
-    const hue      = (idx * 37) % 360;
-    const imgSrc   = _gameImgUrl(g.image_url);   // ← portrait transforms
-    const hasImg   = !!(imgSrc && !imgSrc.includes('placeholder'));
-    const safeName = (g.game_name || '').replace(/'/g, '');
+  if (newSlice.length > 0) {
+    const frag = document.createDocumentFragment();
+    newSlice.forEach((g, i) => {
+      const globalIdx = _renderedCount + i;   // consistent hue across batches
+      const imgSrc    = _gameImgUrl(g.image_url);
+      const hasImg    = !!(imgSrc && !imgSrc.includes('placeholder'));
+      const safeName  = (g.game_name || '').replace(/'/g, '');
 
-    const wrap = document.createElement('div');
-    wrap.className = 'game-card-wrap';
+      const wrap = document.createElement('div');
+      wrap.className = 'game-card-wrap';
 
-    const card = document.createElement('div');
-    card.className = 'game-card';
-    card.id = `gc-${g.game_code}`;
-    card.dataset.code = g.game_code;
-    card.dataset.name = safeName;
+      const card = document.createElement('div');
+      card.className = 'game-card';
+      card.id        = `gc-${g.game_code}`;
+      card.dataset.code = g.game_code;
+      card.dataset.name = safeName;
 
-    if (hasImg) {
-      const img = document.createElement('img');
-      img.className = 'gc-bg';
-      img.alt       = '';                      // empty alt = no alt text flash
-      img.width     = 200;
-      img.height    = 267;
-      img.dataset.src = imgSrc;               // deferred — no network until visible
+      if (hasImg) {
+        const img = document.createElement('img');
+        img.className   = 'gc-bg';
+        img.alt         = '';
+        img.width       = 200;
+        img.height      = 267;
+        img.dataset.src = imgSrc;   // deferred — _gcObserver sets src on scroll
 
-      // On load: fade in + remove shimmer from card
-      img.onload = function() {
+        img.onload  = function() { card.classList.add('gc-img-loaded'); };
+        img.onerror = function() {
+          card.classList.add('gc-img-loaded');
+          const ph = document.createElement('div');
+          ph.innerHTML = _gcPlaceholder(g.game_name);
+          if (this.parentNode) this.parentNode.replaceChild(ph.firstElementChild, this);
+        };
+
+        card.appendChild(img);
+        _gcObserver.observe(img);
+      } else {
         card.classList.add('gc-img-loaded');
-      };
+        card.insertAdjacentHTML('beforeend', _gcPlaceholder(g.game_name));
+      }
 
-      // On error: swap img → placeholder + remove shimmer
-      img.onerror = function() {
-        card.classList.add('gc-img-loaded');
-        const ph = document.createElement('div');
-        ph.innerHTML = _gcPlaceholder(g.game_name);
-        if (this.parentNode) {
-          this.parentNode.replaceChild(ph.firstElementChild, this);
-        }
-      };
+      const nameEl = document.createElement('div');
+      nameEl.className = 'gc-name';
+      nameEl.textContent = g.game_name;
 
-      card.appendChild(img);
-      _gcObserver.observe(img);
-    } else {
-      card.classList.add('gc-img-loaded');    // no image — skip shimmer
-      card.insertAdjacentHTML('beforeend', _gcPlaceholder(g.game_name));
-    }
+      wrap.appendChild(card);
+      wrap.appendChild(nameEl);
+      frag.appendChild(wrap);
+    });
 
-    const nameEl = document.createElement('div');
-    nameEl.className = 'gc-name';
-    nameEl.textContent = g.game_name;
+    grid.appendChild(frag);
+    _renderedCount = upTo;
+  }
 
-    wrap.appendChild(card);
-    wrap.appendChild(nameEl);
-    frag.appendChild(wrap);
-  });
-
-  grid.innerHTML = '';
-  grid.appendChild(frag);
-
-  // Set up / tear down scroll sentinel
-  _updateScrollSentinel(hasMore);
+  // Sentinel + background prefetch of NEXT batch
+  _updateScrollSentinel(_renderedCount < totalCount);
+  _prefetchNextBatch(filtered, _renderedCount, 20);
 }
 
 // ── Infinite scroll helpers ──────────────────────────────────────────────────
@@ -337,11 +341,9 @@ function _updateScrollSentinel(hasMore) {
     if (entries[0].isIntersecting) {
       _scrollObserver.disconnect();
       _scrollObserver = null;
-      // Pause 1.5s — let current images start loading before fetching next 20
-      setTimeout(() => {
-        _displayLimit += 20;
-        renderGames();
-      }, 1500);
+      // Prefetch already handled — append next 20 immediately
+      _displayLimit += 20;
+      renderGames();
     }
   }, {
     root: null,
@@ -351,11 +353,24 @@ function _updateScrollSentinel(hasMore) {
 
   _scrollObserver.observe(sentinel.firstElementChild);
 }
+// ── Background image prefetch ─────────────────────────────────────────────────
+// Loads next batch into browser cache while user is reading current batch.
+// When cards appear in DOM, images are already cached → instant display.
+function _prefetchNextBatch(filtered, startIdx, count) {
+  filtered.slice(startIdx, startIdx + count).forEach(game => {
+    const src = _gameImgUrl(game.image_url);
+    if (src && !src.includes('placeholder') && src !== 'undefined') {
+      const img = new Image();
+      img.src = src;   // silent background download
+    }
+  });
+}
 
 function filterGames(category) {
   _activeCategory = category;
   _activeProvider  = 'all';
   _displayLimit    = 20;        // reset on tab change
+  _renderedCount   = 0;          // force full DOM rebuild
   if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
 
   // Show provider bar ONLY when Slots tab is active
@@ -375,6 +390,7 @@ function filterGames(category) {
 function filterProvider(el, provider) {
   _activeProvider = provider;
   _displayLimit   = 20;         // reset on provider change
+  _renderedCount   = 0;          // force full DOM rebuild
   if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
   // Update active state on provider buttons
   const provBar = document.getElementById('providerFilterBar');
