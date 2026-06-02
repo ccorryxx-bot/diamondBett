@@ -751,3 +751,79 @@
   color: #fff;
   font-weight: 800;
 }
+
+
+/* ================================================
+   LOAD MORE BUTTON
+   Appears below the game grid when more games exist.
+   ================================================ */
+#loadMoreWrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px 20px;
+  box-sizing: border-box;
+}
+
+.load-more-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  max-width: 340px;
+  padding: 13px 18px;
+  background: linear-gradient(135deg, #2d5a2d 0%, #3a7a3a 50%, #2d5a2d 100%);
+  border: 1.5px solid rgba(62,207,142,.35);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+  transition: transform .12s, box-shadow .12s;
+  position: relative;
+  overflow: hidden;
+}
+.load-more-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.load-more-btn:active {
+  transform: scale(.97);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+.lm-count {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #3ecf8e;
+  flex-shrink: 0;
+  text-shadow: 0 0 8px rgba(62,207,142,.4);
+}
+
+.lm-divider {
+  font-size: 12px;
+  color: rgba(255,255,255,.35);
+  flex-shrink: 0;
+}
+
+.lm-cta {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255,255,255,.88);
+  flex: 1;
+  text-align: left;
+}
+
+.lm-arrow {
+  color: #3ecf8e;
+  flex-shrink: 0;
+  animation: lm-bounce 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(62,207,142,.5));
+}
+
+@keyframes lm-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(4px); }
+}
