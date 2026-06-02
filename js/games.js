@@ -1,3 +1,13 @@
+// IMAGE URL HELPER — converts jsDelivr → ImageKit (faster CDN + auto WebP)
+// ============================================================
+function _imgUrl(url) {
+  if (!url) return url;
+  return url.replace(
+    'https://cdn.jsdelivr.net/gh/ccorryxx-bot/game-assets@main/',
+    'https://ik.imagekit.io/tdpebgueq/'
+  );
+}
+
 // STATE
 // ============================================================
 let _allGames       = [];
@@ -27,7 +37,7 @@ async function loadBanners() {
     track.innerHTML = data.map(b => `
       <div class="banner-slide" style="background:#0c0a1e;position:relative;">
         <img
-          src="${b.image_url}"
+          src="${_imgUrl(b.image_url)}"
           alt="${b.title || 'Banner'}"
           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
           onerror="this.style.display='none'">
@@ -140,6 +150,7 @@ function renderGames() {
   filtered.forEach((g, idx) => {
     const hue = (idx * 37) % 360;
     const hasImg = g.image_url && !g.image_url.includes('placeholder');
+    const imgSrc = _imgUrl(g.image_url);
     const safeName = (g.game_name || '').replace(/'/g, '');
     
     const card = document.createElement('div');
@@ -151,7 +162,7 @@ function renderGames() {
     
     card.innerHTML = `
       ${hasImg
-        ? `<img src="${g.image_url}" class="gc-bg" loading="lazy" onerror="this.style.display='none'">`
+        ? `<img src="${imgSrc}" class="gc-bg" loading="lazy" onerror="this.style.display='none'">`
         : `<div class="gc-char">
              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".4">
                <polygon points="12,2 22,8 22,16 12,22 2,16 2,8"/>
