@@ -55,7 +55,8 @@ function _gcPlaceholder(name) {
 let _allGames       = [];
 let _activeCategory = 'all';
 let _activeProvider  = 'all';   // sub-filter used when Slots tab is active
-let _displayLimit    = 40;       // cards shown; grows by 40 on each "load more"
+let _displayLimit    = 20;       // cards visible; auto-grows 20 on scroll
+let _scrollObserver  = null;     // IntersectionObserver for infinite scroll
 let _launchingGame  = null;
 let _gcObserver     = null;
 
@@ -247,10 +248,10 @@ function renderGames() {
     return;
   }
 
-  // Paginate — show only _displayLimit cards
+  // Infinite scroll — show only _displayLimit cards
   const totalCount   = filtered.length;
   const displaySlice = filtered.slice(0, _displayLimit);
-  const remaining    = totalCount - displaySlice.length;
+  const hasMore      = displaySlice.length < totalCount;
 
   _initGcObserver();
 
@@ -312,49 +313,48 @@ function renderGames() {
   grid.innerHTML = '';
   grid.appendChild(frag);
 
-  // Render or hide load-more button
-  _renderLoadMore(remaining, totalCount);
+  // Set up / tear down scroll sentinel
+  _updateScrollSentinel(hasMore);
 }
 
-// ── Load-more helpers ─────────────────────────────────────────────────────────
-function _renderLoadMore(remaining, total) {
-  const wrap = document.getElementById('loadMoreWrap');
-  if (!wrap) return;
-  if (remaining <= 0) { wrap.innerHTML = ''; return; }
+// ── Infinite scroll helpers ──────────────────────────────────────────────────
+function _updateScrollSentinel(hasMore) {
+  const sentinel = document.getElementById('loadMoreWrap');
+  if (!sentinel) return;
 
-  wrap.innerHTML = `
-    <button class="load-more-btn" onclick="loadMoreGames()">
-      <span class="lm-count">${remaining.toLocaleString()} ဂိမ်းကျန်သေးသည်</span>
-      <span class="lm-divider">—</span>
-      <span class="lm-cta">ဆက်ကြည့်ရန် နှိပ်ပါ</span>
-<svg class="lm-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 44" width="32" height="36">
-        <defs>
-          <style>
-            @keyframes fall{0%,100%{opacity:0.2;transform:translateY(-4px)}50%{opacity:1;transform:translateY(0px)}}
-            @keyframes fall2{0%,100%{opacity:0.15;transform:translateY(-4px)}50%{opacity:0.7;transform:translateY(0px)}}
-          </style>
-        </defs>
-        <line x1="20" y1="2" x2="20" y2="22" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
-        <polyline points="4,20 20,38 36,20" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline points="10,14 20,24 30,14" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="animation:fall 1.8s ease-in-out infinite"/>
-        <polyline points="13,8 20,16 27,8" fill="none" stroke="#888" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="animation:fall2 1.8s ease-in-out infinite 0.3s"/>
-        <circle cx="20" cy="41" r="2" fill="#6366f1"/>
-      </svg>
-    </button>`;
-}
+  // Disconnect previous observer before re-observing
+  if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
 
-function loadMoreGames() {
-  _displayLimit += 40;
-  renderGames();
-  // Smooth scroll to reveal new cards
-  const wrap = document.getElementById('loadMoreWrap');
-  if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (!hasMore) {
+    sentinel.innerHTML = '';   // no more games — hide sentinel
+    return;
+  }
+
+  // Keep sentinel visible (CSS makes it a thin invisible strip)
+  sentinel.innerHTML = '<div class="scroll-sentinel"></div>';
+
+  _scrollObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      // Disconnect before re-render to avoid double-fire
+      _scrollObserver.disconnect();
+      _scrollObserver = null;
+      _displayLimit += 20;
+      renderGames();
+    }
+  }, {
+    root: null,
+    rootMargin: '0px 0px 120px 0px',  // trigger 120px before sentinel hits bottom
+    threshold: 0
+  });
+
+  _scrollObserver.observe(sentinel.firstElementChild);
 }
 
 function filterGames(category) {
   _activeCategory = category;
   _activeProvider  = 'all';
-  _displayLimit    = 40;        // reset pagination on tab change
+  _displayLimit    = 20;        // reset on tab change
+  if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
 
   // Show provider bar ONLY when Slots tab is active
   const provBar = document.getElementById('providerFilterBar');
@@ -372,7 +372,8 @@ function filterGames(category) {
 // ── Provider sub-filter (only used inside Slots tab) ─────────────────────────
 function filterProvider(el, provider) {
   _activeProvider = provider;
-  _displayLimit   = 40;         // reset pagination on provider change
+  _displayLimit   = 20;         // reset on provider change
+  if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
   // Update active state on provider buttons
   const provBar = document.getElementById('providerFilterBar');
   if (provBar) {
