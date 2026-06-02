@@ -776,6 +776,25 @@
    PROVIDER / CATEGORY QUICK-JUMP GRID
    Below the game grid — 7 cards, 3-column layout.
    ================================================ */
+
+/* ── Provider / Category Section Header ─────────────────── */
+.prov-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 12px 2px;
+}
+.pch-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.pch-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(255,255,255,.88);
+  letter-spacing: .3px;
+}
 .prov-cat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
