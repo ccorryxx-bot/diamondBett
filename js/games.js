@@ -374,6 +374,7 @@ function _prefetchNextBatch(filtered, startIdx, count) {
     const src = _gameImgUrl(game.image_url);
     if (src && !src.includes('placeholder') && src !== 'undefined') {
       const img = new Image();
+      if (src.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
       img.src = src;   // silent background download
     }
   });
@@ -421,6 +422,7 @@ function _initHsObserver() {
       const img = entry.target;
       const src = img.dataset.src;
       if (!src) return;
+      if (src.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
       img.src = src;
       _hsObserver.unobserve(img);
     });
@@ -479,6 +481,7 @@ function _renderHomeSection(category, count, gridId) {
       img.width       = 200;
       img.height      = 267;
       img.dataset.src = imgSrc;   // deferred via _hsObserver
+      if (imgSrc.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
       // Fallback: original jsDelivr URL if ImageKit CDN fails
       if (gm.image_url && gm.image_url.includes('cdn.jsdelivr.net')) {
         img.dataset.fallback = gm.image_url;
