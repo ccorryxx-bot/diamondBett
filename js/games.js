@@ -55,6 +55,7 @@ function _gcPlaceholder(name) {
 let _allGames       = [];
 let _activeCategory = 'all';
 let _activeProvider  = 'all';   // sub-filter used when Slots tab is active
+let _displayLimit    = 40;       // cards shown; grows by 40 on each "load more"
 let _launchingGame  = null;
 let _gcObserver     = null;
 
@@ -242,13 +243,19 @@ function renderGames() {
       <div style="grid-column:span 3;text-align:center;color:#555;font-size:12px;padding:30px;">
         ဂိမ်း မရှိသေးပါ
       </div>`;
+    _renderLoadMore(0, 0);
     return;
   }
+
+  // Paginate — show only _displayLimit cards
+  const totalCount   = filtered.length;
+  const displaySlice = filtered.slice(0, _displayLimit);
+  const remaining    = totalCount - displaySlice.length;
 
   _initGcObserver();
 
   const frag = document.createDocumentFragment();
-  filtered.forEach((g, idx) => {
+  displaySlice.forEach((g, idx) => {
     const hue      = (idx * 37) % 360;
     const imgSrc   = _gameImgUrl(g.image_url);   // ← portrait transforms
     const hasImg   = !!(imgSrc && !imgSrc.includes('placeholder'));
@@ -304,11 +311,40 @@ function renderGames() {
 
   grid.innerHTML = '';
   grid.appendChild(frag);
+
+  // Render or hide load-more button
+  _renderLoadMore(remaining, totalCount);
+}
+
+// ── Load-more helpers ─────────────────────────────────────────────────────────
+function _renderLoadMore(remaining, total) {
+  const wrap = document.getElementById('loadMoreWrap');
+  if (!wrap) return;
+  if (remaining <= 0) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = `
+    <button class="load-more-btn" onclick="loadMoreGames()">
+      <span class="lm-count">${remaining.toLocaleString()} ဂိမ်းကျန်သေးသည်</span>
+      <span class="lm-divider">—</span>
+      <span class="lm-cta">ဆက်ကြည့်ရန် နှိပ်ပါ</span>
+      <svg class="lm-arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>`;
+}
+
+function loadMoreGames() {
+  _displayLimit += 40;
+  renderGames();
+  // Smooth scroll to reveal new cards
+  const wrap = document.getElementById('loadMoreWrap');
+  if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function filterGames(category) {
   _activeCategory = category;
   _activeProvider  = 'all';
+  _displayLimit    = 40;        // reset pagination on tab change
 
   // Show provider bar ONLY when Slots tab is active
   const provBar = document.getElementById('providerFilterBar');
@@ -326,6 +362,7 @@ function filterGames(category) {
 // ── Provider sub-filter (only used inside Slots tab) ─────────────────────────
 function filterProvider(el, provider) {
   _activeProvider = provider;
+  _displayLimit   = 40;         // reset pagination on provider change
   // Update active state on provider buttons
   const provBar = document.getElementById('providerFilterBar');
   if (provBar) {
