@@ -200,6 +200,7 @@ function _initGcObserver() {
       const src = img.dataset.src;
       if (!src) return;
 
+      if (src.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
       img.src = src;
       img.removeAttribute('data-src');
       _gcObserver.unobserve(img);
@@ -292,6 +293,7 @@ function renderGames() {
         img.width       = 200;
         img.height      = 267;
         img.dataset.src = imgSrc;   // deferred — _gcObserver sets src on scroll
+        if (imgSrc.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
         // Fallback: original jsDelivr URL if ImageKit CDN fails
         if (g.image_url && g.image_url.includes('cdn.jsdelivr.net')) {
           img.dataset.fallback = g.image_url;
