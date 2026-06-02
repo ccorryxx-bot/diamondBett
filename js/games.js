@@ -57,6 +57,7 @@ let _activeCategory = 'all';
 let _activeProvider  = 'all';   // sub-filter used when Slots tab is active
 let _displayLimit    = 20;       // cards visible; auto-grows 20 on scroll
 let _renderedCount   = 0;        // cards currently in DOM (append-only tracking)
+let _hsObserver      = null;     // lazy-load observer for static home sections
 let _scrollObserver  = null;     // IntersectionObserver for infinite scroll
 let _launchingGame  = null;
 let _gcObserver     = null;
@@ -172,6 +173,10 @@ async function loadGamesFromDB() {
 
     _allGames = allData;
     renderGames();
+    // Populate static home-page preview sections
+    _renderHomeSection('live',   9,  'homeLiveGrid');
+    _renderHomeSection('fish',   11, 'homeFishGrid');
+    _renderHomeSection('arcade', 8,  'homeArcadeGrid');
   } catch (err) {
     console.error('Game load error:', err);
     grid.innerHTML = `
@@ -399,6 +404,100 @@ function filterProvider(el, provider) {
   }
   if (el) el.classList.add('active');
   renderGames();
+}
+// ── Home-section lazy-load observer (permanent, never disconnected) ────────────
+function _initHsObserver() {
+  _hsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      const src = img.dataset.src;
+      if (!src) return;
+      img.src = src;
+      _hsObserver.unobserve(img);
+    });
+  }, { root: null, rootMargin: '0px 0px 200px 0px', threshold: 0 });
+}
+
+// ── Render a fixed-count preview section (Live / Fish / Arcade) ──────────────
+// category : 'live' | 'fish' | 'arcade'
+// count    : how many cards to show
+// gridId   : id of the target .hs-grid element
+function _renderHomeSection(category, count, gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid || grid._rendered) return;   // idempotent
+
+  // Pick top-N games for this category
+  const games = _allGames.filter(g => g.category === category).slice(0, count);
+
+  // Hide whole section if no games exist
+  if (!games.length) {
+    const section = grid.closest('.home-section');
+    if (section) section.style.display = 'none';
+    return;
+  }
+
+  if (!_hsObserver) _initHsObserver();
+
+  // Click delegation
+  if (!grid._delegated) {
+    grid.addEventListener('click', (e) => {
+      const wrap = e.target.closest('.game-card-wrap');
+      const card = wrap ? wrap.querySelector('.game-card') : e.target.closest('.game-card');
+      if (card && card.dataset.code) playGame(card.dataset.code, card.dataset.name);
+    });
+    grid._delegated = true;
+  }
+
+  const frag = document.createDocumentFragment();
+  games.forEach(gm => {
+    const imgSrc   = _gameImgUrl(gm.image_url);
+    const hasImg   = !!(imgSrc && !imgSrc.includes('placeholder'));
+    const safeName = (gm.game_name || '').replace(/'/g, '');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'game-card-wrap';
+
+    const card = document.createElement('div');
+    card.className    = 'game-card';
+    card.id           = `hs-${gm.game_code}`;
+    card.dataset.code = gm.game_code;
+    card.dataset.name = safeName;
+
+    if (hasImg) {
+      const img = document.createElement('img');
+      img.className   = 'gc-bg';
+      img.alt         = '';
+      img.width       = 200;
+      img.height      = 267;
+      img.dataset.src = imgSrc;   // deferred via _hsObserver
+
+      img.onload  = function() { card.classList.add('gc-img-loaded'); };
+      img.onerror = function() {
+        card.classList.add('gc-img-loaded');
+        const ph = document.createElement('div');
+        ph.innerHTML = _gcPlaceholder(gm.game_name);
+        if (this.parentNode) this.parentNode.replaceChild(ph.firstElementChild, this);
+      };
+
+      card.appendChild(img);
+      _hsObserver.observe(img);
+    } else {
+      card.classList.add('gc-img-loaded');
+      card.insertAdjacentHTML('beforeend', _gcPlaceholder(gm.game_name));
+    }
+
+    const nameEl = document.createElement('div');
+    nameEl.className  = 'gc-name';
+    nameEl.textContent = gm.game_name;
+
+    wrap.appendChild(card);
+    wrap.appendChild(nameEl);
+    frag.appendChild(wrap);
+  });
+
+  grid.appendChild(frag);
+  grid._rendered = true;
 }
 // ── Quick-jump from provider/category grid ────────────────────────────────────
 function goToSection(cat, provider) {
