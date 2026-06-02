@@ -54,6 +54,7 @@ function _gcPlaceholder(name) {
 // ============================================================
 let _allGames       = [];
 let _activeCategory = 'all';
+let _activeProvider  = 'all';   // sub-filter used when Slots tab is active
 let _launchingGame  = null;
 let _gcObserver     = null;
 
@@ -218,13 +219,23 @@ function renderGames() {
     grid._delegated = true;
   }
 
-  const filtered = _activeCategory === 'all'
-    ? _FEATURED_CODES
-        .map(code => _allGames.find(g => g.game_code === code))
-        .filter(Boolean)
-    : _PROVIDER_CATS.includes(_activeCategory)
-      ? _allGames.filter(g => g.provider_code === _activeCategory)
-      : _allGames.filter(g => g.category === _activeCategory);
+  // Build filtered game list
+  let filtered;
+  if (_activeCategory === 'all') {
+    filtered = _FEATURED_CODES
+      .map(code => _allGames.find(g => g.game_code === code))
+      .filter(Boolean);
+  } else if (_activeCategory === 'slot') {
+    // Slots tab: apply optional provider sub-filter
+    const slotGames = _allGames.filter(g => g.category === 'slot');
+    filtered = _activeProvider === 'all'
+      ? slotGames
+      : slotGames.filter(g => g.provider_code === _activeProvider);
+  } else if (_PROVIDER_CATS.includes(_activeCategory)) {
+    filtered = _allGames.filter(g => g.provider_code === _activeCategory);
+  } else {
+    filtered = _allGames.filter(g => g.category === _activeCategory);
+  }
 
   if (!filtered.length) {
     grid.innerHTML = `
@@ -297,6 +308,30 @@ function renderGames() {
 
 function filterGames(category) {
   _activeCategory = category;
+  _activeProvider  = 'all';
+
+  // Show provider bar ONLY when Slots tab is active
+  const provBar = document.getElementById('providerFilterBar');
+  if (provBar) {
+    provBar.style.display = (category === 'slot') ? 'flex' : 'none';
+    // Reset provider active state to "All"
+    provBar.querySelectorAll('.prov-item').forEach(b => b.classList.remove('active'));
+    const allBtn = provBar.querySelector('[data-prov="all"]');
+    if (allBtn) allBtn.classList.add('active');
+  }
+
+  renderGames();
+}
+
+// ── Provider sub-filter (only used inside Slots tab) ─────────────────────────
+function filterProvider(el, provider) {
+  _activeProvider = provider;
+  // Update active state on provider buttons
+  const provBar = document.getElementById('providerFilterBar');
+  if (provBar) {
+    provBar.querySelectorAll('.prov-item').forEach(b => b.classList.remove('active'));
+  }
+  if (el) el.classList.add('active');
   renderGames();
 }
 
