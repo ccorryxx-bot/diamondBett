@@ -190,7 +190,8 @@ function renderGames() {
 
   if (!grid._delegated) {
     grid.addEventListener('click', (e) => {
-      const card = e.target.closest('.game-card');
+      const wrap = e.target.closest('.game-card-wrap');
+      const card = wrap ? wrap.querySelector('.game-card') : e.target.closest('.game-card');
       if (card && card.dataset.code) {
         playGame(card.dataset.code, card.dataset.name);
       }
@@ -199,7 +200,7 @@ function renderGames() {
   }
 
   const filtered = _activeCategory === 'all'
-    ? _allGames.filter(g => _DEFAULT_PROVIDERS.includes(g.provider_code))
+    ? _allGames.filter(g => _DEFAULT_PROVIDERS.includes(g.provider_code)).slice(0, 15)
     : _PROVIDER_CATS.includes(_activeCategory)
       ? _allGames.filter(g => g.provider_code === _activeCategory)
       : _allGames.filter(g => g.category === _activeCategory);
@@ -221,13 +222,14 @@ function renderGames() {
     const hasImg   = !!(imgSrc && !imgSrc.includes('placeholder'));
     const safeName = (g.game_name || '').replace(/'/g, '');
 
+    const wrap = document.createElement('div');
+    wrap.className = 'game-card-wrap';
+
     const card = document.createElement('div');
     card.className = 'game-card';
     card.id = `gc-${g.game_code}`;
     card.dataset.code = g.game_code;
     card.dataset.name = safeName;
-    card.style.background =
-      `linear-gradient(145deg,hsl(${hue},45%,16%),hsl(${hue + 20},55%,11%))`;
 
     if (hasImg) {
       const img = document.createElement('img');
@@ -259,13 +261,13 @@ function renderGames() {
       card.insertAdjacentHTML('beforeend', _gcPlaceholder(g.game_name));
     }
 
-    card.insertAdjacentHTML('beforeend', `
-      <div class="gc-label">
-        <span>${g.game_name}</span>
-        <span>${(g.category || '').toUpperCase()}</span>
-      </div>`);
+    const nameEl = document.createElement('div');
+    nameEl.className = 'gc-name';
+    nameEl.textContent = g.game_name;
 
-    frag.appendChild(card);
+    wrap.appendChild(card);
+    wrap.appendChild(nameEl);
+    frag.appendChild(wrap);
   });
 
   grid.innerHTML = '';
