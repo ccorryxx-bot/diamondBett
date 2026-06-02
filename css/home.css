@@ -850,3 +850,31 @@
   text-align: center;
   line-height: 1.2;
 }
+
+/* ================================================
+   HOME PREVIEW SECTIONS (Live / Fish / Arcade)
+   Fixed-count game card grids below provider grid.
+   ================================================ */
+.home-section {
+  padding: 0 0 10px;
+}
+.hs-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 12px 6px;
+}
+.hs-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.hs-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(255,255,255,.88);
+  letter-spacing: .3px;
+}
+.hs-grid {
+  padding: 0 8px;
+}
