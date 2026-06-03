@@ -231,6 +231,12 @@ async function loginUser() {
       .eq('id', data.user.id)
       .single();
 
+    // Track last login time (fire-and-forget — don't block login flow)
+    window.DB.from('users')
+      .update({ last_login_at: new Date().toISOString() })
+      .eq('id', data.user.id)
+      .then(() => {});
+
     document.getElementById('authModal')?.classList.remove('active');
     window.currentUserId  = data.user.id;
     window.currentAgentId = data.user.id;
