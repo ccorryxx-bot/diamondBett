@@ -868,22 +868,30 @@
 }
 
 /* ================================================
-   SEARCH BAR — slide-down panel above cat tabs
+   SEARCH BAR — GPU-accelerated grid expand
+   (grid-template-rows avoids layout/paint thrash)
    ================================================ */
 .game-search-bar {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height .25s cubic-bezier(.4,0,.2,1), opacity .2s;
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
+  pointer-events: none;
+  transition: grid-template-rows .22s cubic-bezier(.4,0,.2,1),
+              opacity .18s ease;
+  will-change: grid-template-rows, opacity;
+  contain: layout style;
   background: rgba(10,8,32,.96);
   border-bottom: 1px solid rgba(99,102,241,.15);
   flex-shrink: 0;
 }
 .game-search-bar.open {
-  max-height: 58px;
+  grid-template-rows: 1fr;
   opacity: 1;
+  pointer-events: auto;
 }
 .game-search-inner {
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 8px;
