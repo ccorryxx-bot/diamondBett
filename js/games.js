@@ -248,6 +248,15 @@ function renderGames() {
     filtered = _allGames.filter(g => g.category === _activeCategory);
   }
 
+  // Image မရှိတဲ့ games (pragmaticplay.net CDN) ကို အောက်ဆုံး sort
+  if (_activeCategory !== 'all') {
+    filtered = [...filtered].sort((a, b) => {
+      const aBroken = (a.image_url || '').includes('pragmaticplay.net') ? 1 : 0;
+      const bBroken = (b.image_url || '').includes('pragmaticplay.net') ? 1 : 0;
+      return aBroken - bBroken;
+    });
+  }
+
   const totalCount = filtered.length;
 
   if (!totalCount) {
