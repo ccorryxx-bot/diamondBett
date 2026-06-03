@@ -52,19 +52,33 @@ function _gcPlaceholder(name) {
 
 // STATE
 // ============================================================
-let _allGames       = [];
-let _activeCategory = 'all';
+let _allGames        = [];
+let _activeCategory  = 'all';
 let _activeProvider  = 'all';   // sub-filter used when Slots tab is active
 let _displayLimit    = 20;       // cards visible; auto-grows 20 on scroll
 let _renderedCount   = 0;        // cards currently in DOM (append-only tracking)
 let _hsObserver      = null;     // lazy-load observer for static home sections
 let _scrollObserver  = null;     // IntersectionObserver for infinite scroll
-let _launchingGame  = null;
-let _gcObserver     = null;
+let _launchingGame   = null;
+let _gcObserver      = null;
+let _providerImageMap = null;    // Map<provider_code, string[]> valid image URLs
+let _hotGames        = [];       // top-7 most-played games
+let _hotPollTimer    = null;     // 30-min interval handle
 
 const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
 // 'all' tab shows only these 3 providers (not all 1000+ games)
 const _DEFAULT_PROVIDERS = ['pp', 'jili', 'jdb'];
+
+// Fallback hot games shown until real play_count data accumulates
+const _HOT_FALLBACK_CODES = [
+  '880a68222d05a3697055d523d574cb2b', // Gates of Olympus Super Scatter (pp)
+  '6dcaf78e4e23929cbe2deb3d1210928c', // Sweet Bonanza (pp)
+  '9b93cb0dc46d847864c87ed42a3428bb', // Wild Ape #3258 (pg)
+  'b8e1e1eb06f840517980f96164bc3ccd', // Jackpot Fishing 2 (jili)
+  '09699fd0de13edbb6c4a194d7494640b', // Fengshen (jili)
+  'ab841b96a216b2321baa11d6121185a3', // Pyramid Bonanza (pp)
+  'be6b6890587ed84289fad941d99a3613', // Starlight Princess (pp)
+];
 
 // Featured game codes — shown on 'all' tab in this exact order
 const _FEATURED_CODES = [
@@ -84,6 +98,102 @@ const _FEATURED_CODES = [
   '8cbb88bc0bc1f7be4379cf75abc6095f', // 14. Golden Empire 2 (jili)
   '981f5f9675002fbeaaf24c4128b938d7', // 15. Boxing King (jili)
 ];
+
+// ============================================================
+// PROVIDER IMAGE MAP — fallback images for games with no image
+// ============================================================
+// Builds Map<provider_code, string[]> of valid (non-broken) image URLs.
+// Called once after _allGames is populated.
+function _buildProviderImageMap() {
+  const map = new Map();
+  for (const g of _allGames) {
+    const url = g.image_url || '';
+    // pragmaticplay.net blocks hotlinking → treat as broken
+    if (!url || url.includes('pragmaticplay.net')) continue;
+    const prov = g.provider_code || '_other';
+    if (!map.has(prov)) map.set(prov, []);
+    map.get(prov).push(url);
+  }
+  _providerImageMap = map;
+}
+
+// Returns a resolved, valid image URL for a game.
+// If the game's own image is missing or broken, picks a stable
+// replacement from the same provider (deterministic via game_code hash).
+function _resolveGameImg(g) {
+  const url = g.image_url || '';
+  const isBroken = !url || url.includes('pragmaticplay.net');
+  if (!isBroken) return _gameImgUrl(url);
+
+  if (!_providerImageMap) return '';
+  const pool = _providerImageMap.get(g.provider_code || '_other');
+  if (!pool || !pool.length) return '';
+
+  // Deterministic index from game_code so the same card always shows
+  // the same replacement image (no flicker on re-render).
+  const idx = [...(g.game_code || '')].reduce(
+    (s, c) => (s + c.charCodeAt(0)) & 0xffff, 0
+  ) % pool.length;
+  return _gameImgUrl(pool[idx]);
+}
+
+// ============================================================
+// HOT GAMES — top-7 by play_count, 30-min polling
+// ============================================================
+async function loadHotGames() {
+  if (!window.DB) return;
+  try {
+    const { data } = await window.DB
+      .from('game_cards')
+      .select('id, game_name, game_code, image_url, category, provider_code, play_count')
+      .gt('play_count', 0)
+      .order('play_count', { ascending: false })
+      .limit(7);
+
+    if (data && data.length >= 7) {
+      _hotGames = data;
+    } else if (data && data.length > 0) {
+      // Partial real data — pad with fallback codes
+      const realCodes = new Set(data.map(g => g.game_code));
+      const extra = _HOT_FALLBACK_CODES
+        .map(code => _allGames.find(g => g.game_code === code))
+        .filter(g => g && !realCodes.has(g.game_code));
+      _hotGames = [...data, ...extra].slice(0, 7);
+    } else {
+      // No play data yet — show curated fallback
+      _hotGames = _HOT_FALLBACK_CODES
+        .map(code => _allGames.find(g => g.game_code === code))
+        .filter(Boolean)
+        .slice(0, 7);
+    }
+  } catch (_e) {
+    // play_count column may not exist yet — fall back silently
+    _hotGames = _HOT_FALLBACK_CODES
+      .map(code => _allGames.find(g => g.game_code === code))
+      .filter(Boolean)
+      .slice(0, 7);
+  }
+
+  // If user is currently on the Hot tab, refresh the grid
+  if (_activeCategory === 'show') {
+    _renderedCount = 0;
+    renderGames();
+  }
+}
+
+function _startHotPoll() {
+  if (_hotPollTimer) clearInterval(_hotPollTimer);
+  loadHotGames();
+  _hotPollTimer = setInterval(loadHotGames, 30 * 60 * 1000); // 30 minutes
+}
+
+// Fire-and-forget play count increment (non-critical)
+async function _trackGamePlay(gameCode) {
+  if (!window.DB || !gameCode) return;
+  try {
+    await window.DB.rpc('increment_game_play', { p_game_code: gameCode });
+  } catch (_e) { /* silent — migration may not be applied yet */ }
+}
 
 // ============================================================
 // DYNAMIC BANNERS  (uses _bannerImgUrl — full-width transforms)
@@ -172,6 +282,7 @@ async function loadGamesFromDB() {
     }
 
     _allGames = allData;
+    _buildProviderImageMap();   // build provider→images map for fallback images
     renderGames();
     // Populate static home-page preview sections
     _renderHomeSection('live',   9,  'homeLiveGrid');
@@ -237,6 +348,14 @@ function renderGames() {
     filtered = _FEATURED_CODES
       .map(code => _allGames.find(g => g.game_code === code))
       .filter(Boolean);
+  } else if (_activeCategory === 'show') {
+    // Hot Games — top-7 by play_count (or fallback if no data yet)
+    filtered = _hotGames.length
+      ? _hotGames
+      : _HOT_FALLBACK_CODES
+          .map(code => _allGames.find(g => g.game_code === code))
+          .filter(Boolean)
+          .slice(0, 7);
   } else if (_activeCategory === 'slot') {
     const slotGames = _allGames.filter(g => g.category === 'slot');
     filtered = _activeProvider === 'all'
@@ -282,8 +401,8 @@ function renderGames() {
     const frag = document.createDocumentFragment();
     newSlice.forEach((g, i) => {
       const globalIdx = _renderedCount + i;   // consistent hue across batches
-      const imgSrc    = _gameImgUrl(g.image_url);
-      const hasImg    = !!(imgSrc && !imgSrc.includes('placeholder'));
+      const imgSrc    = _resolveGameImg(g);   // provider-fallback image if own is missing
+      const hasImg    = !!(imgSrc);
       const safeName  = (g.game_name || '').replace(/'/g, '');
 
       const wrap = document.createElement('div');
@@ -302,7 +421,6 @@ function renderGames() {
         img.width       = 200;
         img.height      = 267;
         img.dataset.src = imgSrc;   // deferred — _gcObserver sets src on scroll
-        if (imgSrc.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
         // Fallback: original jsDelivr URL if ImageKit CDN fails
         if (g.image_url && g.image_url.includes('cdn.jsdelivr.net')) {
           img.dataset.fallback = g.image_url;
@@ -396,6 +514,9 @@ function filterGames(category) {
   _renderedCount   = 0;          // force full DOM rebuild
   if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
 
+  // Hot tab — start 30-min polling (first call loads immediately)
+  if (category === 'show') _startHotPoll();
+
   // Show provider bar ONLY when Slots tab is active
   const provBar = document.getElementById('providerFilterBar');
   if (provBar) {
@@ -470,8 +591,8 @@ function _renderHomeSection(category, count, gridId) {
 
   const frag = document.createDocumentFragment();
   games.forEach(gm => {
-    const imgSrc   = _gameImgUrl(gm.image_url);
-    const hasImg   = !!(imgSrc && !imgSrc.includes('placeholder'));
+    const imgSrc   = _resolveGameImg(gm);  // provider-fallback image if own is missing
+    const hasImg   = !!(imgSrc);
     const safeName = (gm.game_name || '').replace(/'/g, '');
 
     const wrap = document.createElement('div');
@@ -490,7 +611,6 @@ function _renderHomeSection(category, count, gridId) {
       img.width       = 200;
       img.height      = 267;
       img.dataset.src = imgSrc;   // deferred via _hsObserver
-      if (imgSrc.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
       // Fallback: original jsDelivr URL if ImageKit CDN fails
       if (gm.image_url && gm.image_url.includes('cdn.jsdelivr.net')) {
         img.dataset.fallback = gm.image_url;
@@ -621,6 +741,9 @@ async function playGame(gameCode, gameName) {
       if (!fallback && typeof gToast === 'function')
         gToast('Pop-up ပိတ်ထားပါသည် — Browser setting စစ်ပါ', 'error');
     }
+
+    // Track play count (fire-and-forget — non-critical)
+    _trackGamePlay(gameCode);
 
   } catch (err) {
     console.error('Game launch error:', err);
