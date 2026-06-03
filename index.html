@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Diamond-BETT</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Preconnect: warm up connections before JS needs them (~250ms gain per domain) -->
+<link rel="preconnect" href="https://xjqrwcsxiaybpztzestb.supabase.co" crossorigin>
+<link rel="preconnect" href="https://ik.imagekit.io" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <link rel="stylesheet" href="css/reset.css">
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/home.css">
@@ -134,6 +139,26 @@
           </div>
 
           <div class="nav-icons">
+            <!-- Search Toggle -->
+            <button class="nav-icon-btn nav-search-btn" id="searchToggleBtn" onclick="toggleSearch()">
+              <div class="nav-ico nav-ico-search">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="17" height="17">
+                  <defs>
+                    <style>
+                      @keyframes db-ping{0%,100%{opacity:0;r:10}60%{opacity:.45;r:16}}
+                      @keyframes db-scan{0%{transform:translateY(-8px);opacity:0}30%{opacity:1}100%{transform:translateY(8px);opacity:0}}
+                    </style>
+                  </defs>
+                  <circle cx="18" cy="18" r="10" fill="none" stroke="#6366f1" stroke-width=".8" opacity="0" style="animation:db-ping 2.5s ease-out infinite"/>
+                  <circle cx="18" cy="18" r="10" fill="none" stroke="#e2e8f0" stroke-width="2.2"/>
+                  <line x1="10" y1="18" x2="26" y2="18" stroke="#6366f1" stroke-width="1.2" stroke-linecap="round" opacity=".6" style="animation:db-scan 2s ease-in-out infinite"/>
+                  <circle cx="18" cy="18" r="2" fill="#6366f1" opacity=".8"/>
+                  <line x1="25" y1="25" x2="38" y2="38" stroke="#e2e8f0" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="29" y1="27" x2="31" y2="29" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span data-i18n="search">ရှာ</span>
+            </button>
             <a class="nav-icon-btn nav-download-btn" href="https://www.dropbox.com/scl/fi/63cxq1u3jt7p7yw6gd71q/DiamondBETT1.apk?rlkey=s1s5dfy1r0n2tu0o30cphb79i&st=bvgrglhi&dl=1" target="_blank" rel="noopener">
               <div class="nav-ico">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M3 20h18"/></svg>
