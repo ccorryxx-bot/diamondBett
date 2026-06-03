@@ -64,6 +64,8 @@ let _gcObserver      = null;
 let _providerImageMap = null;    // Map<provider_code, string[]> valid image URLs
 let _hotGames        = [];       // top-7 most-played games
 let _hotPollTimer    = null;     // 30-min interval handle
+let _searchQuery     = '';       // active search string (empty = no search)
+let _searchActive    = false;    // search bar open state
 
 const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
 // 'all' tab shows only these 3 providers (not all 1000+ games)
@@ -90,22 +92,32 @@ const _MM_POPULAR_SLOT_CODES = new Set([
   '3b502aee6c9e1ef0f698332ee1b76634', // Blackjack
 ]);
 
-// Returns true only when the game has its OWN valid image (not a provider fallback)
+// Returns true only for games hosted on our trusted CDNs (jsDelivr or ImageKit).
+// Provider CDNs (JDB, JILI, etc.) often block hotlinking → treat as unconfirmed.
 function _hasOwnValidImage(g) {
+  const url = g.image_url || '';
+  return url.includes('cdn.jsdelivr.net') || url.includes('ik.imagekit.io');
+}
+
+// Returns true for any non-empty URL that isn't a known blocker.
+// "Maybe valid" — unknown CDN that might work.
+function _hasMaybeImage(g) {
   const url = g.image_url || '';
   return !!(url && !url.includes('pragmaticplay.net'));
 }
 
-// Sort slot games: popular+valid-image → other valid-image → broken/no image
+// Sort games into 4 tiers:
+//   0 — Popular MM + trusted CDN image  (top)
+//   1 — Non-popular + trusted CDN image
+//   2 — Unknown CDN (may display, but unconfirmed)
+//   3 — pragmaticplay.net blocked / no image  (bottom)
 function _sortSlotGames(games) {
   return [...games].sort((a, b) => {
-    const aTier = _MM_POPULAR_SLOT_CODES.has(a.game_code) && _hasOwnValidImage(a) ? 0
-                : _hasOwnValidImage(a) ? 1
-                : 2;
-    const bTier = _MM_POPULAR_SLOT_CODES.has(b.game_code) && _hasOwnValidImage(b) ? 0
-                : _hasOwnValidImage(b) ? 1
-                : 2;
-    return aTier - bTier;
+    const t = g => _MM_POPULAR_SLOT_CODES.has(g.game_code) && _hasOwnValidImage(g) ? 0
+                 : _hasOwnValidImage(g)  ? 1
+                 : _hasMaybeImage(g)     ? 2
+                 : 3;
+    return t(a) - t(b);
   });
 }
 
@@ -409,12 +421,16 @@ function renderGames() {
     filtered = _allGames.filter(g => g.category === _activeCategory);
   }
 
-  // Image မရှိတဲ့ games (pragmaticplay.net CDN) ကို အောက်ဆုံး sort
-  if (_activeCategory !== 'all') {
-    filtered = [...filtered].sort((a, b) => {
-      const aBroken = (a.image_url || '').includes('pragmaticplay.net') ? 1 : 0;
-      const bBroken = (b.image_url || '').includes('pragmaticplay.net') ? 1 : 0;
-      return aBroken - bBroken;
+  // Search filter — overrides category when query is active (searches all games)
+  if (_searchQuery) {
+    filtered = _allGames.filter(g =>
+      (g.game_name || '').toLowerCase().includes(_searchQuery)
+    );
+    // Exact / starts-with matches float to top
+    filtered = filtered.sort((a, b) => {
+      const aN = (a.game_name || '').toLowerCase();
+      const bN = (b.game_name || '').toLowerCase();
+      return (aN.startsWith(_searchQuery) ? 0 : 1) - (bN.startsWith(_searchQuery) ? 0 : 1);
     });
   }
 
@@ -609,8 +625,10 @@ function _renderHomeSection(category, count, gridId) {
   const grid = document.getElementById(gridId);
   if (!grid || grid._rendered) return;   // idempotent
 
-  // Pick top-N games for this category
-  const games = _allGames.filter(g => g.category === category).slice(0, count);
+  // Pick top-N games for this category — trusted-CDN images first, broken last
+  const games = [..._allGames.filter(g => g.category === category)]
+    .sort((a, b) => (_hasOwnValidImage(b) ? 1 : 0) - (_hasOwnValidImage(a) ? 1 : 0))
+    .slice(0, count);
 
   // Hide whole section if no games exist
   if (!games.length) {
@@ -687,6 +705,42 @@ function _renderHomeSection(category, count, gridId) {
   grid.appendChild(frag);
   grid._rendered = true;
 }
+// ============================================================
+// SEARCH — toggle bar, filter games by name across all tabs
+// ============================================================
+function toggleSearch() {
+  _searchActive = !_searchActive;
+  const bar = document.getElementById('gameSearchBar');
+  const btn = document.getElementById('searchToggleBtn');
+  if (bar) bar.classList.toggle('open', _searchActive);
+  if (btn) btn.classList.toggle('active', _searchActive);
+  if (_searchActive) {
+    setTimeout(() => {
+      const inp = document.getElementById('gameSearchInput');
+      if (inp) inp.focus();
+    }, 180);
+  } else {
+    clearSearch();
+  }
+}
+
+function searchGames(query) {
+  _searchQuery  = (query || '').trim().toLowerCase();
+  _displayLimit = 20;
+  _renderedCount = 0;
+  if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
+  renderGames();
+}
+
+function clearSearch() {
+  _searchQuery   = '';
+  _displayLimit  = 20;
+  _renderedCount = 0;
+  const inp = document.getElementById('gameSearchInput');
+  if (inp) inp.value = '';
+  renderGames();
+}
+
 // ── Quick-jump from provider/category grid ────────────────────────────────────
 function goToSection(cat, provider) {
   // Activate the correct cat tab
