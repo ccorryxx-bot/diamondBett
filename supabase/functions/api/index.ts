@@ -1,5 +1,12 @@
-// HUIDU Gaming API — Game Launch + Balance Callback Edge Function (Production)
+// HUIDU Gaming API — Game Launch + Seamless/Transfer Wallet Callback
 // AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
+//
+// CALLBACK DESIGN (handles both seamless & transfer wallet):
+//   GET  /games/callback?payload=<enc>  → balance query    → { code:0, balance:N }
+//   POST /games/callback  action=balance  → balance query
+//   POST /games/callback  action=debit    → deduct bet, return new balance
+//   POST /games/callback  action=credit   → add win, return new balance
+//   POST /games/callback  (no action)     → session-end sync (set balance directly)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
@@ -7,11 +14,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 const AGENCY_UID    = '31ce96cb1fbe80b35b4917ba95627d64'
 const AES_KEY_STR   = '526bedff1dc3050b0513ff20f0b775e5'  // 32 chars = AES-256
 const PLAYER_PREFIX = 'hdf801'
-// Calls route through static-IP VM proxy → whitelisted by HUIDU
 const SERVER_URL    = 'http://216.146.26.239:3000'
 const PROXY_SECRET  = 'dbet_proxy_k9x2mw7q'
 const HOME_URL      = 'https://diamond-bett.vercel.app'
-// HUIDU will POST balance updates here after each game session
 const CALLBACK_URL  = 'https://xjqrwcsxiaybpztzestb.supabase.co/functions/v1/api/games/callback'
 
 // ─── AES-256-ECB + PKCS7 ─────────────────────────────────────────────────────
@@ -52,29 +57,27 @@ async function aes256EcbDecryptBase64(base64: string, keyStr: string): Promise<s
     'raw', keyBytes, { name: 'AES-CBC' }, false, ['decrypt']
   )
 
-  const BLOCK    = 16
+  const BLOCK     = 16
   const numBlocks = cipher.length / BLOCK
-  const result   = new Uint8Array(cipher.length)
-  const zeroIV   = new Uint8Array(BLOCK)
+  const result    = new Uint8Array(cipher.length)
+  const zeroIV    = new Uint8Array(BLOCK)
 
   for (let i = 0; i < numBlocks; i++) {
     const block = cipher.slice(i * BLOCK, (i + 1) * BLOCK)
-    // Pad to 2 blocks for AES-CBC (needs at least 2 blocks: IV + data)
-    const buf = new Uint8Array(BLOCK * 2)
+    const buf   = new Uint8Array(BLOCK * 2)
     buf.set(block, BLOCK)
     const dec = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: zeroIV }, cryptoKey, buf)
     result.set(new Uint8Array(dec).slice(0, BLOCK), i * BLOCK)
   }
 
-  // Remove PKCS7 padding
   const padLen = result[result.length - 1]
   return new TextDecoder().decode(result.slice(0, result.length - padLen))
 }
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const corsHeaders = {
   'Access-Control-Allow-Origin' : '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
 }
 
@@ -90,18 +93,58 @@ function makeSupabase() {
   )
 }
 
-// ─── Handler ──────────────────────────────────────────────────────────────────
+// ── Look up user row by member_account (fast index path + UUID-prefix fallback)
+type UserRow = { id: string; balance: number }
+
+async function findUserByMemberAcct(
+  supabase: ReturnType<typeof makeSupabase>,
+  memberAcct: string
+): Promise<UserRow | null> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, balance')
+    .eq('member_account', memberAcct)
+    .single()
+
+  if (!error && data) return data as UserRow
+
+  // Fallback: UUID-prefix scan (pre-migration users)
+  const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '')
+  const { data: all } = await supabase.from('users').select('id, balance')
+  const found = (all ?? []).find((u: UserRow) =>
+    u.id.replace(/-/g, '').slice(0, 10) === suffix
+  )
+  if (!found) return null
+
+  // Back-fill member_account for next call
+  await supabase.from('users').update({ member_account: memberAcct }).eq('id', found.id)
+  return found as UserRow
+}
+
+// ── Decrypt HUIDU payload (returns parsed object or null on failure) ──────────
+async function decryptPayload(raw: string): Promise<Record<string, unknown> | null> {
+  try {
+    const dec = await aes256EcbDecryptBase64(raw, AES_KEY_STR)
+    return JSON.parse(dec) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+// ─── Main Handler ─────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS')
     return new Response(null, { status: 204, headers: corsHeaders })
 
   const url = new URL(req.url)
 
-  // ── Route 1: Game Launch ─────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // ROUTE 1 — Game Launch   POST /games/launch
+  // ══════════════════════════════════════════════════════════════════════════
   if (req.method === 'POST' && url.pathname.endsWith('/games/launch')) {
     try {
       const body = await req.json()
-      const { user_id, game_uid, platform = 2 } = body
+      const { user_id, game_uid, platform = 2, lang = 'zh' } = body
 
       if (!user_id || !game_uid)
         return json200({ code: 1, msg: 'Missing user_id or game_uid' })
@@ -117,12 +160,16 @@ Deno.serve(async (req: Request) => {
       if (userErr || !user)
         return json200({ code: 1, msg: 'User not found' })
 
-      // Use stored member_account if available, else compute (backward compat)
-      const memberAcct = user.member_account
+      const memberAcct   = user.member_account
         ?? `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
-
       const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
       const timestamp    = Math.floor(Date.now() / 1000)
+
+      // Map frontend lang code → HUIDU language code
+      const langMap: Record<string, string> = {
+        my: 'my', en: 'en', zh: 'zh', th: 'th', id: 'id', vi: 'vi',
+      }
+      const language = langMap[lang] ?? 'zh'
 
       const innerPayload = {
         timestamp,
@@ -131,7 +178,7 @@ Deno.serve(async (req: Request) => {
         game_uid,
         credit_amount : creditAmount,
         currency_code : 'MMK',
-        language      : 'zh',
+        language,
         home_url      : HOME_URL,
         callback_url  : CALLBACK_URL,
         platform,
@@ -142,7 +189,6 @@ Deno.serve(async (req: Request) => {
         AES_KEY_STR
       )
 
-      // Call through VM proxy (static IP 216.146.26.239 — whitelisted by HUIDU)
       const huiduResp = await fetch(`${SERVER_URL}/game/v1`, {
         method : 'POST',
         headers: {
@@ -184,99 +230,115 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── Route 2: HUIDU Balance Callback ──────────────────────────────────────
-  // HUIDU POSTs here after each game session with updated player balance.
-  // FIX: single-row eq('member_account') query instead of full table scan.
-  if (req.method === 'POST' && url.pathname.endsWith('/games/callback')) {
+  // ══════════════════════════════════════════════════════════════════════════
+  // ROUTE 2 — HUIDU Callback   GET|POST /games/callback
+  //
+  // Handles 5 call types HUIDU may send:
+  //   GET  ?payload=enc           → balance query
+  //   POST action=balance         → balance query
+  //   POST action=debit           → real-time bet deduction (seamless wallet)
+  //   POST action=credit          → real-time win credit   (seamless wallet)
+  //   POST (no action / balance)  → session-end balance sync (transfer wallet)
+  // ══════════════════════════════════════════════════════════════════════════
+  if (url.pathname.endsWith('/games/callback')) {
     try {
-      const body = await req.json() as {
-        agency_uid?: string
-        timestamp? : number
-        payload?   : string
-        member_account?: string
-        balance?       : number
-        currency_code? : string
-      }
-
-      let memberAcct: string | undefined
-      let newBalance: number | undefined
-
-      // Try decrypting payload first
-      if (body.payload) {
-        try {
-          const decrypted = await aes256EcbDecryptBase64(body.payload, AES_KEY_STR)
-          const parsed    = JSON.parse(decrypted) as {
-            member_account?: string
-            balance?       : number
-            after_balance? : number
-            credit_amount? : number
-          }
-          memberAcct = parsed.member_account
-          newBalance = parsed.balance ?? parsed.after_balance ?? parsed.credit_amount
-        } catch {
-          // Fall through to unencrypted fields
-        }
-      }
-
-      // Fallback: unencrypted fields
-      if (!memberAcct) memberAcct = body.member_account
-      if (newBalance === undefined) newBalance = body.balance
-
-      if (!memberAcct || newBalance === undefined)
-        return json200({ code: 1, msg: 'Missing member_account or balance' })
-
       const supabase = makeSupabase()
+      let parsed: Record<string, unknown> = {}
 
-      // ── FIXED: direct index lookup — no full table scan ──────────────────
-      // Requires: ALTER TABLE users ADD COLUMN member_account TEXT UNIQUE;
-      //           CREATE UNIQUE INDEX idx_users_member_account ON users(member_account);
-      // Migration: sql/fix_001_member_account.sql
-      const { data: matched, error: findErr } = await supabase
-        .from('users')
-        .select('id, balance')
-        .eq('member_account', memberAcct)
-        .single()
+      if (req.method === 'GET') {
+        // ── GET: balance query ──────────────────────────────────────────────
+        const encParam = url.searchParams.get('payload')
+        const maParam  = url.searchParams.get('member_account')
 
-      if (findErr || !matched) {
-        // Fallback for any user registered before migration ran (no member_account set yet).
-        // Recompute from UUID prefix — safe one-time path; migration removes this codepath.
-        const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '')
-        const { data: allUsers, error: fallbackErr } = await supabase
-          .from('users')
-          .select('id, balance')
-        if (fallbackErr || !allUsers?.length)
-          return json200({ code: 1, msg: 'User lookup failed' })
-        const fallback = allUsers.find(u =>
-          u.id.replace(/-/g, '').slice(0, 10) === suffix
-        )
-        if (!fallback)
-          return json200({ code: 1, msg: 'User not found for member_account: ' + memberAcct })
+        if (encParam) {
+          const dec = await decryptPayload(encParam)
+          if (dec) parsed = dec
+        }
+        if (maParam && !parsed.member_account) parsed.member_account = maParam
 
-        // Backfill member_account so next callback is fast
-        await supabase
-          .from('users')
-          .update({ member_account: memberAcct })
-          .eq('id', fallback.id)
+      } else if (req.method === 'POST') {
+        // ── POST: decrypt body payload ──────────────────────────────────────
+        const body = await req.json().catch(() => ({})) as Record<string, unknown>
 
-        const { error: updateErrFb } = await supabase
-          .from('users')
-          .update({ balance: newBalance })
-          .eq('id', fallback.id)
-        if (updateErrFb)
-          return json200({ code: 1, msg: 'Balance update failed: ' + updateErrFb.message })
-        return json200({ code: 0, msg: 'success' })
+        if (body.payload && typeof body.payload === 'string') {
+          const dec = await decryptPayload(body.payload)
+          if (dec) parsed = { ...body, ...dec }
+          else     parsed = body
+        } else {
+          parsed = body
+        }
+      } else {
+        return json200({ code: 1, msg: 'Method not allowed' })
       }
-      // ── End fix ──────────────────────────────────────────────────────────
 
+      // Extract common fields (handle both snake_case and camelCase)
+      const memberAcct = (parsed.member_account as string | undefined)
+      const action     = ((parsed.action ?? parsed.type ?? '') as string).toLowerCase()
+
+      if (!memberAcct) return json200({ code: 1, msg: 'Missing member_account' })
+
+      const user = await findUserByMemberAcct(supabase, memberAcct)
+      if (!user) return json200({ code: 1, msg: 'User not found: ' + memberAcct })
+
+      const currentBalance = parseFloat(String(user.balance ?? '0')) || 0
+
+      // ── BALANCE QUERY ───────────────────────────────────────────────────
+      if (req.method === 'GET' || action === 'balance' || action === 'getbalance' || action === 'get_balance') {
+        return json200({ code: 0, balance: currentBalance, currency_code: 'MMK' })
+      }
+
+      // ── REAL-TIME DEBIT (player places bet) ─────────────────────────────
+      if (action === 'debit' || action === 'bet') {
+        // Prefer after_balance if HUIDU provides it (authoritative)
+        const afterBal = parsed.after_balance ?? parsed.afterBalance
+        if (afterBal !== undefined && afterBal !== null) {
+          const newBal = parseFloat(String(afterBal)) || 0
+          await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
+          return json200({ code: 0, balance: newBal, currency_code: 'MMK' })
+        }
+        // Fallback: deduct amount from current balance
+        const amount = parseFloat(String(parsed.amount ?? parsed.bet_amount ?? 0)) || 0
+        if (amount > currentBalance)
+          return json200({ code: 1, msg: 'Insufficient balance' })
+        const newBal = Math.max(currentBalance - amount, 0)
+        await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
+        return json200({ code: 0, balance: newBal, currency_code: 'MMK' })
+      }
+
+      // ── REAL-TIME CREDIT (player wins) ──────────────────────────────────
+      if (action === 'credit' || action === 'win' || action === 'refund' || action === 'cancel') {
+        const afterBal = parsed.after_balance ?? parsed.afterBalance
+        if (afterBal !== undefined && afterBal !== null) {
+          const newBal = parseFloat(String(afterBal)) || 0
+          await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
+          return json200({ code: 0, balance: newBal, currency_code: 'MMK' })
+        }
+        const amount = parseFloat(String(parsed.amount ?? parsed.win_amount ?? 0)) || 0
+        const newBal = currentBalance + amount
+        await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
+        return json200({ code: 0, balance: newBal, currency_code: 'MMK' })
+      }
+
+      // ── SESSION-END SYNC (transfer wallet — HUIDU sends final balance) ──
+      const newBalance = (
+        parsed.balance       ??
+        parsed.after_balance ??
+        parsed.credit_amount ??
+        parsed.final_balance
+      )
+      if (newBalance === undefined || newBalance === null)
+        return json200({ code: 1, msg: 'Missing balance field in callback' })
+
+      const finalBal = parseFloat(String(newBalance)) || 0
       const { error: updateErr } = await supabase
         .from('users')
-        .update({ balance: newBalance })
-        .eq('id', matched.id)
+        .update({ balance: finalBal })
+        .eq('id', user.id)
 
       if (updateErr)
         return json200({ code: 1, msg: 'Balance update failed: ' + updateErr.message })
 
-      return json200({ code: 0, msg: 'success' })
+      return json200({ code: 0, balance: finalBal, currency_code: 'MMK' })
 
     } catch (err) {
       return json200({ code: 1, msg: `Callback error: ${String(err)}` })
