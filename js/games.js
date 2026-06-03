@@ -69,6 +69,46 @@ const _PROVIDER_CATS = ['pg', 'pp', 'jili', 'jdb'];
 // 'all' tab shows only these 3 providers (not all 1000+ games)
 const _DEFAULT_PROVIDERS = ['pp', 'jili', 'jdb'];
 
+// Myanmar popular slot game codes — pinned at top of Slots tab (valid-image games only)
+// Covers PP, PG, JILI, JDB top picks for local market
+const _MM_POPULAR_SLOT_CODES = new Set([
+  // ── Pragmatic Play ──────────────────────────────
+  '880a68222d05a3697055d523d574cb2b', // Gates of Olympus Super Scatter
+  '6dcaf78e4e23929cbe2deb3d1210928c', // Sweet Bonanza
+  'ab841b96a216b2321baa11d6121185a3', // Pyramid Bonanza
+  'be6b6890587ed84289fad941d99a3613', // Starlight Princess
+  '09d08939279289a03b89f2f146a7f817', // Starlight Princess 1000
+  '4ae52ed2e1a8c353878ba65ed7791ac4', // Gates of Olympus 1000
+  // ── PG Soft ─────────────────────────────────────
+  '9b93cb0dc46d847864c87ed42a3428bb', // Wild Ape #3258
+  // ── JILI ────────────────────────────────────────
+  '09699fd0de13edbb6c4a194d7494640b', // Fengshen
+  '8cbb88bc0bc1f7be4379cf75abc6095f', // Golden Empire 2
+  '981f5f9675002fbeaaf24c4128b938d7', // Boxing King
+  '3ea8ed5f8ba2239e6cd49366afb743f8', // 3 Charge Buffalo
+  'fe942e56d8f33522e4084e8e3aaa3523', // Cash Coin
+  '3b502aee6c9e1ef0f698332ee1b76634', // Blackjack
+]);
+
+// Returns true only when the game has its OWN valid image (not a provider fallback)
+function _hasOwnValidImage(g) {
+  const url = g.image_url || '';
+  return !!(url && !url.includes('pragmaticplay.net'));
+}
+
+// Sort slot games: popular+valid-image → other valid-image → broken/no image
+function _sortSlotGames(games) {
+  return [...games].sort((a, b) => {
+    const aTier = _MM_POPULAR_SLOT_CODES.has(a.game_code) && _hasOwnValidImage(a) ? 0
+                : _hasOwnValidImage(a) ? 1
+                : 2;
+    const bTier = _MM_POPULAR_SLOT_CODES.has(b.game_code) && _hasOwnValidImage(b) ? 0
+                : _hasOwnValidImage(b) ? 1
+                : 2;
+    return aTier - bTier;
+  });
+}
+
 // Fallback hot games shown until real play_count data accumulates
 const _HOT_FALLBACK_CODES = [
   '880a68222d05a3697055d523d574cb2b', // Gates of Olympus Super Scatter (pp)
@@ -358,9 +398,11 @@ function renderGames() {
           .slice(0, 7);
   } else if (_activeCategory === 'slot') {
     const slotGames = _allGames.filter(g => g.category === 'slot');
-    filtered = _activeProvider === 'all'
+    const base = _activeProvider === 'all'
       ? slotGames
       : slotGames.filter(g => g.provider_code === _activeProvider);
+    // Popular MM games (valid image) → other valid-image games → broken/no image
+    filtered = _sortSlotGames(base);
   } else if (_PROVIDER_CATS.includes(_activeCategory)) {
     filtered = _allGames.filter(g => g.provider_code === _activeCategory);
   } else {
