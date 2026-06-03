@@ -724,12 +724,16 @@ function toggleSearch() {
   }
 }
 
+let _searchDebounce = null;
 function searchGames(query) {
-  _searchQuery  = (query || '').trim().toLowerCase();
-  _displayLimit = 20;
-  _renderedCount = 0;
-  if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
-  renderGames();
+  _searchQuery = (query || '').trim().toLowerCase();
+  clearTimeout(_searchDebounce);
+  _searchDebounce = setTimeout(function() {
+    _displayLimit  = 20;
+    _renderedCount = 0;
+    if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
+    renderGames();
+  }, 250);
 }
 
 function clearSearch() {
