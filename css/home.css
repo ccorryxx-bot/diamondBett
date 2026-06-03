@@ -852,6 +852,86 @@
 }
 
 /* ================================================
+   SEARCH TOGGLE BUTTON (nav-icons area)
+   ================================================ */
+.nav-ico-search {
+  background: rgba(99,102,241,.12);
+  border: 1px solid rgba(99,102,241,.25);
+  transition: background .2s, border-color .2s;
+}
+.nav-search-btn.active .nav-ico-search {
+  background: rgba(99,102,241,.28);
+  border-color: rgba(99,102,241,.55);
+}
+.nav-search-btn.active {
+  color: #818cf8;
+}
+
+/* ================================================
+   SEARCH BAR — slide-down panel above cat tabs
+   ================================================ */
+.game-search-bar {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s cubic-bezier(.4,0,.2,1), opacity .2s;
+  opacity: 0;
+  background: rgba(10,8,32,.96);
+  border-bottom: 1px solid rgba(99,102,241,.15);
+  flex-shrink: 0;
+}
+.game-search-bar.open {
+  max-height: 58px;
+  opacity: 1;
+}
+.game-search-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.gsearch-ico {
+  flex-shrink: 0;
+  opacity: .7;
+}
+.gsearch-input {
+  flex: 1;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(99,102,241,.25);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  -webkit-appearance: none;
+}
+.gsearch-input::placeholder { color: rgba(255,255,255,.3); }
+.gsearch-input:focus {
+  border-color: rgba(99,102,241,.6);
+  background: rgba(99,102,241,.08);
+}
+/* hide browser's native clear button */
+.gsearch-input::-webkit-search-cancel-button { display: none; }
+.gsearch-clear {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,.07);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,.45);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.gsearch-clear:active {
+  background: rgba(99,102,241,.25);
+  color: #818cf8;
+}
+
+/* ================================================
    HOME PREVIEW SECTIONS (Live / Fish / Arcade)
    Fixed-count game card grids below provider grid.
    ================================================ */
