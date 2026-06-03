@@ -67,7 +67,7 @@ async function aes256EcbDecryptBase64(base64: string, keyStr: string): Promise<s
     const buf   = new Uint8Array(BLOCK * 2)
     buf.set(block, BLOCK)
     const dec = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: zeroIV }, cryptoKey, buf)
-    result.set(new Uint8Array(dec).slice(0, BLOCK), i * BLOCK)
+    result.set(new Uint8Array(dec).slice(BLOCK), i * BLOCK)
   }
 
   const padLen = result[result.length - 1]
