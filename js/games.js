@@ -30,6 +30,11 @@ function _gameImgUrl(url) {
   return _applyIkTr(url, 'tr:w-200,h-267,f-auto,q-75');
 }
 
+// LQIP: tiny 20×27 blurred placeholder — loads in <150ms, gives instant preview
+function _lqipUrl(url) {
+  return _applyIkTr(url, 'tr:w-20,h-27,bl-15,q-20');
+}
+
 // Banner images: full-width banner, 800×400, auto-WebP, q85
 function _bannerImgUrl(url) {
   return _applyIkTr(url, 'tr:w-800,h-400,f-auto,q-85');
@@ -340,6 +345,9 @@ async function loadGamesFromDB() {
     _renderHomeSection('live',   9,  'homeLiveGrid');
     _renderHomeSection('fish',   11, 'homeFishGrid');
     _renderHomeSection('arcade', 8,  'homeArcadeGrid');
+    // Silently warm browser cache with all game images during idle time
+    // → 2nd+ search shows images instantly (no dark boxes)
+    _backgroundPreloadAll();
   } catch (err) {
     console.error('Game load error:', err);
     grid.innerHTML = `
@@ -474,28 +482,61 @@ function renderGames() {
 
       if (hasImg) {
         const img = document.createElement('img');
-        img.className   = 'gc-bg';
-        img.alt         = '';
-        img.width       = 200;
-        img.height      = 267;
-        img.dataset.src = imgSrc;   // deferred — _gcObserver sets src on scroll
-        // Fallback: original jsDelivr URL if ImageKit CDN fails
-        if (g.image_url && g.image_url.includes('cdn.jsdelivr.net')) {
-          img.dataset.fallback = g.image_url;
+        img.className = 'gc-bg';
+        img.alt       = '';
+        img.width     = 200;
+        img.height    = 267;
+
+        const fallbackSrc = (g.image_url && g.image_url.includes('cdn.jsdelivr.net'))
+          ? g.image_url : null;
+
+        if (_searchQuery) {
+          // ── SEARCH MODE: LQIP → full crossfade ──────────────────
+          // Step 1: show tiny blurred placeholder instantly (<150ms)
+          const lqip = _lqipUrl(imgSrc);
+          img.src = lqip;
+          img.style.cssText = 'filter:blur(8px);transition:filter .35s ease;';
+
+          // Step 2: load full-res in parallel
+          const full = new Image();
+          if (imgSrc.includes('pragmaticplay.net')) full.referrerPolicy = 'no-referrer';
+          full.onload = function() {
+            img.src = imgSrc;
+            img.style.filter = 'none';
+            card.classList.add('gc-img-loaded');
+          };
+          full.onerror = function() {
+            if (fallbackSrc) {
+              img.src = fallbackSrc;
+              img.style.filter = 'none';
+              card.classList.add('gc-img-loaded');
+            } else {
+              card.classList.add('gc-img-loaded');
+              const ph = document.createElement('div');
+              ph.innerHTML = _gcPlaceholder(g.game_name);
+              if (img.parentNode) img.parentNode.replaceChild(ph.firstElementChild, img);
+            }
+          };
+          full.src = imgSrc;
+          card.appendChild(img);
+        } else {
+          // ── NORMAL MODE: lazy load via IntersectionObserver ──────
+          img.dataset.src = imgSrc;
+          if (fallbackSrc) img.dataset.fallback = fallbackSrc;
+
+          img.onload  = function() { card.classList.add('gc-img-loaded'); };
+          img.onerror = function() {
+            const fb = this.dataset.fallback;
+            if (fb && this.src !== fb) { this.src = fb; return; }
+            card.classList.add('gc-img-loaded');
+            const ph = document.createElement('div');
+            ph.innerHTML = _gcPlaceholder(g.game_name);
+            if (this.parentNode) this.parentNode.replaceChild(ph.firstElementChild, this);
+          };
+
+          card.appendChild(img);
+          _gcObserver.observe(img);
         }
-
-        img.onload  = function() { card.classList.add('gc-img-loaded'); };
-        img.onerror = function() {
-          const fb = this.dataset.fallback;
-          if (fb && this.src !== fb) { this.src = fb; return; }
-          card.classList.add('gc-img-loaded');
-          const ph = document.createElement('div');
-          ph.innerHTML = _gcPlaceholder(g.game_name);
-          if (this.parentNode) this.parentNode.replaceChild(ph.firstElementChild, this);
-        };
-
-        card.appendChild(img);
-        _gcObserver.observe(img);
       } else {
         card.classList.add('gc-img-loaded');
         card.insertAdjacentHTML('beforeend', _gcPlaceholder(g.game_name));
@@ -551,7 +592,7 @@ function _updateScrollSentinel(hasMore) {
 
   _scrollObserver.observe(sentinel.firstElementChild);
 }
-// ── Background image prefetch ─────────────────────────────────────────────────
+// ── Background image prefetch (next scroll batch) ────────────────────────────
 // Loads next batch into browser cache while user is reading current batch.
 // When cards appear in DOM, images are already cached → instant display.
 function _prefetchNextBatch(filtered, startIdx, count) {
@@ -560,9 +601,40 @@ function _prefetchNextBatch(filtered, startIdx, count) {
     if (src && !src.includes('placeholder') && src !== 'undefined') {
       const img = new Image();
       if (src.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
-      img.src = src;   // silent background download
+      img.src = src;
     }
   });
+}
+
+// ── Full background preload via requestIdleCallback ───────────────────────────
+// After games load, silently cache ALL game images during browser idle time.
+// On 2nd+ search: images already cached → near-instant display (no dark boxes).
+function _backgroundPreloadAll() {
+  if (!_allGames || !_allGames.length) return;
+  const idleCb = window.requestIdleCallback
+    || function(cb) { setTimeout(() => cb({ timeRemaining: () => 50 }), 1500); };
+
+  let idx = 0;
+
+  function loadChunk(deadline) {
+    // Process as many games as the browser can handle without jank
+    while (idx < _allGames.length && deadline.timeRemaining() > 4) {
+      const g = _allGames[idx++];
+      const src = _resolveGameImg(g);
+      if (src) {
+        const img = new Image();
+        if (src.includes('pragmaticplay.net')) img.referrerPolicy = 'no-referrer';
+        img.src = src;
+      }
+    }
+    // Schedule next chunk if games remain
+    if (idx < _allGames.length) {
+      idleCb(loadChunk, { timeout: 10000 });
+    }
+  }
+
+  // Start 2.5s after page load — avoid competing with initial critical assets
+  setTimeout(() => idleCb(loadChunk, { timeout: 10000 }), 2500);
 }
 
 function filterGames(category) {
