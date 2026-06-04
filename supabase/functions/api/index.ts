@@ -109,13 +109,16 @@ function makeSupabase() {
 }
 
 // ── Look up user row by member_account ────────────────────────────────────────
+// Handles three formats HUIDU may send:
+//   hdf801abc123def4   (new format — no underscore, compliant with spec)
+//   hdf801_abc123def4  (old format — has underscore, stored in early accounts)
 type UserRow = { id: string; balance: number }
 
 async function findUserByMemberAcct(
   supabase: ReturnType<typeof makeSupabase>,
   memberAcct: string
 ): Promise<UserRow | null> {
-  // Direct lookup by member_account
+  // 1. Direct lookup — exact match
   const { data, error } = await supabase
     .from('users')
     .select('id, balance')
@@ -126,18 +129,48 @@ async function findUserByMemberAcct(
     return { id: data.id, balance: parseBal(data.balance) }
   }
 
-  dbg('FIND_USER_FALLBACK', { memberAcct, err: error?.message })
+  dbg('FIND_USER_TRY_ALT', { memberAcct, err: error?.message })
 
-  // Fallback: UUID-prefix scan (pre-migration users without member_account set)
-  const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '').toLowerCase()
+  // 2. Try alternate format:
+  //    If we received no-underscore form (hdf801abc123) → also try hdf801_abc123
+  //    If we received underscore form (hdf801_abc123)   → also try hdf801abc123
+  const altAcct = memberAcct.includes('_')
+    ? memberAcct.replace('_', '')                        // strip underscore
+    : memberAcct.replace(PLAYER_PREFIX, `${PLAYER_PREFIX}_`)  // add underscore
+
+  if (altAcct !== memberAcct) {
+    const { data: d2, error: e2 } = await supabase
+      .from('users')
+      .select('id, balance')
+      .eq('member_account', altAcct)
+      .single()
+
+    if (!e2 && d2) {
+      dbg('FIND_USER_ALT_MATCH', { altAcct })
+      return { id: d2.id, balance: parseBal(d2.balance) }
+    }
+  }
+
+  dbg('FIND_USER_FALLBACK_SCAN', { memberAcct })
+
+  // 3. UUID-prefix scan — last resort for accounts created before member_account column existed
+  //    Strip prefix (with or without underscore) to get the 10-char hex suffix
+  const suffix = memberAcct
+    .replace(`${PLAYER_PREFIX}_`, '')
+    .replace(PLAYER_PREFIX, '')
+    .toLowerCase()
+    .slice(0, 10)
+
   const { data: all } = await supabase.from('users').select('id, balance')
   const found = (all ?? []).find((u: { id: string; balance: unknown }) =>
     u.id.replace(/-/g, '').slice(0, 10).toLowerCase() === suffix
   )
   if (!found) return null
 
-  // Back-fill member_account so next lookup is fast
-  await supabase.from('users').update({ member_account: memberAcct }).eq('id', found.id)
+  // Back-fill member_account (new format — no underscore) so next lookup is fast
+  const canonical = `${PLAYER_PREFIX}${found.id.replace(/-/g, '').slice(0, 10)}`
+  await supabase.from('users').update({ member_account: canonical }).eq('id', found.id)
+  dbg('FIND_USER_BACKFILL', { canonical })
   return { id: found.id, balance: parseBal(found.balance) }
 }
 
@@ -194,8 +227,10 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'User not found' })
       }
 
+      // member_account: no underscore — HUIDU spec allows only a-z and 0-9
+      // Old accounts may have underscore (hdf801_xxx); new ones use hdf801xxx
       const memberAcct = user.member_account
-        ?? `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
+        ?? `${PLAYER_PREFIX}${user_id.replace(/-/g, '').slice(0, 10)}`
 
       // CRITICAL: credit_amount must be an integer for MMK.
       // Supabase returns numeric columns as strings — parseBal() handles this safely.
