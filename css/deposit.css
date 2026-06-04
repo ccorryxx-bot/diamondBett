@@ -104,11 +104,30 @@
 .dep-submit.red{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 0 #7a1010,0 6px 18px rgba(239,68,68,.3),inset 0 1px 0 rgba(255,255,255,.15);}
 
 /* ================================================
+   DEPOSIT MODAL — full-screen when on Step 2
+   ================================================ */
+#depositModal.full-page.dep-modal{
+  background:#ffffff;
+  align-items:stretch;
+  justify-content:stretch;
+}
+#depositModal.full-page .dep-sheet{
+  max-width:100%;
+  max-height:100vh;
+  min-height:100vh;
+  border-radius:0;
+  contain:layout style paint;
+  isolation:isolate;
+}
+
+/* ================================================
    DEPOSIT STEP 2 — WHITE THEME  (AA Fonts, black text)
    ================================================ */
 #depStep2.dep-body{
   background:#ffffff;
   border-radius:0;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
 }
 #depStep2 *{color:#000;}
 #depStep2 .dep-sec-lbl,#depStep2 .slip-lbl{color:#888;font-size:11px;}
@@ -152,6 +171,7 @@
   transition:border-color .2s;
   -webkit-appearance:none;
 }
+.slip-box{transition:none;}
 .slip-box:focus{border-bottom-color:#1a4fd6;outline:none;}
 .slip-hint{font-size:10px;color:#bbb;text-align:center;}
 
