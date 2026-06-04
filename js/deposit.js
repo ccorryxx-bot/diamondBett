@@ -115,6 +115,7 @@ function goStep2() {
 
   document.getElementById('depStep1').style.display = 'none';
   document.getElementById('depStep2').style.display = 'block';
+  document.getElementById('depositModal')?.classList.add('full-page');
 
   document.getElementById('dep2Logo').innerHTML = getProvLogo(_dMethod.provider_name, 40);
   setEl('dep2Name',  _dMethod.provider_name);
@@ -150,6 +151,12 @@ function startCd(sec) {
 function slipMove(el, idx) {
   const boxes = document.querySelectorAll('.slip-box');
   if (el.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+}
+function slipBack(el, e, idx) {
+  if (e.key === 'Backspace' && !el.value && idx > 0) {
+    const boxes = document.querySelectorAll('.slip-box');
+    boxes[idx - 1].focus();
+  }
 }
 
 function cpText(id) {
@@ -187,7 +194,7 @@ async function submitSlip() {
     if (error) throw error;
 
     clearInterval(window._cdTimer);
-    document.getElementById('depositModal')?.classList.remove('open');
+    document.getElementById('depositModal')?.classList.remove('open','full-page');
     gToast('ငွေသွင်း တောင်းဆိုမှု အောင်မြင်ပါသည်\nမိနစ် 5–10 အတွင်း Wallet ထဲ ရောက်ပါမည်', 'success');
   } catch (e) {
     gToast('မအောင်မြင်ပါ: ' + (e.message || 'ထပ်စမ်းပါ'), 'error');
