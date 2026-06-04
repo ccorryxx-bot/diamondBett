@@ -15,8 +15,16 @@
 // FIX (2026-06-04 v3): CRITICAL — Added credit_amount to callback response body.
 // HUIDU reads "credit_amount" as the balance field (not "balance"). Without it,
 // HUIDU sees balance=0 on every spin → "Add Funds" error even with K1,000,000.
-// Also added credit_amount to all afterBalRaw / newBalanceRaw lookup chains so
-// HUIDU's incoming credit_amount field is correctly parsed as the post-tx balance.
+//
+// FIX (2026-06-04 v4): CRITICAL — Removed parsed.credit_amount from DEBIT and CREDIT
+// afterBalRaw lookup chains. In HUIDU V3 debit/credit callbacks, credit_amount = the
+// transaction amount (same as `amount`), NOT the after-balance. Treating it as
+// after-balance caused balance to be set to the bet amount on every spin:
+//   e.g. user has K20,000, bets K250 → HUIDU sends credit_amount:250 →
+//   we mistakenly set balance = K250 → next bet > K250 → "Add Funds" error.
+// Fix: DEBIT uses (currentBalance - amount), CREDIT uses (currentBalance + amount).
+// credit_amount is kept ONLY in SESSION-END fallback (no action field), where HUIDU
+// may use it as the final balance field.
 //
 // CALLBACK DESIGN:
 //   GET  /games/callback?payload=<enc>&member_account=<ma>  → balance query
@@ -96,12 +104,11 @@ function balanceResp(code: number, balance: number, msg?: string, beforeBalance?
   const bal = Math.round(balance)
   // Include BOTH "balance" (generic) AND "credit_amount" (HUIDU's field name).
   // HUIDU reads "credit_amount" from our response — without it, HUIDU sees 0
-  // and shows "Add Funds" even when the player has money. This was the root cause
-  // of the spin → "TO PLACE THIS BET, ADD FUNDS TO YOUR ACCOUNT" bug.
+  // and shows "Add Funds" even when the player has money.
   const body: Record<string, unknown> = {
     code: 0,
     balance: bal,
-    credit_amount: bal,          // ← HUIDU's required field name
+    credit_amount: bal,          // ← HUIDU reads this as the player's balance
     currency_code: 'MMK',
     payload: { balance: bal, credit_amount: bal, currency_code: 'MMK' },
   }
@@ -270,7 +277,7 @@ Deno.serve(async (req: Request) => {
         agency_uid    : AGENCY_UID,
         member_account: memberAcct,
         game_uid,
-        credit_amount : creditAmount,   // integer MMK
+        credit_amount : creditAmount,   // integer MMK — player's starting balance
         currency_code : 'MMK',
         language,
         home_url      : HOME_URL,
@@ -433,9 +440,10 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── DEBIT (player places bet) ─────────────────────────────────────────
+      // IMPORTANT: In HUIDU V3 debit callbacks, credit_amount = bet amount (NOT after-balance).
+      // We only trust explicit after-balance fields; otherwise compute: currentBalance - amount.
       if (action === 'debit' || action === 'bet' || action === 'withdraw' || action === 'transfer_out') {
-        // credit_amount = HUIDU's post-transaction balance field (same as after_balance)
-        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit ?? parsed.credit_amount
+        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
         const amount = parseBal(parsed.amount ?? parsed.bet_amount ?? parsed.betAmount ?? 0)
 
         dbg('CB_ACTION_DEBIT', { amount, afterBalRaw, currentBalance })
@@ -457,9 +465,10 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── CREDIT (player wins) ──────────────────────────────────────────────
+      // IMPORTANT: In HUIDU V3 credit callbacks, credit_amount = win amount (NOT after-balance).
+      // We only trust explicit after-balance fields; otherwise compute: currentBalance + amount.
       if (action === 'credit' || action === 'win' || action === 'refund' || action === 'cancel' || action === 'transfer_in') {
-        // credit_amount = HUIDU's post-transaction balance field (same as after_balance)
-        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit ?? parsed.credit_amount
+        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
         const amount = parseBal(parsed.amount ?? parsed.win_amount ?? parsed.winAmount ?? 0)
 
         dbg('CB_ACTION_CREDIT', { amount, afterBalRaw, currentBalance })
@@ -481,9 +490,6 @@ Deno.serve(async (req: Request) => {
       //   { bet_amount, win_amount, member_account, game_round, serial_number }
       // There is NO "action" field. We compute net change:
       //   new_balance = current_balance - bet_amount + win_amount
-      // This is the actual root-cause fix for the "Add Funds" error: without
-      // this handler, the round callback fell through to SESSION-END which found
-      // no known balance field, returned unchanged balance → HUIDU rejected it.
       const hasBetOrWin = (parsed.bet_amount !== undefined || parsed.win_amount !== undefined)
       if (hasBetOrWin) {
         const betAmt = parseBal(parsed.bet_amount ?? 0)
@@ -498,6 +504,8 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── SESSION-END SYNC ──────────────────────────────────────────────────
+      // No action field, no bet_amount/win_amount — HUIDU sends final balance.
+      // credit_amount is trusted here (session-end context, not a transaction callback).
       const newBalanceRaw = (
         parsed.balance         ??
         parsed.final_balance   ??
@@ -508,7 +516,7 @@ Deno.serve(async (req: Request) => {
         parsed.afterBalance    ??
         parsed.after_credit    ??
         parsed.afterCredit     ??
-        parsed.credit_amount       // HUIDU's canonical balance field
+        parsed.credit_amount       // trusted in session-end: HUIDU final balance field
       )
 
       dbg('CB_SESSION_END', { newBalanceRaw, allKeys: Object.keys(parsed) })
