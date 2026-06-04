@@ -238,10 +238,19 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'User not found' })
       }
 
-      // member_account: no underscore — HUIDU spec allows only a-z and 0-9
-      // Old accounts may have underscore (hdf801_xxx); new ones use hdf801xxx
-      const memberAcct = user.member_account
+      // member_account: MUST have no underscore — HUIDU spec only allows a-z and 0-9.
+      // Strip any underscore from stored value (old accounts had hdf801_xxx format).
+      // Fallback generates hdf801xxxxxxxxxx (no underscore) for new accounts.
+      const rawAcct = user.member_account
         ?? `${PLAYER_PREFIX}${user_id.replace(/-/g, '').slice(0, 10)}`
+      const memberAcct = rawAcct.replace(/_/g, '')  // enforce: no underscore to HUIDU
+
+      // If stored value had underscore, back-fill DB with clean version
+      if (user.member_account && user.member_account.includes('_')) {
+        supabase.from('users').update({ member_account: memberAcct }).eq('id', user_id)
+          .then(() => dbg('LAUNCH_BACKFILL_MEMBER_ACCT', { memberAcct }))
+          .catch(() => {})  // non-blocking
+      }
 
       // CRITICAL: credit_amount must be an integer for MMK.
       // Supabase returns numeric columns as strings — parseBal() handles this safely.
@@ -399,6 +408,16 @@ Deno.serve(async (req: Request) => {
       }
 
       const user = await findUserByMemberAcct(supabase, memberAcct)
+
+      // ── Diagnostic log — capture every HUIDU callback (first 500 chars of body) ──
+      supabase.from('callback_log').insert({
+        method        : req.method,
+        raw_body      : rawBody.slice(0, 500),
+        parsed_member : memberAcct ?? 'MISSING',
+        parsed_action : action || 'NONE',
+        response_code : user ? 0 : 1,
+      }).then(() => {}).catch(() => {})  // non-blocking, best-effort
+
       if (!user) {
         dbg('CB_USER_NOT_FOUND', { memberAcct })
         return json200({ code: 1, msg: 'User not found: ' + memberAcct })
