@@ -12,6 +12,12 @@
 // decimal units. Debit/credit responses now include before_balance per HUIDU V3 spec.
 // Null-safe balance parsing throughout. member_account case-insensitive fallback added.
 //
+// FIX (2026-06-04 v3): CRITICAL — Added credit_amount to callback response body.
+// HUIDU reads "credit_amount" as the balance field (not "balance"). Without it,
+// HUIDU sees balance=0 on every spin → "Add Funds" error even with K1,000,000.
+// Also added credit_amount to all afterBalRaw / newBalanceRaw lookup chains so
+// HUIDU's incoming credit_amount field is correctly parsed as the post-tx balance.
+//
 // CALLBACK DESIGN:
 //   GET  /games/callback?payload=<enc>&member_account=<ma>  → balance query
 //   POST /games/callback  action=balance  → balance query
@@ -88,11 +94,16 @@ function parseBal(val: unknown): number {
 function balanceResp(code: number, balance: number, msg?: string, beforeBalance?: number) {
   if (code !== 0) return json200({ code, msg: msg ?? 'error' })
   const bal = Math.round(balance)
+  // Include BOTH "balance" (generic) AND "credit_amount" (HUIDU's field name).
+  // HUIDU reads "credit_amount" from our response — without it, HUIDU sees 0
+  // and shows "Add Funds" even when the player has money. This was the root cause
+  // of the spin → "TO PLACE THIS BET, ADD FUNDS TO YOUR ACCOUNT" bug.
   const body: Record<string, unknown> = {
     code: 0,
     balance: bal,
+    credit_amount: bal,          // ← HUIDU's required field name
     currency_code: 'MMK',
-    payload: { balance: bal, currency_code: 'MMK' },
+    payload: { balance: bal, credit_amount: bal, currency_code: 'MMK' },
   }
   if (beforeBalance !== undefined) {
     body.before_balance = Math.round(beforeBalance)
@@ -404,7 +415,8 @@ Deno.serve(async (req: Request) => {
 
       // ── DEBIT (player places bet) ─────────────────────────────────────────
       if (action === 'debit' || action === 'bet' || action === 'withdraw' || action === 'transfer_out') {
-        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
+        // credit_amount = HUIDU's post-transaction balance field (same as after_balance)
+        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit ?? parsed.credit_amount
         const amount = parseBal(parsed.amount ?? parsed.bet_amount ?? parsed.betAmount ?? 0)
 
         dbg('CB_ACTION_DEBIT', { amount, afterBalRaw, currentBalance })
@@ -427,7 +439,8 @@ Deno.serve(async (req: Request) => {
 
       // ── CREDIT (player wins) ──────────────────────────────────────────────
       if (action === 'credit' || action === 'win' || action === 'refund' || action === 'cancel' || action === 'transfer_in') {
-        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
+        // credit_amount = HUIDU's post-transaction balance field (same as after_balance)
+        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit ?? parsed.credit_amount
         const amount = parseBal(parsed.amount ?? parsed.win_amount ?? parsed.winAmount ?? 0)
 
         dbg('CB_ACTION_CREDIT', { amount, afterBalRaw, currentBalance })
@@ -454,7 +467,8 @@ Deno.serve(async (req: Request) => {
         parsed.after_balance   ??
         parsed.afterBalance    ??
         parsed.after_credit    ??
-        parsed.afterCredit
+        parsed.afterCredit     ??
+        parsed.credit_amount       // HUIDU's canonical balance field
       )
 
       dbg('CB_SESSION_END', { newBalanceRaw, allKeys: Object.keys(parsed) })
