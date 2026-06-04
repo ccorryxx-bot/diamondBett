@@ -79,7 +79,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('authModal')?.classList.remove('active');
   });
   document.getElementById('depCloseBtn')?.addEventListener('click', () => {
-    document.getElementById('depositModal')?.classList.remove('open');
+    const dm = document.getElementById('depositModal');
+    if (dm) { dm.classList.remove('open','full-page'); }
+    document.getElementById('depStep1').style.display = 'block';
+    document.getElementById('depStep2').style.display = 'none';
   });
   document.getElementById('wdCloseBtn')?.addEventListener('click', () => {
     document.getElementById('withdrawModal')?.classList.remove('open');
