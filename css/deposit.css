@@ -172,8 +172,20 @@
 .bot-pulse.gold{background:var(--accent);}
 
 /* ================================================
-   WITHDRAW MODAL
+   WITHDRAW MODAL — full-screen page
    ================================================ */
+#withdrawModal.dep-modal{
+  background:#0f0d22;
+  align-items:stretch;
+  justify-content:stretch;
+}
+#withdrawModal .dep-sheet{
+  max-width:100%;
+  max-height:100vh;
+  min-height:100vh;
+  border-radius:0;
+  animation:slideUp .28s cubic-bezier(.25,.8,.25,1);
+}
 .wd-tabs{display:flex;background:#0a0820;border-bottom:1px solid #1c1840;flex-shrink:0;}
 .wd-tab{flex:1;padding:12px 6px;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.35);font-size:11px;font-family:inherit;font-weight:600;transition:all .2s;white-space:nowrap;}
 .wd-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
