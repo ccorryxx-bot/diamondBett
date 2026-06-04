@@ -1,44 +1,28 @@
 // HUIDU Gaming API — Game Launch + Seamless Wallet Callback
 // AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
 //
-// FIX (2026-06-03): Replaced broken WebCrypto AES-CBC-as-ECB workaround with
-// crypto-js (proper AES-ECB support).
-//
-// FIX (2026-06-04): Added URL-query member_account fallback for POST callbacks,
-// URL-decode payload before decrypt, and dual response format (top-level + payload obj)
-// to handle HUIDU V3 callback format variations.
-//
-// FIX (2026-06-04 v2): Balance values now always integer (Math.round) — MMK has no
-// decimal units. Debit/credit responses now include before_balance per HUIDU V3 spec.
-// Null-safe balance parsing throughout. member_account case-insensitive fallback added.
-//
-// FIX (2026-06-04 v3): CRITICAL — Added credit_amount to callback response body.
-// HUIDU reads "credit_amount" as the balance field (not "balance"). Without it,
-// HUIDU sees balance=0 on every spin → "Add Funds" error even with K1,000,000.
-//
-// FIX (2026-06-04 v4): CRITICAL — Removed parsed.credit_amount from DEBIT and CREDIT
-// afterBalRaw lookup chains. In HUIDU V3 debit/credit callbacks, credit_amount = the
-// transaction amount (same as `amount`), NOT the after-balance. Treating it as
-// after-balance caused balance to be set to the bet amount on every spin:
-//   e.g. user has K20,000, bets K250 → HUIDU sends credit_amount:250 →
-//   we mistakenly set balance = K250 → next bet > K250 → "Add Funds" error.
-// Fix: DEBIT uses (currentBalance - amount), CREDIT uses (currentBalance + amount).
-// credit_amount is kept ONLY in SESSION-END fallback (no action field), where HUIDU
-// may use it as the final balance field.
+// FIX v5 (2026-06-04): CRITICAL — Callback response must be AES-256 encrypted.
+// Official HUIDU guide requires:
+//   { "code": 0, "msg": "", "payload": "<AES256_ECB_encrypted_json>" }
+// Previous versions returned plain JSON → HUIDU could not read balance → "Add Funds".
+// Also added:
+//   - serial_number deduplication (same serial → return code:0 immediately, no DB write)
+//   - credit_amount sent as STRING in encrypted payload per spec
+//   - member_account: no underscore enforced (4-20 chars, alphanumeric prefix)
 //
 // CALLBACK DESIGN:
 //   GET  /games/callback?payload=<enc>&member_account=<ma>  → balance query
 //   POST /games/callback  action=balance  → balance query
-//   POST /games/callback  action=debit    → deduct bet, return new balance
-//   POST /games/callback  action=credit   → add win, return new balance
-//   POST /games/callback  (no action)     → session-end sync (set balance directly)
+//   POST /games/callback  action=debit    → deduct bet, return encrypted balance
+//   POST /games/callback  action=credit   → add win, return encrypted balance
+//   POST /games/callback  (no action)     → session-end sync
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0'
 
-// ── Production credentials (V3-DiamodBETT-260601) ──────────────────────────
+// ── Production credentials ──────────────────────────────────────────────────
 const AGENCY_UID    = '31ce96cb1fbe80b35b4917ba95627d64'
-const AES_KEY_STR   = '526bedff1dc3050b0513ff20f0b775e5'  // 32 chars = AES-256
+const AES_KEY_STR   = '526bedff1dc3050b0513ff20f0b775e5'
 const PLAYER_PREFIX = 'hdf801'
 const SERVER_URL    = 'http://216.73.158.42:3000'
 const PROXY_SECRET  = 'dbet_proxy_k9x2mw7q'
@@ -55,7 +39,7 @@ function dbg(tag: string, data?: unknown) {
   }
 }
 
-// ─── AES-256-ECB + PKCS7 via crypto-js ────────────────────────────────────────
+// ─── AES-256-ECB + PKCS7 ─────────────────────────────────────────────────────
 function aes256EcbEncryptBase64(plaintext: string, keyStr: string): string {
   const key = CryptoJS.enc.Utf8.parse(keyStr)
   const encrypted = CryptoJS.AES.encrypt(plaintext, key, {
@@ -88,34 +72,30 @@ function json200(body: object) {
   return Response.json(body, { status: 200, headers: corsHeaders })
 }
 
-// Safely parse a balance value to an integer (MMK has no sub-unit).
-// Handles: number, string, null, undefined, NaN.
 function parseBal(val: unknown): number {
   if (val === null || val === undefined) return 0
   const n = typeof val === 'number' ? val : parseFloat(String(val))
   if (!isFinite(n)) return 0
-  return Math.round(n)   // MMK — always integer kyats
+  return Math.round(n)
 }
 
-// Balance response — always integer, includes both top-level and payload formats.
-// Also includes before_balance for debit/credit per HUIDU V3 spec.
-function balanceResp(code: number, balance: number, msg?: string, beforeBalance?: number) {
-  if (code !== 0) return json200({ code, msg: msg ?? 'error' })
+// ─── Encrypted Balance Response (Official HUIDU V3 spec) ─────────────────────
+// Response MUST be:  { code, msg, payload: AES256_ECB_base64(json) }
+// The encrypted json contains credit_amount as STRING per spec.
+function balanceResp(code: number, balance: number, msg?: string) {
+  if (code !== 0) return json200({ code, msg: msg ?? 'error', payload: '' })
   const bal = Math.round(balance)
-  // Include BOTH "balance" (generic) AND "credit_amount" (HUIDU's field name).
-  // HUIDU reads "credit_amount" from our response — without it, HUIDU sees 0
-  // and shows "Add Funds" even when the player has money.
-  const body: Record<string, unknown> = {
-    code: 0,
-    balance: bal,
-    credit_amount: bal,          // ← HUIDU reads this as the player's balance
-    currency_code: 'MMK',
-    payload: { balance: bal, credit_amount: bal, currency_code: 'MMK' },
-  }
-  if (beforeBalance !== undefined) {
-    body.before_balance = Math.round(beforeBalance)
-  }
-  return json200(body)
+  const innerJson = JSON.stringify({
+    credit_amount : String(bal),   // HUIDU spec: string
+    currency_code : 'MMK',
+  })
+  const encryptedPayload = aes256EcbEncryptBase64(innerJson, AES_KEY_STR)
+  dbg('RESP_ENCRYPTED', { bal, innerJson })
+  return json200({
+    code   : 0,
+    msg    : '',
+    payload: encryptedPayload,
+  })
 }
 
 function makeSupabase() {
@@ -126,17 +106,13 @@ function makeSupabase() {
   )
 }
 
-// ── Look up user row by member_account ────────────────────────────────────────
-// Handles three formats HUIDU may send:
-//   hdf801abc123def4   (new format — no underscore, compliant with spec)
-//   hdf801_abc123def4  (old format — has underscore, stored in early accounts)
+// ── Look up user by member_account ────────────────────────────────────────────
 type UserRow = { id: string; balance: number }
 
 async function findUserByMemberAcct(
   supabase: ReturnType<typeof makeSupabase>,
   memberAcct: string
 ): Promise<UserRow | null> {
-  // 1. Direct lookup — exact match
   const { data, error } = await supabase
     .from('users')
     .select('id, balance')
@@ -149,20 +125,14 @@ async function findUserByMemberAcct(
 
   dbg('FIND_USER_TRY_ALT', { memberAcct, err: error?.message })
 
-  // 2. Try alternate format:
-  //    If we received no-underscore form (hdf801abc123) → also try hdf801_abc123
-  //    If we received underscore form (hdf801_abc123)   → also try hdf801abc123
+  // Try alternate format (with/without underscore)
   const altAcct = memberAcct.includes('_')
-    ? memberAcct.replace('_', '')                        // strip underscore
-    : memberAcct.replace(PLAYER_PREFIX, `${PLAYER_PREFIX}_`)  // add underscore
+    ? memberAcct.replace('_', '')
+    : memberAcct.replace(PLAYER_PREFIX, `${PLAYER_PREFIX}_`)
 
   if (altAcct !== memberAcct) {
     const { data: d2, error: e2 } = await supabase
-      .from('users')
-      .select('id, balance')
-      .eq('member_account', altAcct)
-      .single()
-
+      .from('users').select('id, balance').eq('member_account', altAcct).single()
     if (!e2 && d2) {
       dbg('FIND_USER_ALT_MATCH', { altAcct })
       return { id: d2.id, balance: parseBal(d2.balance) }
@@ -171,8 +141,7 @@ async function findUserByMemberAcct(
 
   dbg('FIND_USER_FALLBACK_SCAN', { memberAcct })
 
-  // 3. UUID-prefix scan — last resort for accounts created before member_account column existed
-  //    Strip prefix (with or without underscore) to get the 10-char hex suffix
+  // UUID-prefix scan — last resort
   const suffix = memberAcct
     .replace(`${PLAYER_PREFIX}_`, '')
     .replace(PLAYER_PREFIX, '')
@@ -185,22 +154,42 @@ async function findUserByMemberAcct(
   )
   if (!found) return null
 
-  // Back-fill member_account (new format — no underscore) so next lookup is fast
   const canonical = `${PLAYER_PREFIX}${found.id.replace(/-/g, '').slice(0, 10)}`
   await supabase.from('users').update({ member_account: canonical }).eq('id', found.id)
   dbg('FIND_USER_BACKFILL', { canonical })
   return { id: found.id, balance: parseBal(found.balance) }
 }
 
-// ── Decrypt HUIDU payload — handles URL-encoded and standard base64 ───────────
+// ── serial_number deduplication ───────────────────────────────────────────────
+// Returns true if this serial was already processed (idempotency).
+// Stores in callback_log.serial_number — column added on first use via ALTER TABLE.
+async function isDuplicateSerial(
+  supabase: ReturnType<typeof makeSupabase>,
+  serial: string | undefined
+): Promise<boolean> {
+  if (!serial) return false
+  try {
+    // Check if serial_number already exists in callback_log
+    const { data } = await supabase
+      .from('callback_log')
+      .select('id')
+      .eq('serial_number', serial)
+      .limit(1)
+      .single()
+    if (data?.id) {
+      dbg('SERIAL_DUPLICATE', { serial })
+      return true
+    }
+  } catch { /* column may not exist yet — not a duplicate */ }
+  return false
+}
+
+// ── Decrypt HUIDU payload ─────────────────────────────────────────────────────
 function decryptPayload(raw: string): Record<string, unknown> | null {
   try {
     const normalized = decodeURIComponent(raw.replace(/ /g, '+'))
     const dec = aes256EcbDecryptBase64(normalized, AES_KEY_STR)
-    if (!dec || dec.length === 0) {
-      dbg('DECRYPT_EMPTY', { rawLen: raw.length })
-      return null
-    }
+    if (!dec || dec.length === 0) { dbg('DECRYPT_EMPTY', { rawLen: raw.length }); return null }
     return JSON.parse(dec) as Record<string, unknown>
   } catch (_e1) {
     try {
@@ -245,41 +234,34 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'User not found' })
       }
 
-      // member_account: MUST have no underscore — HUIDU spec only allows a-z and 0-9.
-      // Strip any underscore from stored value (old accounts had hdf801_xxx format).
-      // Fallback generates hdf801xxxxxxxxxx (no underscore) for new accounts.
+      // member_account: no underscore — HUIDU allows only a-z 0-9, 4-20 chars
       const rawAcct = user.member_account
         ?? `${PLAYER_PREFIX}${user_id.replace(/-/g, '').slice(0, 10)}`
-      const memberAcct = rawAcct.replace(/_/g, '')  // enforce: no underscore to HUIDU
+      const memberAcct = rawAcct.replace(/_/g, '')
 
-      // If stored value had underscore, back-fill DB with clean version
       if (user.member_account && user.member_account.includes('_')) {
         supabase.from('users').update({ member_account: memberAcct }).eq('id', user_id)
           .then(() => dbg('LAUNCH_BACKFILL_MEMBER_ACCT', { memberAcct }))
-          .catch(() => {})  // non-blocking
+          .catch(() => {})
       }
 
-      // CRITICAL: credit_amount must be an integer for MMK.
-      // Supabase returns numeric columns as strings — parseBal() handles this safely.
       const creditAmount = parseBal(user.balance)
+      const timestamp = Date.now()
 
-      const timestamp = Date.now()  // milliseconds — HUIDU requires ms per spec
-
-      dbg('LAUNCH_USER_OK', { memberAcct, rawBalance: user.balance, creditAmount })
+      dbg('LAUNCH_USER_OK', { memberAcct, creditAmount })
 
       const langMap: Record<string, string> = {
         my: 'my', en: 'en', zh: 'zh', th: 'th', id: 'id', vi: 'vi',
       }
-      const language = langMap[lang] ?? 'my'
 
       const innerPayload = {
         timestamp,
         agency_uid    : AGENCY_UID,
         member_account: memberAcct,
         game_uid,
-        credit_amount : creditAmount,   // integer MMK — player's starting balance
+        credit_amount : String(creditAmount),  // string per spec
         currency_code : 'MMK',
-        language,
+        language      : langMap[lang] ?? 'my',
         home_url      : HOME_URL,
         callback_url  : CALLBACK_URL,
         platform,
@@ -294,11 +276,8 @@ Deno.serve(async (req: Request) => {
 
       const huiduResp = await fetch(`${SERVER_URL}/game/v1`, {
         method : 'POST',
-        headers: {
-          'Content-Type'  : 'application/json',
-          'x-proxy-secret': PROXY_SECRET,
-        },
-        body: JSON.stringify({ agency_uid: AGENCY_UID, timestamp, payload: encryptedPayload }),
+        headers: { 'Content-Type': 'application/json', 'x-proxy-secret': PROXY_SECRET },
+        body   : JSON.stringify({ agency_uid: AGENCY_UID, timestamp, payload: encryptedPayload }),
       })
 
       const huiduData = await huiduResp.json() as {
@@ -317,16 +296,11 @@ Deno.serve(async (req: Request) => {
         return json200({ code: huiduData.code ?? 1, msg: huiduData.msg || huiduData.message || 'Game API error' })
 
       const gameUrl = (
-        huiduData.payload?.game_launch_url
-        ?? huiduData.payload?.url
-        ?? huiduData.payload?.game_url
-        ?? huiduData.game_url
-        ?? huiduData.url
-        ?? huiduData.game_launch_url
+        huiduData.payload?.game_launch_url ?? huiduData.payload?.url ?? huiduData.payload?.game_url
+        ?? huiduData.game_url ?? huiduData.url ?? huiduData.game_launch_url
       )
 
-      if (!gameUrl)
-        return json200({ code: 1, msg: 'No game URL in response' })
+      if (!gameUrl) return json200({ code: 1, msg: 'No game URL in response' })
 
       dbg('LAUNCH_OK', { gameUrl: gameUrl.slice(0, 80) + '...' })
       return json200({ code: 0, game_url: gameUrl })
@@ -353,16 +327,10 @@ Deno.serve(async (req: Request) => {
       const qAction  = url.searchParams.get('action')
 
       if (req.method === 'GET') {
-        dbg('CB_GET_PARAMS', { hasPayload: !!qPayload, member_account: qMember })
-
         if (qPayload) {
           const dec = decryptPayload(qPayload)
-          if (dec) {
-            parsed = dec
-            dbg('CB_GET_DECRYPTED', dec)
-          } else {
-            dbg('CB_GET_DECRYPT_FAIL', { payloadLen: qPayload.length })
-          }
+          if (dec) { parsed = dec; dbg('CB_GET_DECRYPTED', dec) }
+          else      { dbg('CB_GET_DECRYPT_FAIL', { payloadLen: qPayload.length }) }
         }
         if (qMember && !parsed.member_account) parsed.member_account = qMember
         if (qAction && !parsed.action)         parsed.action         = qAction
@@ -374,18 +342,10 @@ Deno.serve(async (req: Request) => {
         let body: Record<string, unknown> = {}
         try { body = JSON.parse(rawBody) } catch { body = {} }
 
-        dbg('CB_POST_BODY_KEYS', Object.keys(body))
-
         if (body.payload && typeof body.payload === 'string') {
-          dbg('CB_POST_HAS_ENCRYPTED_PAYLOAD', { payloadLen: (body.payload as string).length })
           const dec = decryptPayload(body.payload as string)
-          if (dec) {
-            parsed = { ...body, ...dec }
-            dbg('CB_POST_DECRYPTED', dec)
-          } else {
-            parsed = body
-            dbg('CB_POST_DECRYPT_FAIL_FALLBACK', body)
-          }
+          if (dec) { parsed = { ...body, ...dec }; dbg('CB_POST_DECRYPTED', dec) }
+          else      { parsed = body; dbg('CB_POST_DECRYPT_FAIL_FALLBACK', body) }
         } else {
           parsed = body
           dbg('CB_POST_PLAIN_JSON', body)
@@ -395,7 +355,7 @@ Deno.serve(async (req: Request) => {
         if (qAction && !parsed.action)         parsed.action         = qAction
 
       } else {
-        return json200({ code: 1, msg: 'Method not allowed' })
+        return json200({ code: 1, msg: 'Method not allowed', payload: '' })
       }
 
       // ── Extract fields ────────────────────────────────────────────────────
@@ -406,31 +366,45 @@ Deno.serve(async (req: Request) => {
       const action = (
         (parsed.action ?? parsed.type ?? parsed.event ?? '') as string
       ).toLowerCase()
+      const serialNumber = (parsed.serial_number ?? parsed.serialNumber) as string | undefined
 
-      dbg('CB_PARSED', { memberAcct, action, keys: Object.keys(parsed) })
+      dbg('CB_PARSED', { memberAcct, action, serialNumber, keys: Object.keys(parsed) })
 
       if (!memberAcct) {
         dbg('CB_NO_MEMBER_ACCT', { parsed, qMember })
-        return json200({ code: 1, msg: 'Missing member_account' })
+        return json200({ code: 1, msg: 'Missing member_account', payload: '' })
+      }
+
+      // ── serial_number idempotency check ──────────────────────────────────
+      // If this exact transaction was already processed, return code:0 immediately.
+      if (serialNumber && action !== 'balance' && action !== 'getbalance' && action !== 'get_balance' && action !== 'query' && req.method !== 'GET') {
+        const isDup = await isDuplicateSerial(supabase, serialNumber)
+        if (isDup) {
+          dbg('CB_SERIAL_DUP_SKIP', { serialNumber })
+          // Find user to return their current balance
+          const dupUser = await findUserByMemberAcct(supabase, memberAcct)
+          return balanceResp(0, dupUser?.balance ?? 0)
+        }
       }
 
       const user = await findUserByMemberAcct(supabase, memberAcct)
 
-      // ── Diagnostic log — capture every HUIDU callback (first 500 chars of body) ──
+      // ── Diagnostic log ────────────────────────────────────────────────────
       supabase.from('callback_log').insert({
         method        : req.method,
         raw_body      : rawBody.slice(0, 500),
         parsed_member : memberAcct ?? 'MISSING',
         parsed_action : action || 'NONE',
+        serial_number : serialNumber ?? null,
         response_code : user ? 0 : 1,
-      }).then(() => {}).catch(() => {})  // non-blocking, best-effort
+      }).then(() => {}).catch(() => {})
 
       if (!user) {
         dbg('CB_USER_NOT_FOUND', { memberAcct })
-        return json200({ code: 1, msg: 'User not found: ' + memberAcct })
+        return json200({ code: 1, msg: 'User not found: ' + memberAcct, payload: '' })
       }
 
-      const currentBalance = user.balance  // already integer from parseBal()
+      const currentBalance = user.balance
       dbg('CB_USER_FOUND', { userId: user.id.slice(0, 8) + '...', currentBalance, action })
 
       // ── BALANCE QUERY ─────────────────────────────────────────────────────
@@ -440,8 +414,8 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── DEBIT (player places bet) ─────────────────────────────────────────
-      // IMPORTANT: In HUIDU V3 debit callbacks, credit_amount = bet amount (NOT after-balance).
-      // We only trust explicit after-balance fields; otherwise compute: currentBalance - amount.
+      // NOTE: credit_amount in HUIDU debit callback = bet amount, NOT after-balance.
+      // Only trust explicit after_balance / after_credit fields.
       if (action === 'debit' || action === 'bet' || action === 'withdraw' || action === 'transfer_out') {
         const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
         const amount = parseBal(parsed.amount ?? parsed.bet_amount ?? parsed.betAmount ?? 0)
@@ -452,21 +426,20 @@ Deno.serve(async (req: Request) => {
           const newBal = parseBal(afterBalRaw)
           await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
           dbg('CB_DEBIT_OK_AFTER_BAL', { newBal })
-          return balanceResp(0, newBal, undefined, currentBalance)
+          return balanceResp(0, newBal)
         }
         if (amount > currentBalance) {
           dbg('CB_DEBIT_INSUFFICIENT', { amount, currentBalance })
-          return balanceResp(1, currentBalance, 'Insufficient balance')
+          return json200({ code: 1, msg: 'Insufficient balance', payload: '' })
         }
         const newBal = Math.max(currentBalance - amount, 0)
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
         dbg('CB_DEBIT_OK', { amount, newBal })
-        return balanceResp(0, newBal, undefined, currentBalance)
+        return balanceResp(0, newBal)
       }
 
       // ── CREDIT (player wins) ──────────────────────────────────────────────
-      // IMPORTANT: In HUIDU V3 credit callbacks, credit_amount = win amount (NOT after-balance).
-      // We only trust explicit after-balance fields; otherwise compute: currentBalance + amount.
+      // NOTE: credit_amount in HUIDU credit callback = win amount, NOT after-balance.
       if (action === 'credit' || action === 'win' || action === 'refund' || action === 'cancel' || action === 'transfer_in') {
         const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
         const amount = parseBal(parsed.amount ?? parsed.win_amount ?? parsed.winAmount ?? 0)
@@ -477,46 +450,33 @@ Deno.serve(async (req: Request) => {
           const newBal = parseBal(afterBalRaw)
           await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
           dbg('CB_CREDIT_OK_AFTER_BAL', { newBal })
-          return balanceResp(0, newBal, undefined, currentBalance)
+          return balanceResp(0, newBal)
         }
         const newBal = currentBalance + amount
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
         dbg('CB_CREDIT_OK', { amount, newBal })
-        return balanceResp(0, newBal, undefined, currentBalance)
+        return balanceResp(0, newBal)
       }
 
       // ── HUIDU ROUND SUMMARY (no action field) ────────────────────────────
-      // HUIDU V3 sends ONE callback per spin round with:
-      //   { bet_amount, win_amount, member_account, game_round, serial_number }
-      // There is NO "action" field. We compute net change:
-      //   new_balance = current_balance - bet_amount + win_amount
       const hasBetOrWin = (parsed.bet_amount !== undefined || parsed.win_amount !== undefined)
       if (hasBetOrWin) {
         const betAmt = parseBal(parsed.bet_amount ?? 0)
         const winAmt = parseBal(parsed.win_amount ?? 0)
-        const net    = winAmt - betAmt   // negative = player lost, positive = player won
+        const net    = winAmt - betAmt
         const newBal = Math.max(currentBalance + net, 0)
 
-        dbg('CB_ROUND_SUMMARY', { betAmt, winAmt, net, currentBalance, newBal, serial: parsed.serial_number })
-
+        dbg('CB_ROUND_SUMMARY', { betAmt, winAmt, net, currentBalance, newBal, serial: serialNumber })
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
-        return balanceResp(0, newBal, undefined, currentBalance)
+        return balanceResp(0, newBal)
       }
 
       // ── SESSION-END SYNC ──────────────────────────────────────────────────
-      // No action field, no bet_amount/win_amount — HUIDU sends final balance.
-      // credit_amount is trusted here (session-end context, not a transaction callback).
       const newBalanceRaw = (
-        parsed.balance         ??
-        parsed.final_balance   ??
-        parsed.finalBalance    ??
-        parsed.end_balance     ??
-        parsed.endBalance      ??
-        parsed.after_balance   ??
-        parsed.afterBalance    ??
-        parsed.after_credit    ??
-        parsed.afterCredit     ??
-        parsed.credit_amount       // trusted in session-end: HUIDU final balance field
+        parsed.balance       ?? parsed.final_balance  ?? parsed.finalBalance  ??
+        parsed.end_balance   ?? parsed.endBalance     ?? parsed.after_balance  ??
+        parsed.afterBalance  ?? parsed.after_credit   ?? parsed.afterCredit    ??
+        parsed.credit_amount    // trusted here: session-end final balance field
       )
 
       dbg('CB_SESSION_END', { newBalanceRaw, allKeys: Object.keys(parsed) })
@@ -525,19 +485,18 @@ Deno.serve(async (req: Request) => {
         const finalBal = parseBal(newBalanceRaw)
         await supabase.from('users').update({ balance: finalBal }).eq('id', user.id)
         dbg('CB_SESSION_END_OK', { finalBal })
-        return balanceResp(0, finalBal, undefined, currentBalance)
+        return balanceResp(0, finalBal)
       }
 
-      // Unknown action — return current balance (safe default)
       dbg('CB_UNKNOWN_ACTION', { action, parsedFull: parsed })
       return balanceResp(0, currentBalance)
 
     } catch (err) {
       dbg('CB_ERROR', String(err))
-      return json200({ code: 1, msg: `Callback error: ${String(err)}` })
+      return json200({ code: 1, msg: `Callback error: ${String(err)}`, payload: '' })
     }
   }
 
   dbg('NOT_FOUND', { path: url.pathname })
-  return json200({ code: 1, msg: 'Not found' })
+  return json200({ code: 1, msg: 'Not found', payload: '' })
 })
