@@ -21,7 +21,7 @@ import CryptoJS from 'https://esm.sh/crypto-js@4.2.0'
 const AGENCY_UID    = '31ce96cb1fbe80b35b4917ba95627d64'
 const AES_KEY_STR   = '526bedff1dc3050b0513ff20f0b775e5'  // 32 chars = AES-256
 const PLAYER_PREFIX = 'hdf801'
-const SERVER_URL    = 'http://216.146.26.239:3000'
+const SERVER_URL    = 'http://216.73.158.42:3000'
 const PROXY_SECRET  = 'dbet_proxy_k9x2mw7q'
 const HOME_URL      = 'https://diamond-bett.vercel.app'
 const CALLBACK_URL  = 'https://xjqrwcsxiaybpztzestb.supabase.co/functions/v1/api/games/callback'
