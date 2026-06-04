@@ -201,7 +201,7 @@ Deno.serve(async (req: Request) => {
       // Supabase returns numeric columns as strings — parseBal() handles this safely.
       const creditAmount = parseBal(user.balance)
 
-      const timestamp = Math.floor(Date.now() / 1000)
+      const timestamp = Date.now()  // milliseconds — HUIDU requires ms per spec
 
       dbg('LAUNCH_USER_OK', { memberAcct, rawBalance: user.balance, creditAmount })
 
