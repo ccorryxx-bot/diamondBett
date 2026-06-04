@@ -1,33 +1,28 @@
-// HUIDU Gaming API — Game Launch + Seamless Wallet Callback
+// HUIDU Gaming API — Game Launch + Seamless Wallet Callback + Admin API
 // AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
 //
-// FIX v5 (2026-06-04): CRITICAL — Callback response must be AES-256 encrypted.
-// Official HUIDU guide requires:
-//   { "code": 0, "msg": "", "payload": "<AES256_ECB_encrypted_json>" }
-// Previous versions returned plain JSON → HUIDU could not read balance → "Add Funds".
-// Also added:
-//   - serial_number deduplication (same serial → return code:0 immediately, no DB write)
-//   - credit_amount sent as STRING in encrypted payload per spec
-//   - member_account: no underscore enforced (4-20 chars, alphanumeric prefix)
+// FIX v6 (2026-06-04):
+//   - Added POST /admin/process-tx  — secure admin transaction processing
+//     (uses service role, protected by x-admin-secret header)
+//   - All v5 fixes kept (encrypted callback response, serial dedup, credit_amount string)
 //
-// CALLBACK DESIGN:
-//   GET  /games/callback?payload=<enc>&member_account=<ma>  → balance query
-//   POST /games/callback  action=balance  → balance query
-//   POST /games/callback  action=debit    → deduct bet, return encrypted balance
-//   POST /games/callback  action=credit   → add win, return encrypted balance
-//   POST /games/callback  (no action)     → session-end sync
+// ROUTES:
+//   POST /games/launch           → launch HUIDU game
+//   GET|POST /games/callback     → HUIDU wallet callback (balance/debit/credit)
+//   POST /admin/process-tx       → admin approve/reject transaction  [NEW]
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0'
 
 // ── Production credentials ──────────────────────────────────────────────────
-const AGENCY_UID    = '31ce96cb1fbe80b35b4917ba95627d64'
-const AES_KEY_STR   = '526bedff1dc3050b0513ff20f0b775e5'
-const PLAYER_PREFIX = 'hdf801'
-const SERVER_URL    = 'http://216.73.158.42:3000'
-const PROXY_SECRET  = 'dbet_proxy_k9x2mw7q'
-const HOME_URL      = 'https://diamond-bett.vercel.app'
-const CALLBACK_URL  = 'https://xjqrwcsxiaybpztzestb.supabase.co/functions/v1/api/games/callback'
+const AGENCY_UID     = '31ce96cb1fbe80b35b4917ba95627d64'
+const AES_KEY_STR    = '526bedff1dc3050b0513ff20f0b775e5'
+const PLAYER_PREFIX  = 'hdf801'
+const SERVER_URL     = 'http://216.73.158.42:3000'
+const PROXY_SECRET   = 'dbet_proxy_k9x2mw7q'
+const ADMIN_SECRET   = 'dbet_admin_k9x2mw7q'
+const HOME_URL       = 'https://diamond-bett.vercel.app'
+const CALLBACK_URL   = 'https://xjqrwcsxiaybpztzestb.supabase.co/functions/v1/api/games/callback'
 
 // ─── Debug Logger ─────────────────────────────────────────────────────────────
 function dbg(tag: string, data?: unknown) {
@@ -65,7 +60,7 @@ function aes256EcbDecryptBase64(base64: string, keyStr: string): string {
 const corsHeaders = {
   'Access-Control-Allow-Origin' : '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-admin-secret',
 }
 
 function json200(body: object) {
@@ -80,22 +75,16 @@ function parseBal(val: unknown): number {
 }
 
 // ─── Encrypted Balance Response (Official HUIDU V3 spec) ─────────────────────
-// Response MUST be:  { code, msg, payload: AES256_ECB_base64(json) }
-// The encrypted json contains credit_amount as STRING per spec.
 function balanceResp(code: number, balance: number, msg?: string) {
   if (code !== 0) return json200({ code, msg: msg ?? 'error', payload: '' })
   const bal = Math.round(balance)
   const innerJson = JSON.stringify({
-    credit_amount : String(bal),   // HUIDU spec: string
-    currency_code : 'MMK',
+    credit_amount: String(bal),
+    currency_code: 'MMK',
   })
   const encryptedPayload = aes256EcbEncryptBase64(innerJson, AES_KEY_STR)
   dbg('RESP_ENCRYPTED', { bal, innerJson })
-  return json200({
-    code   : 0,
-    msg    : '',
-    payload: encryptedPayload,
-  })
+  return json200({ code: 0, msg: '', payload: encryptedPayload })
 }
 
 function makeSupabase() {
@@ -119,13 +108,8 @@ async function findUserByMemberAcct(
     .eq('member_account', memberAcct)
     .single()
 
-  if (!error && data) {
-    return { id: data.id, balance: parseBal(data.balance) }
-  }
+  if (!error && data) return { id: data.id, balance: parseBal(data.balance) }
 
-  dbg('FIND_USER_TRY_ALT', { memberAcct, err: error?.message })
-
-  // Try alternate format (with/without underscore)
   const altAcct = memberAcct.includes('_')
     ? memberAcct.replace('_', '')
     : memberAcct.replace(PLAYER_PREFIX, `${PLAYER_PREFIX}_`)
@@ -133,15 +117,9 @@ async function findUserByMemberAcct(
   if (altAcct !== memberAcct) {
     const { data: d2, error: e2 } = await supabase
       .from('users').select('id, balance').eq('member_account', altAcct).single()
-    if (!e2 && d2) {
-      dbg('FIND_USER_ALT_MATCH', { altAcct })
-      return { id: d2.id, balance: parseBal(d2.balance) }
-    }
+    if (!e2 && d2) return { id: d2.id, balance: parseBal(d2.balance) }
   }
 
-  dbg('FIND_USER_FALLBACK_SCAN', { memberAcct })
-
-  // UUID-prefix scan — last resort
   const suffix = memberAcct
     .replace(`${PLAYER_PREFIX}_`, '')
     .replace(PLAYER_PREFIX, '')
@@ -156,31 +134,24 @@ async function findUserByMemberAcct(
 
   const canonical = `${PLAYER_PREFIX}${found.id.replace(/-/g, '').slice(0, 10)}`
   await supabase.from('users').update({ member_account: canonical }).eq('id', found.id)
-  dbg('FIND_USER_BACKFILL', { canonical })
   return { id: found.id, balance: parseBal(found.balance) }
 }
 
 // ── serial_number deduplication ───────────────────────────────────────────────
-// Returns true if this serial was already processed (idempotency).
-// Stores in callback_log.serial_number — column added on first use via ALTER TABLE.
 async function isDuplicateSerial(
   supabase: ReturnType<typeof makeSupabase>,
   serial: string | undefined
 ): Promise<boolean> {
   if (!serial) return false
   try {
-    // Check if serial_number already exists in callback_log
     const { data } = await supabase
       .from('callback_log')
       .select('id')
       .eq('serial_number', serial)
       .limit(1)
       .single()
-    if (data?.id) {
-      dbg('SERIAL_DUPLICATE', { serial })
-      return true
-    }
-  } catch { /* column may not exist yet — not a duplicate */ }
+    if (data?.id) { dbg('SERIAL_DUPLICATE', { serial }); return true }
+  } catch { /* column may not exist yet */ }
   return false
 }
 
@@ -189,15 +160,184 @@ function decryptPayload(raw: string): Record<string, unknown> | null {
   try {
     const normalized = decodeURIComponent(raw.replace(/ /g, '+'))
     const dec = aes256EcbDecryptBase64(normalized, AES_KEY_STR)
-    if (!dec || dec.length === 0) { dbg('DECRYPT_EMPTY', { rawLen: raw.length }); return null }
+    if (!dec || dec.length === 0) return null
     return JSON.parse(dec) as Record<string, unknown>
   } catch (_e1) {
     try {
       const dec = aes256EcbDecryptBase64(raw, AES_KEY_STR)
       if (dec && dec.length > 0) return JSON.parse(dec) as Record<string, unknown>
     } catch { /* ignore */ }
-    dbg('DECRYPT_FAIL', String(_e1))
     return null
+  }
+}
+
+// ─── ADMIN: Process Transaction ───────────────────────────────────────────────
+// POST /admin/process-tx
+// Header: x-admin-secret: <ADMIN_SECRET>
+// Body: { id, uid, type, amount, status, admin_note?, admin_id? }
+//
+// Uses service role (no RLS) — secure because protected by x-admin-secret header.
+// Handles deposit/withdrawal balance updates, bonus, commission, turnover.
+async function handleAdminProcessTx(req: Request): Promise<Response> {
+  // ── Auth check ────────────────────────────────────────────────────────
+  const secret = req.headers.get('x-admin-secret')
+  if (secret !== ADMIN_SECRET) {
+    dbg('ADMIN_AUTH_FAIL', { provided: secret?.slice(0, 5) + '...' })
+    return json200({ code: 401, msg: 'Unauthorized' })
+  }
+
+  let body: Record<string, unknown>
+  try { body = await req.json() }
+  catch { return json200({ code: 400, msg: 'Invalid JSON body' }) }
+
+  const { id, uid, type, amount, status, admin_note, admin_id } = body as {
+    id: string; uid: string; type: string
+    amount: number; status: string
+    admin_note?: string; admin_id?: string
+  }
+
+  if (!id || !uid || !type || !status) {
+    return json200({ code: 400, msg: 'Missing required fields: id, uid, type, status' })
+  }
+
+  dbg('ADMIN_TX_START', { id, uid: uid.slice(0, 8) + '...', type, amount, status })
+
+  const supabase = makeSupabase()
+  const now      = new Date().toISOString()
+  const adminBy  = admin_id || 'admin'
+
+  try {
+    if (status === 'rejected') {
+      // ── REJECT ──────────────────────────────────────────────────────────
+      const { error } = await supabase.from('transactions').update({
+        status,
+        admin_note   : admin_note || null,
+        processed_at : now,
+        processed_by : adminBy,
+      }).eq('id', id)
+      if (error) throw error
+      dbg('ADMIN_TX_REJECTED', { id })
+      return json200({ code: 0, msg: 'ငြင်းပယ်ပြီ' })
+    }
+
+    if (status !== 'approved') {
+      return json200({ code: 400, msg: 'status must be approved or rejected' })
+    }
+
+    // ── APPROVE ────────────────────────────────────────────────────────────
+    // Fetch user profile + site settings in parallel (graceful defaults)
+    const [profileRes, settingsRes] = await Promise.all([
+      supabase.from('users')
+        .select('balance, remaining_turnover, total_deposited, total_withdrawn, referrer_id')
+        .eq('id', uid)
+        .single(),
+      supabase.from('site_settings')
+        .select('deposit_bonus_rate, turnover_multiplier, commission_enabled, commission_rate')
+        .eq('id', 1)
+        .maybeSingle(),
+    ])
+
+    if (profileRes.error || !profileRes.data) {
+      dbg('ADMIN_TX_USER_NOT_FOUND', { uid, err: profileRes.error?.message })
+      return json200({ code: 404, msg: 'User not found: ' + (profileRes.error?.message || uid) })
+    }
+
+    const profile  = profileRes.data
+    // Safe defaults for site_settings (columns may not exist yet)
+    const sets     = settingsRes.data ?? {}
+    const bonusRate  = parseFloat((sets as Record<string,unknown>).deposit_bonus_rate as string  || '0') || 0
+    const turnoverX  = parseFloat((sets as Record<string,unknown>).turnover_multiplier as string || '10') || 10
+    const commEnabled= !!((sets as Record<string,unknown>).commission_enabled)
+    const commRate   = parseFloat((sets as Record<string,unknown>).commission_rate as string     || '0') || 0
+
+    let newBal = parseBal(profile.balance)
+    let newTO  = parseBal(profile.remaining_turnover)
+    let newDep = parseBal(profile.total_deposited)
+    let newWd  = parseBal(profile.total_withdrawn)
+
+    if (type === 'deposit') {
+      const bonus = amount * (bonusRate / 100)
+      newBal += amount + bonus
+      newTO  += amount * turnoverX
+      newDep += amount
+
+      dbg('ADMIN_TX_DEPOSIT', { amount, bonus, newBal, newTO })
+
+      // Commission to referrer (if enabled)
+      if (commEnabled && commRate > 0 && profile.referrer_id) {
+        let referrerId: string | null = profile.referrer_id as string
+        // Handle ref_code vs UUID
+        if (referrerId && referrerId.length < 20) {
+          const { data: ref } = await supabase
+            .from('users').select('id').eq('ref_code', referrerId).single()
+          referrerId = ref?.id || null
+        }
+        if (referrerId) {
+          const commAmt = amount * (commRate / 100)
+          const { data: referrer } = await supabase
+            .from('users').select('balance').eq('id', referrerId).single()
+          if (referrer) {
+            const newRefBal = parseBal(referrer.balance) + commAmt
+            await Promise.all([
+              supabase.from('users').update({ balance: newRefBal }).eq('id', referrerId),
+              supabase.from('commissions').insert({
+                agent_id      : referrerId,
+                user_id       : uid,
+                transaction_id: id,
+                amount        : commAmt,
+                percentage    : commRate,
+                level         : 1,
+                type          : 'deposit',
+                created_at    : now,
+              }),
+            ])
+            dbg('ADMIN_TX_COMMISSION', { commAmt, referrerId: referrerId.slice(0, 8) + '...' })
+          }
+        }
+      }
+
+    } else if (type === 'withdrawal') {
+      newBal = Math.max(newBal - amount, 0)
+      newWd  += amount
+      dbg('ADMIN_TX_WITHDRAWAL', { amount, newBal })
+    }
+
+    // ── Update user balance ──────────────────────────────────────────────
+    const { error: balErr } = await supabase.from('users').update({
+      balance           : newBal,
+      remaining_turnover: newTO,
+      total_deposited   : newDep,
+      total_withdrawn   : newWd,
+      last_login_at     : now,
+    }).eq('id', uid)
+
+    if (balErr) throw balErr
+
+    // ── Update transaction status ────────────────────────────────────────
+    const { data: origTx } = await supabase
+      .from('transactions').select('amount').eq('id', id).single()
+
+    const { error: txErr } = await supabase.from('transactions').update({
+      status,
+      amount,
+      original_amount: origTx?.amount ?? amount,
+      admin_note     : admin_note || null,
+      processed_at   : now,
+      processed_by   : adminBy,
+    }).eq('id', id)
+
+    if (txErr) throw txErr
+
+    dbg('ADMIN_TX_APPROVED', { id, uid: uid.slice(0, 8) + '...', newBal })
+    return json200({
+      code    : 0,
+      msg     : `${amount.toLocaleString()} K အတည်ပြုပြီ`,
+      new_balance: newBal,
+    })
+
+  } catch (err) {
+    dbg('ADMIN_TX_ERROR', String(err))
+    return json200({ code: 500, msg: `Server error: ${String(err)}` })
   }
 }
 
@@ -207,6 +347,13 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 204, headers: corsHeaders })
 
   const url = new URL(req.url)
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ROUTE: Admin process transaction  POST /admin/process-tx
+  // ══════════════════════════════════════════════════════════════════════════
+  if (req.method === 'POST' && url.pathname.endsWith('/admin/process-tx')) {
+    return handleAdminProcessTx(req)
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // ROUTE 1 — Game Launch   POST /games/launch
@@ -234,9 +381,7 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'User not found' })
       }
 
-      // member_account: no underscore — HUIDU allows only a-z 0-9, 4-20 chars
-      const rawAcct = user.member_account
-        ?? `${PLAYER_PREFIX}${user_id.replace(/-/g, '').slice(0, 10)}`
+      const rawAcct   = user.member_account ?? `${PLAYER_PREFIX}${user_id.replace(/-/g, '').slice(0, 10)}`
       const memberAcct = rawAcct.replace(/_/g, '')
 
       if (user.member_account && user.member_account.includes('_')) {
@@ -246,9 +391,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const creditAmount = parseBal(user.balance)
-      const timestamp = Date.now()
-
-      dbg('LAUNCH_USER_OK', { memberAcct, creditAmount })
+      const timestamp    = Date.now()
 
       const langMap: Record<string, string> = {
         my: 'my', en: 'en', zh: 'zh', th: 'th', id: 'id', vi: 'vi',
@@ -259,7 +402,7 @@ Deno.serve(async (req: Request) => {
         agency_uid    : AGENCY_UID,
         member_account: memberAcct,
         game_uid,
-        credit_amount : String(creditAmount),  // string per spec
+        credit_amount : String(creditAmount),
         currency_code : 'MMK',
         language      : langMap[lang] ?? 'my',
         home_url      : HOME_URL,
@@ -267,12 +410,7 @@ Deno.serve(async (req: Request) => {
         platform,
       }
 
-      dbg('LAUNCH_HUIDU_PAYLOAD', innerPayload)
-
-      const encryptedPayload = aes256EcbEncryptBase64(
-        JSON.stringify(innerPayload),
-        AES_KEY_STR
-      )
+      const encryptedPayload = aes256EcbEncryptBase64(JSON.stringify(innerPayload), AES_KEY_STR)
 
       const huiduResp = await fetch(`${SERVER_URL}/game/v1`, {
         method : 'POST',
@@ -302,7 +440,6 @@ Deno.serve(async (req: Request) => {
 
       if (!gameUrl) return json200({ code: 1, msg: 'No game URL in response' })
 
-      dbg('LAUNCH_OK', { gameUrl: gameUrl.slice(0, 80) + '...' })
       return json200({ code: 0, game_url: gameUrl })
 
     } catch (err) {
@@ -329,26 +466,23 @@ Deno.serve(async (req: Request) => {
       if (req.method === 'GET') {
         if (qPayload) {
           const dec = decryptPayload(qPayload)
-          if (dec) { parsed = dec; dbg('CB_GET_DECRYPTED', dec) }
-          else      { dbg('CB_GET_DECRYPT_FAIL', { payloadLen: qPayload.length }) }
+          if (dec) parsed = dec
         }
         if (qMember && !parsed.member_account) parsed.member_account = qMember
         if (qAction && !parsed.action)         parsed.action         = qAction
 
       } else if (req.method === 'POST') {
         rawBody = await req.text()
-        dbg('CB_POST_RAW_BODY', rawBody.slice(0, 600))
 
         let body: Record<string, unknown> = {}
         try { body = JSON.parse(rawBody) } catch { body = {} }
 
         if (body.payload && typeof body.payload === 'string') {
           const dec = decryptPayload(body.payload as string)
-          if (dec) { parsed = { ...body, ...dec }; dbg('CB_POST_DECRYPTED', dec) }
-          else      { parsed = body; dbg('CB_POST_DECRYPT_FAIL_FALLBACK', body) }
+          if (dec) parsed = { ...body, ...dec }
+          else     parsed = body
         } else {
           parsed = body
-          dbg('CB_POST_PLAIN_JSON', body)
         }
 
         if (qMember && !parsed.member_account) parsed.member_account = qMember
@@ -358,30 +492,19 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'Method not allowed', payload: '' })
       }
 
-      // ── Extract fields ────────────────────────────────────────────────────
-      const memberAcct = (
-        (parsed.member_account as string | undefined) ??
-        (parsed.memberAccount  as string | undefined)
-      )
-      const action = (
-        (parsed.action ?? parsed.type ?? parsed.event ?? '') as string
-      ).toLowerCase()
+      const memberAcct  = (parsed.member_account as string | undefined) ?? (parsed.memberAccount as string | undefined)
+      const action      = ((parsed.action ?? parsed.type ?? parsed.event ?? '') as string).toLowerCase()
       const serialNumber = (parsed.serial_number ?? parsed.serialNumber) as string | undefined
 
       dbg('CB_PARSED', { memberAcct, action, serialNumber, keys: Object.keys(parsed) })
 
-      if (!memberAcct) {
-        dbg('CB_NO_MEMBER_ACCT', { parsed, qMember })
-        return json200({ code: 1, msg: 'Missing member_account', payload: '' })
-      }
+      if (!memberAcct) return json200({ code: 1, msg: 'Missing member_account', payload: '' })
 
-      // ── serial_number idempotency check ──────────────────────────────────
-      // If this exact transaction was already processed, return code:0 immediately.
-      if (serialNumber && action !== 'balance' && action !== 'getbalance' && action !== 'get_balance' && action !== 'query' && req.method !== 'GET') {
+      // ── serial_number idempotency ─────────────────────────────────────────
+      const isBalanceQuery = req.method === 'GET' || action === 'balance' || action === 'getbalance' || action === 'get_balance' || action === 'query'
+      if (serialNumber && !isBalanceQuery) {
         const isDup = await isDuplicateSerial(supabase, serialNumber)
         if (isDup) {
-          dbg('CB_SERIAL_DUP_SKIP', { serialNumber })
-          // Find user to return their current balance
           const dupUser = await findUserByMemberAcct(supabase, memberAcct)
           return balanceResp(0, dupUser?.balance ?? 0)
         }
@@ -389,7 +512,7 @@ Deno.serve(async (req: Request) => {
 
       const user = await findUserByMemberAcct(supabase, memberAcct)
 
-      // ── Diagnostic log ────────────────────────────────────────────────────
+      // Diagnostic log (fire and forget)
       supabase.from('callback_log').insert({
         method        : req.method,
         raw_body      : rawBody.slice(0, 500),
@@ -399,96 +522,69 @@ Deno.serve(async (req: Request) => {
         response_code : user ? 0 : 1,
       }).then(() => {}).catch(() => {})
 
-      if (!user) {
-        dbg('CB_USER_NOT_FOUND', { memberAcct })
-        return json200({ code: 1, msg: 'User not found: ' + memberAcct, payload: '' })
-      }
+      if (!user) return json200({ code: 1, msg: 'User not found: ' + memberAcct, payload: '' })
 
       const currentBalance = user.balance
       dbg('CB_USER_FOUND', { userId: user.id.slice(0, 8) + '...', currentBalance, action })
 
       // ── BALANCE QUERY ─────────────────────────────────────────────────────
-      if (req.method === 'GET' || action === 'balance' || action === 'getbalance' || action === 'get_balance' || action === 'query') {
-        dbg('CB_ACTION_BALANCE', { balance: currentBalance })
-        return balanceResp(0, currentBalance)
-      }
+      if (isBalanceQuery) return balanceResp(0, currentBalance)
 
-      // ── DEBIT (player places bet) ─────────────────────────────────────────
-      // NOTE: credit_amount in HUIDU debit callback = bet amount, NOT after-balance.
-      // Only trust explicit after_balance / after_credit fields.
+      // ── DEBIT ─────────────────────────────────────────────────────────────
       if (action === 'debit' || action === 'bet' || action === 'withdraw' || action === 'transfer_out') {
         const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
         const amount = parseBal(parsed.amount ?? parsed.bet_amount ?? parsed.betAmount ?? 0)
 
-        dbg('CB_ACTION_DEBIT', { amount, afterBalRaw, currentBalance })
-
         if (afterBalRaw !== undefined && afterBalRaw !== null) {
           const newBal = parseBal(afterBalRaw)
           await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
-          dbg('CB_DEBIT_OK_AFTER_BAL', { newBal })
           return balanceResp(0, newBal)
         }
-        if (amount > currentBalance) {
-          dbg('CB_DEBIT_INSUFFICIENT', { amount, currentBalance })
-          return json200({ code: 1, msg: 'Insufficient balance', payload: '' })
-        }
+        if (amount > currentBalance) return json200({ code: 1, msg: 'Insufficient balance', payload: '' })
         const newBal = Math.max(currentBalance - amount, 0)
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
-        dbg('CB_DEBIT_OK', { amount, newBal })
         return balanceResp(0, newBal)
       }
 
-      // ── CREDIT (player wins) ──────────────────────────────────────────────
-      // NOTE: credit_amount in HUIDU credit callback = win amount, NOT after-balance.
+      // ── CREDIT ────────────────────────────────────────────────────────────
       if (action === 'credit' || action === 'win' || action === 'refund' || action === 'cancel' || action === 'transfer_in') {
         const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
         const amount = parseBal(parsed.amount ?? parsed.win_amount ?? parsed.winAmount ?? 0)
 
-        dbg('CB_ACTION_CREDIT', { amount, afterBalRaw, currentBalance })
-
         if (afterBalRaw !== undefined && afterBalRaw !== null) {
           const newBal = parseBal(afterBalRaw)
           await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
-          dbg('CB_CREDIT_OK_AFTER_BAL', { newBal })
           return balanceResp(0, newBal)
         }
         const newBal = currentBalance + amount
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
-        dbg('CB_CREDIT_OK', { amount, newBal })
         return balanceResp(0, newBal)
       }
 
-      // ── HUIDU ROUND SUMMARY (no action field) ────────────────────────────
+      // ── ROUND SUMMARY ─────────────────────────────────────────────────────
       const hasBetOrWin = (parsed.bet_amount !== undefined || parsed.win_amount !== undefined)
       if (hasBetOrWin) {
         const betAmt = parseBal(parsed.bet_amount ?? 0)
         const winAmt = parseBal(parsed.win_amount ?? 0)
-        const net    = winAmt - betAmt
-        const newBal = Math.max(currentBalance + net, 0)
-
-        dbg('CB_ROUND_SUMMARY', { betAmt, winAmt, net, currentBalance, newBal, serial: serialNumber })
+        const newBal = Math.max(currentBalance + (winAmt - betAmt), 0)
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
         return balanceResp(0, newBal)
       }
 
       // ── SESSION-END SYNC ──────────────────────────────────────────────────
       const newBalanceRaw = (
-        parsed.balance       ?? parsed.final_balance  ?? parsed.finalBalance  ??
-        parsed.end_balance   ?? parsed.endBalance     ?? parsed.after_balance  ??
-        parsed.afterBalance  ?? parsed.after_credit   ?? parsed.afterCredit    ??
-        parsed.credit_amount    // trusted here: session-end final balance field
+        parsed.balance      ?? parsed.final_balance ?? parsed.finalBalance  ??
+        parsed.end_balance  ?? parsed.endBalance    ?? parsed.after_balance ??
+        parsed.afterBalance ?? parsed.after_credit  ?? parsed.afterCredit   ??
+        parsed.credit_amount
       )
-
-      dbg('CB_SESSION_END', { newBalanceRaw, allKeys: Object.keys(parsed) })
 
       if (newBalanceRaw !== undefined && newBalanceRaw !== null) {
         const finalBal = parseBal(newBalanceRaw)
         await supabase.from('users').update({ balance: finalBal }).eq('id', user.id)
-        dbg('CB_SESSION_END_OK', { finalBal })
         return balanceResp(0, finalBal)
       }
 
-      dbg('CB_UNKNOWN_ACTION', { action, parsedFull: parsed })
       return balanceResp(0, currentBalance)
 
     } catch (err) {
@@ -497,6 +593,5 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  dbg('NOT_FOUND', { path: url.pathname })
   return json200({ code: 1, msg: 'Not found', payload: '' })
 })
