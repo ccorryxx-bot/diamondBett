@@ -267,11 +267,11 @@
       <div class="slip-row">
         <div class="slip-lbl">Slip နောက်ဆုံး ၅ လုံး ထည့်ပါ</div>
         <div class="slip-boxes" id="slipBoxes">
-          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,0)">
-          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,1)">
-          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,2)">
-          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,3)">
-          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,4)">
+          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,0)" onkeydown="slipBack(this,event,0)">
+          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,1)" onkeydown="slipBack(this,event,1)">
+          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,2)" onkeydown="slipBack(this,event,2)">
+          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,3)" onkeydown="slipBack(this,event,3)">
+          <input type="tel" class="slip-box" maxlength="1" oninput="slipMove(this,4)" onkeydown="slipBack(this,event,4)">
         </div>
         <div class="slip-hint">ငွေလွှဲ Slip ထဲမှ နောက်ဆုံးဂဏန်း ၅ လုံး</div>
       </div>
