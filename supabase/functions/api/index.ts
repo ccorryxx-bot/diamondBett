@@ -476,6 +476,27 @@ Deno.serve(async (req: Request) => {
         return balanceResp(0, newBal, undefined, currentBalance)
       }
 
+      // ── HUIDU ROUND SUMMARY (no action field) ────────────────────────────
+      // HUIDU V3 sends ONE callback per spin round with:
+      //   { bet_amount, win_amount, member_account, game_round, serial_number }
+      // There is NO "action" field. We compute net change:
+      //   new_balance = current_balance - bet_amount + win_amount
+      // This is the actual root-cause fix for the "Add Funds" error: without
+      // this handler, the round callback fell through to SESSION-END which found
+      // no known balance field, returned unchanged balance → HUIDU rejected it.
+      const hasBetOrWin = (parsed.bet_amount !== undefined || parsed.win_amount !== undefined)
+      if (hasBetOrWin) {
+        const betAmt = parseBal(parsed.bet_amount ?? 0)
+        const winAmt = parseBal(parsed.win_amount ?? 0)
+        const net    = winAmt - betAmt   // negative = player lost, positive = player won
+        const newBal = Math.max(currentBalance + net, 0)
+
+        dbg('CB_ROUND_SUMMARY', { betAmt, winAmt, net, currentBalance, newBal, serial: parsed.serial_number })
+
+        await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
+        return balanceResp(0, newBal, undefined, currentBalance)
+      }
+
       // ── SESSION-END SYNC ──────────────────────────────────────────────────
       const newBalanceRaw = (
         parsed.balance         ??
