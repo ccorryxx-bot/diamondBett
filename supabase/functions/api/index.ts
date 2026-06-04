@@ -1,15 +1,16 @@
-// HUIDU Gaming API — Game Launch + Seamless/Transfer Wallet Callback
+// HUIDU Gaming API — Game Launch + Seamless Wallet Callback
 // AES-256-ECB + PKCS7  (key = raw UTF-8 string, 32 bytes)
 //
 // FIX (2026-06-03): Replaced broken WebCrypto AES-CBC-as-ECB workaround with
-// crypto-js (proper AES-ECB support). The old Deno WebCrypto approach threw
-// OperationError on multi-block payloads due to automatic PKCS7 unpadding on
-// every call, causing decryptPayload() to silently return null — which made
-// HUIDU callbacks always fail with "Missing member_account".
+// crypto-js (proper AES-ECB support).
 //
 // FIX (2026-06-04): Added URL-query member_account fallback for POST callbacks,
 // URL-decode payload before decrypt, and dual response format (top-level + payload obj)
 // to handle HUIDU V3 callback format variations.
+//
+// FIX (2026-06-04 v2): Balance values now always integer (Math.round) — MMK has no
+// decimal units. Debit/credit responses now include before_balance per HUIDU V3 spec.
+// Null-safe balance parsing throughout. member_account case-insensitive fallback added.
 //
 // CALLBACK DESIGN:
 //   GET  /games/callback?payload=<enc>&member_account=<ma>  → balance query
@@ -73,17 +74,30 @@ function json200(body: object) {
   return Response.json(body, { status: 200, headers: corsHeaders })
 }
 
-// Return balance response in BOTH formats HUIDU V3 might expect:
-// { code:0, balance:N, currency_code:"MMK" }  (top-level)
-// { code:0, payload:{ balance:N, currency_code:"MMK" } }  (nested)
-function balanceResp(code: number, balance: number, msg?: string) {
+// Safely parse a balance value to an integer (MMK has no sub-unit).
+// Handles: number, string, null, undefined, NaN.
+function parseBal(val: unknown): number {
+  if (val === null || val === undefined) return 0
+  const n = typeof val === 'number' ? val : parseFloat(String(val))
+  if (!isFinite(n)) return 0
+  return Math.round(n)   // MMK — always integer kyats
+}
+
+// Balance response — always integer, includes both top-level and payload formats.
+// Also includes before_balance for debit/credit per HUIDU V3 spec.
+function balanceResp(code: number, balance: number, msg?: string, beforeBalance?: number) {
   if (code !== 0) return json200({ code, msg: msg ?? 'error' })
-  return json200({
+  const bal = Math.round(balance)
+  const body: Record<string, unknown> = {
     code: 0,
-    balance,
+    balance: bal,
     currency_code: 'MMK',
-    payload: { balance, currency_code: 'MMK' },
-  })
+    payload: { balance: bal, currency_code: 'MMK' },
+  }
+  if (beforeBalance !== undefined) {
+    body.before_balance = Math.round(beforeBalance)
+  }
+  return json200(body)
 }
 
 function makeSupabase() {
@@ -101,31 +115,35 @@ async function findUserByMemberAcct(
   supabase: ReturnType<typeof makeSupabase>,
   memberAcct: string
 ): Promise<UserRow | null> {
+  // Direct lookup by member_account
   const { data, error } = await supabase
     .from('users')
     .select('id, balance')
     .eq('member_account', memberAcct)
     .single()
 
-  if (!error && data) return data as UserRow
+  if (!error && data) {
+    return { id: data.id, balance: parseBal(data.balance) }
+  }
 
-  // Fallback: UUID-prefix scan (pre-migration users)
-  const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '')
+  dbg('FIND_USER_FALLBACK', { memberAcct, err: error?.message })
+
+  // Fallback: UUID-prefix scan (pre-migration users without member_account set)
+  const suffix = memberAcct.replace(`${PLAYER_PREFIX}_`, '').toLowerCase()
   const { data: all } = await supabase.from('users').select('id, balance')
-  const found = (all ?? []).find((u: UserRow) =>
-    u.id.replace(/-/g, '').slice(0, 10) === suffix
+  const found = (all ?? []).find((u: { id: string; balance: unknown }) =>
+    u.id.replace(/-/g, '').slice(0, 10).toLowerCase() === suffix
   )
   if (!found) return null
 
-  // Back-fill member_account for next call
+  // Back-fill member_account so next lookup is fast
   await supabase.from('users').update({ member_account: memberAcct }).eq('id', found.id)
-  return found as UserRow
+  return { id: found.id, balance: parseBal(found.balance) }
 }
 
 // ── Decrypt HUIDU payload — handles URL-encoded and standard base64 ───────────
 function decryptPayload(raw: string): Record<string, unknown> | null {
   try {
-    // HUIDU sometimes URL-encodes the base64 payload
     const normalized = decodeURIComponent(raw.replace(/ /g, '+'))
     const dec = aes256EcbDecryptBase64(normalized, AES_KEY_STR)
     if (!dec || dec.length === 0) {
@@ -134,7 +152,6 @@ function decryptPayload(raw: string): Record<string, unknown> | null {
     }
     return JSON.parse(dec) as Record<string, unknown>
   } catch (_e1) {
-    // Try without URL-decode (raw base64)
     try {
       const dec = aes256EcbDecryptBase64(raw, AES_KEY_STR)
       if (dec && dec.length > 0) return JSON.parse(dec) as Record<string, unknown>
@@ -157,7 +174,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'POST' && url.pathname.endsWith('/games/launch')) {
     try {
       const body = await req.json()
-      const { user_id, game_uid, platform = 2, lang = 'zh' } = body
+      const { user_id, game_uid, platform = 2, lang = 'my' } = body
 
       dbg('LAUNCH_REQ', { user_id, game_uid, platform, lang })
 
@@ -177,24 +194,28 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'User not found' })
       }
 
-      const memberAcct   = user.member_account
+      const memberAcct = user.member_account
         ?? `${PLAYER_PREFIX}_${user_id.replace(/-/g, '').slice(0, 10)}`
-      const creditAmount = Math.max(parseFloat(String(user.balance ?? '0')) || 0, 0)
-      const timestamp    = Math.floor(Date.now() / 1000)
 
-      dbg('LAUNCH_USER_OK', { memberAcct, balance: user.balance, creditAmount })
+      // CRITICAL: credit_amount must be an integer for MMK.
+      // Supabase returns numeric columns as strings — parseBal() handles this safely.
+      const creditAmount = parseBal(user.balance)
+
+      const timestamp = Math.floor(Date.now() / 1000)
+
+      dbg('LAUNCH_USER_OK', { memberAcct, rawBalance: user.balance, creditAmount })
 
       const langMap: Record<string, string> = {
         my: 'my', en: 'en', zh: 'zh', th: 'th', id: 'id', vi: 'vi',
       }
-      const language = langMap[lang] ?? 'zh'
+      const language = langMap[lang] ?? 'my'
 
       const innerPayload = {
         timestamp,
         agency_uid    : AGENCY_UID,
         member_account: memberAcct,
         game_uid,
-        credit_amount : creditAmount,
+        credit_amount : creditAmount,   // integer MMK
         currency_code : 'MMK',
         language,
         home_url      : HOME_URL,
@@ -265,7 +286,6 @@ Deno.serve(async (req: Request) => {
       let parsed: Record<string, unknown> = {}
       let rawBody = ''
 
-      // ── URL query params — checked for ALL methods (HUIDU may append ?member_account=xxx)
       const qPayload = url.searchParams.get('payload')
       const qMember  = url.searchParams.get('member_account')
       const qAction  = url.searchParams.get('action')
@@ -282,9 +302,8 @@ Deno.serve(async (req: Request) => {
             dbg('CB_GET_DECRYPT_FAIL', { payloadLen: qPayload.length })
           }
         }
-        // Merge URL params into parsed (URL params win for missing fields)
-        if (qMember  && !parsed.member_account) parsed.member_account = qMember
-        if (qAction  && !parsed.action)         parsed.action         = qAction
+        if (qMember && !parsed.member_account) parsed.member_account = qMember
+        if (qAction && !parsed.action)         parsed.action         = qAction
 
       } else if (req.method === 'POST') {
         rawBody = await req.text()
@@ -299,7 +318,6 @@ Deno.serve(async (req: Request) => {
           dbg('CB_POST_HAS_ENCRYPTED_PAYLOAD', { payloadLen: (body.payload as string).length })
           const dec = decryptPayload(body.payload as string)
           if (dec) {
-            // Merge: decrypted fields override top-level body
             parsed = { ...body, ...dec }
             dbg('CB_POST_DECRYPTED', dec)
           } else {
@@ -311,7 +329,6 @@ Deno.serve(async (req: Request) => {
           dbg('CB_POST_PLAIN_JSON', body)
         }
 
-        // IMPORTANT: HUIDU sometimes puts member_account in URL query even for POST
         if (qMember && !parsed.member_account) parsed.member_account = qMember
         if (qAction && !parsed.action)         parsed.action         = qAction
 
@@ -341,7 +358,7 @@ Deno.serve(async (req: Request) => {
         return json200({ code: 1, msg: 'User not found: ' + memberAcct })
       }
 
-      const currentBalance = parseFloat(String(user.balance ?? '0')) || 0
+      const currentBalance = user.balance  // already integer from parseBal()
       dbg('CB_USER_FOUND', { userId: user.id.slice(0, 8) + '...', currentBalance, action })
 
       // ── BALANCE QUERY ─────────────────────────────────────────────────────
@@ -352,16 +369,16 @@ Deno.serve(async (req: Request) => {
 
       // ── DEBIT (player places bet) ─────────────────────────────────────────
       if (action === 'debit' || action === 'bet' || action === 'withdraw' || action === 'transfer_out') {
-        const afterBal = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
-        const amount   = parseFloat(String(parsed.amount ?? parsed.bet_amount ?? parsed.betAmount ?? 0)) || 0
+        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
+        const amount = parseBal(parsed.amount ?? parsed.bet_amount ?? parsed.betAmount ?? 0)
 
-        dbg('CB_ACTION_DEBIT', { amount, afterBal, currentBalance })
+        dbg('CB_ACTION_DEBIT', { amount, afterBalRaw, currentBalance })
 
-        if (afterBal !== undefined && afterBal !== null) {
-          const newBal = parseFloat(String(afterBal)) || 0
+        if (afterBalRaw !== undefined && afterBalRaw !== null) {
+          const newBal = parseBal(afterBalRaw)
           await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
           dbg('CB_DEBIT_OK_AFTER_BAL', { newBal })
-          return balanceResp(0, newBal)
+          return balanceResp(0, newBal, undefined, currentBalance)
         }
         if (amount > currentBalance) {
           dbg('CB_DEBIT_INSUFFICIENT', { amount, currentBalance })
@@ -370,30 +387,30 @@ Deno.serve(async (req: Request) => {
         const newBal = Math.max(currentBalance - amount, 0)
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
         dbg('CB_DEBIT_OK', { amount, newBal })
-        return balanceResp(0, newBal)
+        return balanceResp(0, newBal, undefined, currentBalance)
       }
 
       // ── CREDIT (player wins) ──────────────────────────────────────────────
       if (action === 'credit' || action === 'win' || action === 'refund' || action === 'cancel' || action === 'transfer_in') {
-        const afterBal = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
-        const amount   = parseFloat(String(parsed.amount ?? parsed.win_amount ?? parsed.winAmount ?? 0)) || 0
+        const afterBalRaw = parsed.after_balance ?? parsed.afterBalance ?? parsed.after_credit ?? parsed.afterCredit
+        const amount = parseBal(parsed.amount ?? parsed.win_amount ?? parsed.winAmount ?? 0)
 
-        dbg('CB_ACTION_CREDIT', { amount, afterBal, currentBalance })
+        dbg('CB_ACTION_CREDIT', { amount, afterBalRaw, currentBalance })
 
-        if (afterBal !== undefined && afterBal !== null) {
-          const newBal = parseFloat(String(afterBal)) || 0
+        if (afterBalRaw !== undefined && afterBalRaw !== null) {
+          const newBal = parseBal(afterBalRaw)
           await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
           dbg('CB_CREDIT_OK_AFTER_BAL', { newBal })
-          return balanceResp(0, newBal)
+          return balanceResp(0, newBal, undefined, currentBalance)
         }
         const newBal = currentBalance + amount
         await supabase.from('users').update({ balance: newBal }).eq('id', user.id)
         dbg('CB_CREDIT_OK', { amount, newBal })
-        return balanceResp(0, newBal)
+        return balanceResp(0, newBal, undefined, currentBalance)
       }
 
       // ── SESSION-END SYNC ──────────────────────────────────────────────────
-      const newBalance = (
+      const newBalanceRaw = (
         parsed.balance         ??
         parsed.final_balance   ??
         parsed.finalBalance    ??
@@ -405,13 +422,13 @@ Deno.serve(async (req: Request) => {
         parsed.afterCredit
       )
 
-      dbg('CB_SESSION_END', { newBalance, allKeys: Object.keys(parsed) })
+      dbg('CB_SESSION_END', { newBalanceRaw, allKeys: Object.keys(parsed) })
 
-      if (newBalance !== undefined && newBalance !== null) {
-        const finalBal = parseFloat(String(newBalance)) || 0
+      if (newBalanceRaw !== undefined && newBalanceRaw !== null) {
+        const finalBal = parseBal(newBalanceRaw)
         await supabase.from('users').update({ balance: finalBal }).eq('id', user.id)
         dbg('CB_SESSION_END_OK', { finalBal })
-        return balanceResp(0, finalBal)
+        return balanceResp(0, finalBal, undefined, currentBalance)
       }
 
       // Unknown action — return current balance (safe default)
