@@ -14,6 +14,11 @@ async function openWithdrawModal() {
   const bal = document.getElementById('statBalance')?.textContent || '0.00';
   setEl('wdBalShow', bal);
   setEl('wdBalAmt',  bal + ' ကျပ်');
+  // Populate KBZ / Wave logos with real images (falls back to SVG automatically)
+  var kbzLogoEl  = document.getElementById('kbzProvLogo');
+  var waveLogoEl = document.getElementById('waveProvLogo');
+  if (kbzLogoEl)  kbzLogoEl.innerHTML  = getProvLogo('KBZ Pay',    48);
+  if (waveLogoEl) waveLogoEl.innerHTML = getProvLogo('Wave Money', 48);
   await initLinked();
   switchWdTab('wd', document.querySelectorAll('.wd-tab')[0]);
 }
