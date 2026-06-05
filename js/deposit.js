@@ -2,9 +2,10 @@
 // STATE
 // ============================================================
 // (module-level — no window needed)
-let _dMethod = null;
-let _dAmt    = 0;
-let _dBonus  = true;
+let _dMethod    = null;
+let _dAmt       = 0;
+let _dBonus     = true;
+let _dBonusRate = 20; // fetched from site_settings on open
 
 // ============================================================
 // OPEN DEPOSIT
@@ -33,6 +34,20 @@ async function openDepositModal() {
   document.getElementById('depPreview').style.display = 'block';
   updatePreview();
   fetchDepMethods();
+  fetchBonusRate();
+}
+
+async function fetchBonusRate() {
+  try {
+    const { data } = await window.DB
+      .from('site_settings')
+      .select('deposit_bonus_rate')
+      .eq('id', 1)
+      .single();
+    _dBonusRate = parseFloat(data?.deposit_bonus_rate ?? 20) || 20;
+  } catch(_) { _dBonusRate = 20; }
+  document.querySelectorAll('.bBonusPct').forEach(el => { el.textContent = _dBonusRate; });
+  updatePreview();
 }
 
 // ============================================================
@@ -100,7 +115,7 @@ function pickBonus(yes) {
 }
 
 function updatePreview() {
-  const bonus = _dBonus ? _dAmt : 0;
+  const bonus = _dBonus ? Math.round(_dAmt * _dBonusRate / 100) : 0;
   setEl('pvDep',   _dAmt.toLocaleString() + ' ကျပ်');
   setEl('pvBonus', '+ ' + bonus.toLocaleString() + ' ကျပ်');
   setEl('pvTotal', (_dAmt + bonus).toLocaleString() + ' ကျပ်');
