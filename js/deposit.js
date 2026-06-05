@@ -159,14 +159,30 @@ function slipBack(el, e, idx) {
   }
 }
 
+function _doCopy(text) {
+  const ok = () => gToast('ကူးပြီးပါပြီ', 'success');
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); ok(); } catch(e) { gToast('ကူး၍မရပါ', 'error'); }
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(ok).catch(fallback);
+  } else { fallback(); }
+}
+
 function cpText(id) {
-  const val = document.getElementById(id)?.textContent;
-  if (val) navigator.clipboard.writeText(val).then(() => gToast('ကူးပြီးပါပြီ', 'success'));
+  const val = document.getElementById(id)?.textContent?.trim();
+  if (val) _doCopy(val);
 }
 
 function cpVal(val) {
-  if (!val) return;
-  navigator.clipboard.writeText(String(val)).then(() => gToast('ကူးပြီးပါပြီ', 'success'));
+  if (!val && val !== 0) return;
+  _doCopy(String(val));
 }
 
 // ============================================================
