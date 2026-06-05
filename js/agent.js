@@ -267,6 +267,7 @@ function initAgentTabs() {
       loadMyData(window.currentAgentId, p);
     }
     if (btn.dataset.atab === 'downline' && window.currentAgentId) loadDownline();
+    if (btn.dataset.atab === 'settings') loadAdminSettings();
   });
 
   document.getElementById('timePills')?.addEventListener('click', e => {
@@ -362,3 +363,53 @@ window.setEl = function(id, val) {
     generateAgentQR(val);
   }
 };
+
+// ============================================================
+// ADMIN SITE SETTINGS
+// ============================================================
+async function loadAdminSettings() {
+  const g = id => document.getElementById(id);
+  try {
+    const { data, error } = await window.DB
+      .from('site_settings')
+      .select('deposit_bonus_rate,turnover_multiplier,commission_enabled,commission_rate,min_withdrawal,max_withdrawal')
+      .eq('id', 1)
+      .single();
+    if (error || !data) { gToast('Settings load မအောင်မြင်', 'error'); return; }
+    const sv = (id, val) => { const el = g(id); if (el) el.value = val ?? ''; };
+    sv('stDepBonus', data.deposit_bonus_rate ?? 20);
+    sv('stTurnover', data.turnover_multiplier ?? 10);
+    sv('stCommRate', data.commission_rate ?? 0);
+    sv('stMinWd',    data.min_withdrawal ?? 10000);
+    sv('stMaxWd',    data.max_withdrawal ?? 1000000);
+    const cb = g('stCommEnabled');
+    if (cb) cb.checked = !!data.commission_enabled;
+  } catch(e) { gToast('Settings load error', 'error'); }
+}
+
+async function saveAdminSettings() {
+  const getNum = id => parseFloat(document.getElementById(id)?.value || '0') || 0;
+  const cb = document.getElementById('stCommEnabled');
+  const payload = {
+    deposit_bonus_rate : getNum('stDepBonus'),
+    turnover_multiplier: getNum('stTurnover'),
+    commission_enabled : cb?.checked ?? false,
+    commission_rate    : getNum('stCommRate'),
+    min_withdrawal     : getNum('stMinWd'),
+    max_withdrawal     : getNum('stMaxWd'),
+  };
+  const btn = document.querySelector('#atab-settings button[onclick]');
+  if (btn) { btn.disabled = true; btn.textContent = 'သိမ်းနေသည်...'; }
+  try {
+    const { error } = await window.DB
+      .from('site_settings')
+      .update(payload)
+      .eq('id', 1);
+    if (error) throw error;
+    gToast('Settings သိမ်းပြီးပါပြီ ✓', 'success');
+  } catch(e) {
+    gToast('မသိမ်းရ: ' + (e.message || 'error'), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'သိမ်းဆည်းမည်'; }
+  }
+}
