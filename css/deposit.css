@@ -113,11 +113,12 @@
 }
 #depositModal.full-page .dep-sheet{
   max-width:100%;
-  max-height:100vh;
-  min-height:100vh;
+  height:-webkit-fill-available;
+  height:100dvh;
   border-radius:0;
   contain:layout style paint;
   isolation:isolate;
+  will-change:transform;
 }
 
 /* ================================================
@@ -157,22 +158,22 @@
 .dep-order-sub{font-size:11px;color:#999;margin-top:5px;}
 
 /* Slip — UNDERLINE style (no boxes) */
-.slip-row{background:#f9f9f9;border:1px solid #ebebeb;border-radius:12px;padding:14px;margin-bottom:14px;}
+.slip-row{background:#f9f9f9;border:1px solid #ebebeb;border-radius:12px;padding:14px;margin-bottom:14px;contain:layout style paint;transform:translateZ(0);}
 .slip-lbl{font-size:11px;color:#888;margin-bottom:12px;}
-.slip-boxes{display:flex;gap:16px;justify-content:center;margin-bottom:6px;}
+.slip-boxes{display:flex;gap:16px;justify-content:center;margin-bottom:6px;contain:layout style;}
 .slip-box{
   width:36px;height:44px;
   background:transparent;border:none;
-  border-bottom:2.5px solid #ccc;
   border-radius:0;
+  box-shadow:inset 0 -2.5px 0 #ccc;
   text-align:center;
   font-size:24px;font-weight:900;color:#000;
   font-family:'Segoe UI',sans-serif;
-  transition:border-color .2s;
+  transition:none;
+  will-change:box-shadow;
   -webkit-appearance:none;
 }
-.slip-box{transition:none;}
-.slip-box:focus{border-bottom-color:#1a4fd6;outline:none;}
+.slip-box:focus{box-shadow:inset 0 -2.5px 0 #1a4fd6;outline:none;}
 .slip-hint{font-size:10px;color:#bbb;text-align:center;}
 
 /* Instructions */
