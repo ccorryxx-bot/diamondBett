@@ -1,9 +1,38 @@
 // ============================================================
 // OPEN / CLOSE AUTH MODAL
 // ============================================================
-function openAuthModal(tab = 'login') {
+function openAuthModal(tab = 'register') {
   document.getElementById('authModal')?.classList.add('active');
   switchTab(tab);
+  if (tab === 'register') prefillRegisterForm();
+}
+
+// ── Auto-fill Register form with random name + password ──────────────────
+function prefillRegisterForm() {
+  const nameEl = document.getElementById('regName');
+  const passEl = document.getElementById('regPassword');
+  const ageEl  = document.getElementById('ageCheck');
+
+  // Only fill if empty (don't overwrite what user already typed)
+  if (nameEl && !nameEl.value) {
+    const adj  = ['Lucky','Cool','Swift','Bold','Star','Ace','Wild','Gold','Blue','Fire',
+                  'Royal','Super','Mega','Ultra','Flash','Storm','Dark','Bright','Iron','Sky'];
+    const noun = ['Tiger','Dragon','Eagle','Lion','Fox','Wolf','Bear','Hawk','Puma','Lynx',
+                  'Viper','Cobra','Shark','Falcon','Panther','Phoenix','Raven','Bison','Buck','Moose'];
+    const sfx  = Math.random().toString(36).toUpperCase().slice(2, 6);
+    nameEl.value = adj[Math.floor(Math.random() * adj.length)] +
+                   noun[Math.floor(Math.random() * noun.length)] + sfx;
+  }
+
+  if (passEl && !passEl.value) {
+    const chars   = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+    const autoPass = Array.from({ length: 10 }, () =>
+      chars[Math.floor(Math.random() * chars.length)]).join('');
+    passEl.value = autoPass;
+  }
+
+  // Auto-check 18+
+  if (ageEl) ageEl.checked = true;
 }
 
 // ============================================================
