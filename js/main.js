@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('showAuthBtn')?.addEventListener('click', () => {
-    if (typeof openAuthModal === 'function') openAuthModal('login');
+    if (typeof openAuthModal === 'function') openAuthModal('register');
   });
 
   document.addEventListener('click', (e) => {
