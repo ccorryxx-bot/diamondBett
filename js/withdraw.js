@@ -233,6 +233,7 @@ async function doWithdraw() {
     if (amount < min) { gToast('အနည်းဆုံး ' + min.toLocaleString() + ' ကျပ်', 'error'); resetWdBtn(); return; }
     if (amount > max) { gToast('အများဆုံး ' + max.toLocaleString() + ' ကျပ်', 'error'); resetWdBtn(); return; }
     if (amount > bal) { gToast('Balance မလုံလောက်ပါ', 'error'); resetWdBtn(); return; }
+    if (amount % 1000 !== 0) { gToast('ငွေပမာဏ ၁,၀၀၀ ကျပ် တိုးဆင့်ဖြင့်သာ ထုတ်ယူနိုင်သည်\n(ဥပမာ: 10,000 / 11,000 / 12,000)', 'error'); resetWdBtn(); return; }
 
     const { error: txErr } = await window.DB.from('transactions').insert([{
       user_id        : window.currentUserId,
